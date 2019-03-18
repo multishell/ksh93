@@ -56,7 +56,7 @@ tmpoff(register char* s, size_t z, register const char* p, register int n, int d
 		}
 		else
 			*s++ = '-';
-		s += sfsprintf(s, e - s, "%02d%02d", n / 60, n % 60);
+		s += sfsprintf(s, e - s, "%02d%s%02d", n / 60, d == -24*60 ? ":" : "", n % 60);
 	}
 	return s;
 }

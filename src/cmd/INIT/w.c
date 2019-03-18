@@ -17,21 +17,12 @@
 *                 Glenn Fowler <gsf@research.att.com>                  *
 *                                                                      *
 ***********************************************************************/
-/*
- * small test for -lgdbm
- */
-
-#define _hdr_ndbm	1
-
-#if _hdr_ndbm
-#include <ndbm.h>
-#endif
+#include <wchar.h>
+#include <wctype.h>
 
 int
 main()
 {
-	DBM*	dbm = 0;
-
-	dbm_close(dbm);
-	return 0;
+	wchar_t	w = ' ';
+	return iswspace(w) == 0;
 }

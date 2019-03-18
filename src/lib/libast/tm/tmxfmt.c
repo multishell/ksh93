@@ -589,7 +589,7 @@ tmxfmt(char* buf, size_t len, const char* format, Time_t t)
 				continue;
 			}
 			if ((ep - cp) >= 16)
-				cp = tmpoff(cp, ep - cp, "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), 24 * 60);
+				cp = tmpoff(cp, ep - cp, "", (flags & TM_UTC) ? 0 : tm->tm_zone->west + (tm->tm_isdst ? tm->tm_zone->dst : 0), pad == '_' ? -24 * 60 : 24 * 60);
 			continue;
 		case 'Z':	/* time zone */
 			if (arg)

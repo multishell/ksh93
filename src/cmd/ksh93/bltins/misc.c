@@ -273,7 +273,6 @@ int    b_dot_cmd(register int n,char *argv[],void* extra)
 	shp->st.self = &savst;
 	shp->topscope = (Shscope_t*)shp->st.self;
 	prevscope->save_tree = shp->var_tree;
-	shp->st.cmdname = argv[0];
 	if(np)
 		shp->st.filename = np->nvalue.rp->fname;
 	nv_putval(SH_PATHNAMENOD, shp->st.filename ,NV_NOFREE);

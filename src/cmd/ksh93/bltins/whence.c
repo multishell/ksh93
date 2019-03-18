@@ -272,7 +272,10 @@ static int whence(Shell_t *shp,char **argv, register int flags)
 				else
 					pp = 0;
 				if(tofree)
+				{
 					free((char*)cp);
+					tofree = 0;
+				}
 			}
 			else if(aflag<=1) 
 			{

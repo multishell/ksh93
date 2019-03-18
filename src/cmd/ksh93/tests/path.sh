@@ -335,4 +335,14 @@ done
 exec {n}< /dev/null
 (( n > 24 )) && err_exit 'autoload function in subshell leaves file open'
 
+# whence -a bug fix
+rmdir=rmdir
+if	mkdir "$rmdir"
+then	rm=${ whence rm;}
+	cp "$rm" "$rmdir"
+	{ PATH=:${rm%/rm} $SHELL -c "cd \"$rmdir\";whence -a rm";} > /dev/null 2>&1
+	exitval=$?
+	(( exitval==0 )) || err_exit "whence -a has exitval $exitval"
+fi
+
 exit $((Errors<125?Errors:125))

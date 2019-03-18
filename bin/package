@@ -1,6 +1,6 @@
 USAGE_LICENSE="[-author?Glenn Fowler <gsf@research.att.com>][-copyright?Copyright (c) 1994-2011 AT&T][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?INIT]"
+### this script contains archaic constructs that work with all sh variants ###
 # package - source and binary package control
-# this script is written to make it through all sh variants
 # Glenn Fowler <gsf@research.att.com>
 
 case $-:$BASH_VERSION in
@@ -10,6 +10,7 @@ esac
 command=package
 
 LC_ALL=C
+export LC_ALL
 
 src="cmd contrib etc lib"
 use="/usr/common /exp /usr/local /usr/add-on /usr/addon /usr/tools /usr /opt"
@@ -40,16 +41,18 @@ admin_ping="ping -c 1 -w 5"
 default_url=default.url
 MAKESKIP=${MAKESKIP:-"*[-.]*"}
 RATZ=ratz
+SED=
 TAR=tar
 TARFLAGS=xv
 TARPROBE=B
+TR=
 
 all_types='*.*|sun4'		# all but sun4 match *.*
 
 case `(getopts '[-][123:xyz]' opt --xyz; echo 0$opt) 2>/dev/null` in
 0123)	USAGE=$'
 [-?
-@(#)$Id: package (AT&T Research) 2011-02-02 $
+@(#)$Id: package (AT&T Research) 2011-03-25 $
 ]'$USAGE_LICENSE$'
 [+NAME?package - source and binary package control]
 [+DESCRIPTION?The \bpackage\b command controls source and binary
@@ -671,7 +674,7 @@ ${bT}(3)${bD}These instructions bypass the ${bI}click to download${eI} package l
 ${bT}(4)${bD}If the ${bB}bin/package${eB} script does not exist then run:${bX}
 		test -d bin || mkdir bin
 		url=\$URL/package
-		(wget -O bin/package \$url||curl \$url||hurl \$url) > bin/package
+		(wget -O bin/package \$url||curl -L \$url||hurl \$url) > bin/package
 		chmod +x bin/package${eX}${eD}
 ${bT}(5)${bD}Determine the list of package names you want from the download site, then
       use the ${Mpackage} command to do the actual download:${bX}
@@ -830,7 +833,7 @@ ${bT}(3)${bD}These instructions bypass the ${bI}click to download${eI} package l
 ${bT}(4)${bD}If the ${bB}bin/package${eB} script does not exist then run:${bX}
 		test -d bin || mkdir bin
 		url=\$URL/package
-		(wget -O bin/package \$url||curl \$url||hurl \$url) > bin/package
+		(wget -O bin/package \$url||curl -L \$url||hurl \$url) > bin/package
 		chmod +x bin/package${eX}${eD}
 ${bT}(5)${bD}Determine the list of package names you want from the download site, then
       use the ${Mpackage} command to do the actual download:${bX}
@@ -1460,9 +1463,9 @@ hostinfo() # attribute ...
 		done
 		PATH=$PATH:$i/bin
 	done
-	case $* in
-	type)	# LD_LIBRARY_PATH may be out of sync with PATH here
-		SED=sed
+	# LD_LIBRARY_PATH may be out of sync with PATH here
+	case $SED in
+	'')	SED=sed
 		$SED 1d < /dev/null > /dev/null 2>&1 ||
 		for dir in /bin /usr/bin
 		do	if	test -x $dir/$SED
@@ -3075,7 +3078,8 @@ esac
 # set up the view state
 
 VIEW_bin=$INSTALLROOT VIEW_src=$PACKAGEROOT VIEW_all="$INSTALLROOT $PACKAGEROOT"
-if	(vpath) >/dev/null 2>&1 && vpath $INSTALLROOT $PACKAGEROOT $USER_VPATH_CHAIN
+if	(vpath $INSTALLROOT $PACKAGEROOT $USER_VPATH_CHAIN) >/dev/null 2>&1 &&
+	 vpath $INSTALLROOT $PACKAGEROOT $USER_VPATH_CHAIN
 then	$show vpath $INSTALLROOT $PACKAGEROOT $USER_VPATH_CHAIN
 else	VPATH=$INSTALLROOT:$PACKAGEROOT$USER_VPATH
 	$show VPATH=$VPATH
@@ -3355,7 +3359,8 @@ int main(int argc, char** argv) { return argc || argv; }
 						esac
 						$exec touch $PROTOROOT/UPDATE
 					)
-					if (vpath) >/dev/null 2>&1 && vpath $INSTALLROOT - && vpath $INSTALLROOT $PROTOROOT $PROTOROOT $PACKAGEROOT
+					if	(vpath $INSTALLROOT - $INSTALLROOT $PROTOROOT $PROTOROOT $PACKAGEROOT) >/dev/null 2>&1 &&
+						 vpath $INSTALLROOT - $INSTALLROOT $PROTOROOT $PROTOROOT $PACKAGEROOT
 					then	$show vpath $INSTALLROOT $PROTOROOT $PROTOROOT $PACKAGEROOT $USER_VPATH_CHAIN
 					else	VPATH=$INSTALLROOT:$PROTOROOT:$PACKAGEROOT$USER_VPATH
 						$show VPATH=$VPATH
@@ -5583,7 +5588,8 @@ cat $j $k
 				;;
 			esac
 			if	test '' != "$PROTOROOT"
-			then	if (vpath) >/dev/null 2>&1 && vpath $INSTALLROOT - && vpath $PROTOROOT - && vpath $INSTALLROOT $PACKAGEROOT
+			then	if	(vpath $INSTALLROOT - $PROTOROOT - $INSTALLROOT $PACKAGEROOT) >/dev/null 2>&1 &&
+					 vpath $INSTALLROOT - $PROTOROOT - $INSTALLROOT $PACKAGEROOT
 				then	$show vpath $INSTALLROOT $PACKAGEROOT $USER_VPATH_CHAIN
 				else	VPATH=$INSTALLROOT:$PACKAGEROOT$USER_VPATH
 					$show VPATH=$VPATH

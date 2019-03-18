@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: rm (AT&T Research) 2010-12-10 $\n]"
+"[-?\n@(#)$Id: rm (AT&T Research) 2011-03-26 $\n]"
 USAGE_LICENSE
 "[+NAME?rm - remove files]"
 "[+DESCRIPTION?\brm\b removes the named \afile\a arguments. By default it"
@@ -264,7 +264,7 @@ rm(State_t* state, register FTSENT* ent)
 				break;
 			}
 		}
-		else if (!state->force && state->terminal && eaccess(path, W_OK))
+		else if (!(ent->fts_info & FTS_SL) && !state->force && state->terminal && eaccess(path, W_OK))
 		{
 			if ((v = astquery(-1, "override protection %s for %s? ",
 #ifdef ETXTBSY

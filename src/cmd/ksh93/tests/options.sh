@@ -509,4 +509,21 @@ $SHELL -uc 'var=foo;nset var;: ${var:-OK}' >/dev/null 2>&1 || err_exit '${var:-O
 z=$($SHELL 2>&1  -uc 'print ${X23456789012345}')
 [[ $z == *X23456789012345:* ]] || err_exit "error message garbled with set -u got $z"
 
+# pipe hang bug fixed 2011-03-15
+float start=SECONDS
+( $SHELL <<-\EOF
+	set -o pipefail
+	(sleep 3;kill $$> /dev/null) &
+	cat $SHELL | for ((i=0; i < 5; i++))
+	do
+		date | wc > /dev/null
+		$SHELL -c 'read -N1'
+	done
+EOF
+) 2> /dev/null
+(( (SECONDS-start) > 2.5)) && err_exit 'pipefail causes script to hang'
+
+# showme with arithmetic for loops
+$SHELL -n -c $'for((;1;))\ndo ; nothing\ndone'  2>/dev/null  || err_exit 'showme commands give syntax error inside arithmetic for loops'
+
 exit $((Errors<125?Errors:125))

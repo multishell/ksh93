@@ -242,7 +242,7 @@ Namval_t *sh_assignok(register Namval_t *np,int add)
 	if(!sp->shpwd || np==SH_LEVELNOD || np==L_ARGNOD || np==SH_SUBSCRNOD || np==SH_NAMENOD)
 		return(np);
 	/* don't bother to save if in newer scope */
-	if(sp->var!=shp->var_tree && shp->last_root==shp->var_tree)
+	if(sp->var!=shp->var_tree && sp->var!=shp->var_base && shp->last_root==shp->var_tree)
 		return(np);
 	if((ap=nv_arrayptr(np)) && (mp=nv_opensub(np)))
 	{

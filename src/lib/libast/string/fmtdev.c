@@ -24,7 +24,7 @@
  * Glenn Fowler
  * AT&T Bell Laboratories
  *
- * idevice() formatter
+ * st_dev formatter
  */
 
 #include <ast.h>
@@ -35,11 +35,14 @@ char*
 fmtdev(struct stat* st)
 {
 	char*		buf;
+	unsigned long	mm;
+	unsigned int	ma;
+	unsigned int	mi;
 	int		z;
 
-	unsigned int	ma = major(idevice(st));
-	unsigned int	mi = minor(idevice(st));
-
+	mm = (S_ISBLK(st->st_mode) || S_ISCHR(st->st_mode)) ? idevice(st) : st->st_dev;
+	ma = major(mm);
+	mi = minor(mm);
 	buf = fmtbuf(z = 17);
 	if (ma == '#' && isalnum(mi))
 	{

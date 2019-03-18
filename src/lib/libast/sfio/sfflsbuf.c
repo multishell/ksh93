@@ -56,8 +56,9 @@ int	c;	/* if c>=0, c is also written out */
 		n = f->next - (data = f->data);
 
 		if(n == (f->endb-data) && (f->flags&SF_STRING))
-		{	/* extend string stream buffer */
-			(void)SFWR(f,data,1,f->disc);
+		{	/* call sfwr() to extend string buffer and process events */
+			w = ((f->bits&SF_PUTR) && f->val > 0) ? f->val : 1;
+			(void)SFWR(f, data, w, f->disc);
 
 			/* !(f->flags&SF_STRING) is required because exception
 			   handlers may turn a string stream to a file stream */

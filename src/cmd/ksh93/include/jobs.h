@@ -79,6 +79,7 @@ struct process
 #if SHOPT_COSHELL
 	Cojob_t		*p_cojob;	/* coshell job */
 #endif /* SHOPT_COSHELL */
+	int		*p_exitval;	/* place to store the exitval */
 	pid_t		p_pid;		/* process id */
 	pid_t		p_pgrp;		/* process group */
 	pid_t		p_fgrp;		/* process group when stopped */
@@ -96,11 +97,13 @@ struct process
 struct jobs
 {
 	struct process	*pwlist;	/* head of process list */
+	int		*exitval;	/* pipe exit values */
 	pid_t		curpgid;	/* current process gid id */
 	pid_t		parent;		/* set by fork() */
 	pid_t		mypid;		/* process id of shell */
 	pid_t		mypgid;		/* process group id of shell */
 	pid_t		mytgid;		/* terminal group id of shell */
+	int		curjobid;
 	unsigned int	in_critical;	/* >0 => in critical region */
 	int		savesig;	/* active signal */
 	int		numpost;	/* number of posted jobs */

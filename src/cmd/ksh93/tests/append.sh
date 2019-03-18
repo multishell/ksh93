@@ -78,4 +78,9 @@ foo+=(x=4)
 [[ ${foo[1].x} == 4 ]] || err_exit 'compound append to index array not working'
 [[ ${foo[0].x} == 3 ]] || err_exit 'compound append to index array unsets existing variables'
 
+unset foo
+foo=a
+foo+=''
+[[ $foo == 'a' ]] || err_exit 'appending an empty string not working'
+
 exit $((Errors<125?Errors:125))

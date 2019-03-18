@@ -726,7 +726,7 @@ static Shnode_t	*arithfor(Lex_t *lexp,register Shnode_t *tf)
 		n = sh_lex(lexp);
 	if(n!=DOSYM && n!=LBRACE)
 		sh_syntax(lexp);
-	tw->wh.dotre = sh_cmd(lexp,n==DOSYM?DONESYM:RBRACE,SH_NL);
+	tw->wh.dotre = sh_cmd(lexp,n==DOSYM?DONESYM:RBRACE,SH_NL|SH_SEMI);
 	tw->wh.whtyp = TWH;
 	return(tf);
 

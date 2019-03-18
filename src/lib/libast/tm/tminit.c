@@ -35,6 +35,7 @@
 
 #ifndef tzname
 #	if defined(__DYNAMIC__)
+#		undef	_dat_tzname
 #		define	tzname		__DYNAMIC__(tzname)
 #	else
 #		if !_dat_tzname

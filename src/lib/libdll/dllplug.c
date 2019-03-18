@@ -1,10 +1,10 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1997-2006 AT&T Corp.                  *
+*           Copyright (c) 1997-2006 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
-*                            by AT&T Corp.                             *
+*                      by AT&T Knowledge Ventures                      *
 *                                                                      *
 *                A copy of the License is available at                 *
 *            http://www.opensource.org/licenses/cpl1.0.txt             *
@@ -25,6 +25,7 @@
 
 #include <ast.h>
 #include <dlldefs.h>
+#include <error.h>
 
 /*
  * find and load lib plugin/module library name with optional version ver and dlopen() flags
@@ -55,6 +56,8 @@ dllplug(const char* lib, const char* name, const char* ver, int flags, char* pat
 						strncopy(path, dle->path, size);
 					break;
 				}
+				else
+					errorf("dll", NiL, 1, "%s: dlopen failed: %s", dle->path, dlerror());
 			}
 			dllsclose(dls);
 		}

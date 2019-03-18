@@ -113,7 +113,7 @@ int b_test(int argc, char *argv[],void *extra)
 	struct test tdata;
 	register char *cp = argv[0];
 	register int not;
-	tdata.sh = (Shell_t*)extra;
+	tdata.sh = ((Shbltin_t*)extra)->shp;
 	tdata.av = argv;
 	tdata.ap = 1;
 	if(c_eq(cp,'['))
@@ -125,6 +125,11 @@ int b_test(int argc, char *argv[],void *extra)
 	if(argc <= 1)
 		return(1);
 	cp = argv[1];
+	if(c_eq(cp,'(') && argc<=6 && c_eq(argv[argc-1],')'))
+	{
+		cp =  (++argv)[1];
+		argc -= 2;
+	}
 	not = c_eq(cp,'!');
 	/* posix portion for test */
 	switch(argc)
@@ -173,8 +178,6 @@ int b_test(int argc, char *argv[],void *extra)
 		case 2:
 			return(*cp==0);
 	}
-	if(argc==5)
-		argv--;
 	tdata.ac = argc;
 	return(!expr(&tdata,0));
 }

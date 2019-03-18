@@ -95,6 +95,7 @@ int main(int argc, char *argv[])
 		break;
 	}
 	shp = sh_init(argc,argv,(Shinit_f)0);
+	shp->shcomp = 1;
 	argv += opt_info.index;
 	argc -= opt_info.index;
 	if(error_info.errors || argc>2)

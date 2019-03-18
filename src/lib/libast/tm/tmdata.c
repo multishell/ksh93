@@ -229,6 +229,7 @@ static Tm_zone_t	zone[] =
  0,	"UCT",	0,	 ( 0 * 60),	     0,	/* UTC			*/
  0,	"UTC",	0,	 ( 0 * 60),	     0,	/* UTC			*/
  0,	"CUT",	0,	 ( 0 * 60),	     0,	/* UTC			*/
+ 0,	"Z",	0,	 ( 0 * 60),	     0,	/* UTC			*/
  "USA",	"HST",	0,	 (10 * 60),	     0,	/* Hawaii		*/
  0,	"YST",	"YDT",	 ( 9 * 60),	TM_DST,	/* Yukon		*/
  0,	"PST",	"PDT",	 ( 8 * 60),	TM_DST,	/* Pacific		*/

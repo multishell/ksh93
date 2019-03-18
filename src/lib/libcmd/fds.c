@@ -29,7 +29,7 @@ USAGE_LICENSE
     "calling shell, otherwise it lists the file descriptors passed across "
     "\bexec\b(2).]"
 "[l:long?List file descriptor details.]"
-"[+SEE ALSO?\blogname\b(1), \bwho\b(1), \bgetgroups\b(2), \bgetsockname\b(2), \bgetsockopts\b(2), ]"
+"[+SEE ALSO?\blogname\b(1), \bwho\b(1), \bgetgroups\b(2), \bgetsockname\b(2), \bgetsockopts\b(2)]"
 ;
 
 #include <cmd.h>

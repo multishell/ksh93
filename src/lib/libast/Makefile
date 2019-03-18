@@ -30,10 +30,10 @@ __OBSOLETE__ == $("6 months ago":@F=%(%Y0101)T)
 HEADERSRC = ast.h ast_dir.h ast_getopt.h ast_std.h \
 	ast_namval.h ast_version.h ast_windows.h \
 	ccode.h cdt.h cmdarg.h debug.h dt.h error.h find.h ftw.h ftwalk.h \
-	fts.h fs3d.h getopt.h glob.h hash.h hashkey.h hashpart.h lc.h \
-	ls.h magic.h mc.h mime.h mnt.h modecanon.h modex.h namval.h \
+	fts.h fs3d.h getopt.h glob.h hash.h hashkey.h hashpart.h ip6.h \
+	lc.h ls.h magic.h mc.h mime.h mnt.h modecanon.h modex.h namval.h \
 	option.h proc.h re_comp.h recfmt.h regex.h regexp.h \
-	sfio.h sfio_s.h sfio_t.h sfdisc.h \
+	sfio.h sfio_s.h sfio_t.h sfdisc.h shcmd.h \
 	stack.h stak.h stk.h swap.h tar.h times.h tm.h tok.h \
 	usage.h vdb.h vecargs.h vmalloc.h wait.h wordexp.h \
 	bytesex.h endian.h fnmatch.h magicid.h fnv.h \
@@ -41,9 +41,9 @@ HEADERSRC = ast.h ast_dir.h ast_getopt.h ast_std.h \
 
 HEADERGEN = align.h preroot.h sig.h tmx.h tv.h \
 	$(ID)_botch.h $(ID)_ccode.h $(ID)_fcntl.h $(ID)_float.h $(ID)_fs.h \
-	$(ID)_lib.h $(ID)_map.h $(ID)_mmap.h $(ID)_mode.h $(ID)_param.h \
-	$(ID)_sys.h $(ID)_time.h $(ID)_time.h $(ID)_tty.h $(ID)_types.h \
-	$(ID)_vfork.h $(ID)_wait.h $(ID)_limits.h $(ID)_standards.h \
+	$(ID)_lib.h $(ID)_map.h $(ID)_mmap.h $(ID)_mode.h $(ID)_ndbm.h \
+	$(ID)_param.h $(ID)_sys.h $(ID)_time.h $(ID)_time.h $(ID)_tty.h \
+	$(ID)_types.h $(ID)_vfork.h $(ID)_wait.h $(ID)_limits.h $(ID)_standards.h \
 	$(HEADERSTD:/^/$(ID)_/)
 
 HEADEREXP = $(ID)_common.h
@@ -78,7 +78,8 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	pathexists.c pathfind.c pathkey.c pathprobe.c pathrepl.c \
 	pathnative.c pathposix.c pathtemp.c pathtmp.c pathstat.c \
 	pathgetlink.c pathsetlink.c pathbin.c pathshell.c pathcd.c \
-	fs3d.c ftwalk.c ftwflags.c fts.c setenviron.c \
+	fs3d.c ftwalk.c ftwflags.c fts.c \
+	astintercept.c getenv.c setenviron.c \
 	optget.c optjoin.c optesc.c optctx.c strsort.c struniq.c \
 	magic.c mime.c mimetype.c signal.c systrace.c \
 	error.c errorf.c errormsg.c errorx.c \
@@ -86,10 +87,11 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	catopen.c iconv.c lc.c lctab.c mc.c \
 	base64.c recfmt.c recstr.c reclen.c fmtrec.c \
 	fmtbase.c fmtbuf.c fmtclock.c fmtdev.c fmtelapsed.c fmterror.c \
-	fmtesc.c fmtfmt.c fmtfs.c fmtident.c fmtip4.c fmtls.c fmtmatch.c \
-	fmtmode.c fmtnum.c fmtperm.c fmtre.c fmttime.c fmtuid.c fmtgid.c \
-	fmtsignal.c fmtscale.c fmttmx.c fmttv.c fmtversion.c \
-	strelapsed.c strperm.c struid.c strgid.c strtoip4.c stack.c stk.c \
+	fmtesc.c fmtfmt.c fmtfs.c fmtident.c fmtip4.c fmtip6.c fmtls.c \
+	fmtmatch.c fmtmode.c fmtnum.c fmtperm.c fmtre.c fmttime.c fmtuid.c \
+	fmtgid.c fmtsignal.c fmtscale.c fmttmx.c fmttv.c fmtversion.c \
+	strelapsed.c strperm.c struid.c strgid.c \
+	strtoip4.c strtoip6.c stack.c stk.c \
 	swapget.c swapmem.c swapop.c swapput.c \
 	sigdata.c sigcrit.c sigunblock.c \
 	proclib.h procopen.c procclose.c procrun.c procfree.c \
@@ -100,7 +102,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	tmxscan.c tmxsettime.c tmxsleep.c tmxtime.c tmxtouch.c \
 	tvcmp.c tvgettime.c tvsettime.c tvsleep.c tvtouch.c \
 	cmdarg.c vecargs.c vecfile.c vecfree.c vecload.c vecstring.c \
-	univlib.h univdata.c touch.c mnt.c \
+	univlib.h univdata.c touch.c mnt.c debug.c \
 	memccpy.c memchr.c memcmp.c memcpy.c memdup.c memmove.c memset.c \
 	mkdir.c mkfifo.c mknod.c rmdir.c remove.c rename.c link.c unlink.c \
 	strdup.c strchr.c strrchr.c strstr.c \
@@ -215,11 +217,11 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 .AST.INIT : .MAKE
 	CCFLAGS += -D_BLD_ast
 
-parameter	(_BLD_ast) (_AST_VERSION) ast_version.h
+parameter	(_BLD_ast) (_AST_VERSION)
 virtual		ast/stdio.h
 
 		:NOOPTIMIZE: spawnveg.c
-"sol*.*"	:NOOPTIMIZE: sfrd.c sfvprintf.c
+"sol*.*"	:NOOPTIMIZE: sfrd.c sfvprintf.c tmxfmt.c
 "win32*"	:NOOPTIMIZE: fastfind.c mc.c
 
 /*

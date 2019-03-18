@@ -148,6 +148,7 @@ fmtre(const char* as)
 						continue;
 					}
 					p->len = 0;
+					p->min = 0;
 					*t++ = *s++;
 					*t++ = '?';
 				}

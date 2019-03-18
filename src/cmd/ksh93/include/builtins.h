@@ -39,8 +39,9 @@
 #define SYSBRACKET	(sh.bltin_cmds+11)
 #define SYSLET		(sh.bltin_cmds+12)
 #define SYSEXPORT	(sh.bltin_cmds+13)
+#define SYSDOT		(sh.bltin_cmds+14)
 #if SHOPT_BASH
-#   define SYSLOCAL	(sh.bltin_cmds+14)
+#   define SYSLOCAL	(sh.bltin_cmds+15)
 #else
 #   define SYSLOCAL	0
 #endif
@@ -54,6 +55,7 @@
 extern int b_alias(int, char*[],void*);
 extern int b_break(int, char*[],void*);
 extern int b_dot_cmd(int, char*[],void*);
+extern int b_enum(int, char*[],void*);
 extern int b_exec(int, char*[],void*);
 extern int b_eval(int, char*[],void*);
 extern int b_return(int, char*[],void*);

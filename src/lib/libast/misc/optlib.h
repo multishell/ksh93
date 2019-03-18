@@ -37,9 +37,10 @@
 #define OPT_functions		0x02
 #define OPT_ignore		0x04
 #define OPT_long		0x08
-#define OPT_old			0x10
-#define OPT_plus		0x20
-#define OPT_proprietary		0x40
+#define OPT_numeric		0x10
+#define OPT_old			0x20
+#define OPT_plus		0x40
+#define OPT_proprietary		0x80
 
 #define OPT_cache_flag		0x01
 #define OPT_cache_invert	0x02

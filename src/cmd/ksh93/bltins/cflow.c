@@ -47,7 +47,7 @@
 int	b_return(register int n, register char *argv[],void *extra)
 {
 	register char *arg;
-	register Shell_t *shp = (Shell_t*)extra;
+	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
 	struct checkpt *pp = (struct checkpt*)shp->jmplist;
 	const char *options = (**argv=='r'?sh_optreturn:sh_optexit);
 	while((n = optget(argv,options))) switch(n)
@@ -85,7 +85,7 @@ int	b_break(register int n, register char *argv[],void *extra)
 {
 	char *arg;
 	register int cont= **argv=='c';
-	register Shell_t *shp = (Shell_t*)extra;
+	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
 	while((n = optget(argv,cont?sh_optcont:sh_optbreak))) switch(n)
 	{
 	    case ':':

@@ -474,7 +474,11 @@ static const Map_t map[] =
 	MON_10,				(TM_MONTH+9),
 	MON_11,				(TM_MONTH+10),
 	MON_12,				(TM_MONTH+11),
+#ifdef _DATE_FMT
+	_DATE_FMT,			TM_DEFAULT,
+#else
 	D_T_FMT,			TM_DEFAULT,
+#endif
 	D_FMT,				TM_DATE,
 	T_FMT,				TM_TIME,
 #ifdef ERA

@@ -512,6 +512,8 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			}
 			break;
 		}
+		p = "";
+		num = 0;
 		if (!ep->expr)
 			num = ep->offset + off;
 		else

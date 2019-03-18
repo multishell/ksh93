@@ -43,5 +43,5 @@ int main(int argc, char *argv[])
 	(void)memcntl(NULL, 0, MC_HAT_ADVISE, (caddr_t)&mha, 0, 0);
 #endif
 	sh_waitnotify((Shnote_f)0);
-	return(sh_main(argc, argv, 0));
+	return(sh_main(argc, argv, (Shinit_f)0));
 }

@@ -249,6 +249,7 @@ regsub(const regex_t* p, Sfio_t* dp, const char* op, const char* sp, size_t nmat
 		return fatal(p->env->disc, REG_BADPAT, NiL);
 	m = (flags >> 16) & 0x3fff;
 	sre = !!(p->env->flags & REG_SHELL);
+	r = 0;
 	do
 	{
 		if (--m > 0)

@@ -172,7 +172,7 @@ date(char* s, char** e)
 			return 0;
 		if (!(d = number(t, &s)))
 			return 0;
-		for (; *s; s++)
+		for (y = 1969; *s; s++)
 			if ((y = number(s, &t)) && (t - s) == 4)
 			{
 				if (y < 1969)

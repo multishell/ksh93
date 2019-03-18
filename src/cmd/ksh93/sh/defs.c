@@ -29,9 +29,9 @@
 #include	"edit.h"
 #include	"timeout.h"
 
-struct sh_static	sh = {0};
+Shell_t			sh = {0};
 #ifdef	__IMPORT__
-    struct sh_static	*_imp__sh = &sh;
+    Shell_t		*_imp__sh = &sh;
 #endif
 
 Dtdisc_t	_Nvdisc =

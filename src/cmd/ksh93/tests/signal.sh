@@ -32,6 +32,13 @@ mkdir /tmp/ksh$$ || err_exit "mkdir /tmp/ksh$$ failed"
 trap 'cd /; rm -rf /tmp/ksh$$' EXIT
 cd /tmp/ksh$$ || err_exit "cd /tmp/ksh$$ failed"
 
+[[ $( trap 'print -n got_child' SIGCHLD
+	sleep 2 &
+	for	((i=0; i < 4; i++))
+	do 	sleep .9
+		print -n $i
+	done) == 01got_child23 ]] || err_exit 'SIGCHLD not working'
+
 # begin standalone SIGINT test generation
 
 cat > tst <<'!'
@@ -210,4 +217,10 @@ while	read ops out
 do	[[ $out == ${expected[$ops]} ]] || err_exit "interrupt $ops test failed -- got '$out', expected '${expected[$ops]}'"
 done < tst.got
 
+float s=$SECONDS
+[[ $($SHELL -c 'trap "print SIGUSR1 ; exit 0" USR1; (trap "" USR1 ; exec kill -USR1 $$ & sleep 5); print done') == SIGUSR1 ]] || err_exit 'subshell ignoring signal does not send signal to parent' 
+(( (SECONDS-s) < 4 )) && err_exit 'parent does not wait for child to complete before handling signal'
+((s = SECONDS))
+[[ $($SHELL -c 'trap "print SIGUSR1 ; exit 0" USR1; (trap "exit" USR1 ; exec kill -USR1 $$ & sleep 5); print done') == SIGUSR1 ]] || err_exit 'subshell catching signal does not send signal to parent' 
+(( SECONDS-s < 4 )) && err_exit 'parent completes early'
 exit $((Errors))

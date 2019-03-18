@@ -144,7 +144,7 @@ x=$( . $file)
 if	[[ $x != $0 ]]
 then	err_exit "\$0 in a dot script is $x. Should be $0"
 fi
-x=$($SHELL -i 2> /dev/null <<\!
+x=$($SHELL -i --norc 2> /dev/null <<\!
 typeset -i x=1/0
 print hello
 !

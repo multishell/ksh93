@@ -523,7 +523,6 @@ procopen(const char* cmd, char** argv, char** envv, long* modv, int flags)
 #endif
 	if (!proc->pid)
 	{
-		char*		s;
 #if _use_spawnveg
 		char**		oenviron = 0;
 		char*		oenviron0 = 0;

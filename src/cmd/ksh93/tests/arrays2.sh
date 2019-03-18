@@ -81,7 +81,6 @@ function check
 
 check a
 
-exit
 unset a
 typeset -A a
 for	((i=0; i < 4; i++ ))

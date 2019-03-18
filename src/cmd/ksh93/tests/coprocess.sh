@@ -154,7 +154,7 @@ fi
 ) && err_exit 'coprocess with subshell would hang'
 for sig in IOT ABRT
 do	if	( trap - $sig ) 2> /dev/null
-	then	if	[[ $(	
+	then	if	[[ $( { sig=$sig $SHELL  2> /dev/null <<- '++EOF++'
 				cat |&
 				pid=$!
 				trap "print TRAP" $sig
@@ -164,9 +164,12 @@ do	if	( trap - $sig ) 2> /dev/null
 					sleep 2
 					kill -$sig $$
 					kill $pid
+					sleep 2
+					kill  $$
 				) 2> /dev/null &
 				read -p
-			) != $'TRAP\nTRAP' ]]
+			++EOF++
+			} 2> /dev/null ) != $'TRAP\nTRAP' ]]
 		then	err_exit 'traps when reading from coprocess not working'
 		fi
 		break

@@ -57,6 +57,7 @@ int		type;
 	ssize_t	rv;
 
 	done = 0;	/* amount processed by direct IO */
+	rv = 0;
 
 #ifdef F_DIOINFO
 	if((P2I(buf)%di->dio.d_mem) == 0 &&

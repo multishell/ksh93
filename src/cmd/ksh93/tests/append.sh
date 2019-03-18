@@ -63,10 +63,18 @@ point+=( y=3 z=4)
 if	[[ ${point.y} != 3 ]]
 then	err_exit 'compound append fails'
 fi
+if	[[ ${point.x} != 1 ]]
+then	err_exit 'compound append to compound variable unsets existing variables'
+fi
 unset foo
 foo=one
 foo+=(two)
 if	[[ ${foo[@]} != 'one two' ]]
 then	err_exit 'array append to non array variable fails'
 fi
+unset foo
+foo[0]=(x=3)
+foo+=(x=4)
+[[ ${foo[1].x} == 4 ]] || err_exit 'compound append to index array not working'
+[[ ${foo[0].x} == 3 ]] || err_exit 'compound append to index array unsets existing variables'
 exit $((Errors))

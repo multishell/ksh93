@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: head (AT&T Research) 2006-09-27 $\n]"
+"[-n?\n@(#)$Id: head (AT&T Research) 2006-09-27 $\n]"
 USAGE_LICENSE
 "[+NAME?head - output beginning portion of one or more files ]"
 "[+DESCRIPTION?\bhead\b copies one or more input files to standard "

@@ -219,7 +219,8 @@ hashlook(register Hash_table_t* tab, const char* name, long flags, const char* v
 					if (!(i = tab->bucketsize))
 						i = (sizeof(Hash_bucket_t) + sizeof(char*) - 1) / sizeof(char*);
 					i *= sizeof(char*);
-					if (b->name == ((char*)b + i) && strlen(b->name) <= (m = strlen(value)))
+					m = strlen(value);
+					if (b->name == ((char*)b + i) && strlen(b->name) <= m)
 					{
 						strcpy(b->name, value);
 						name = 0;

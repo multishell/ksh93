@@ -273,7 +273,7 @@ main()
 	printf("extern int		remove(const char*);\n");
 	printf("#undef	resolvepath\n");
 	printf("#define resolvepath	_ast_resolvepath\n");
-	printf("extern char*		resolvepath(const char*, char*, size_t);\n");
+	printf("extern int		resolvepath(const char*, char*, size_t);\n");
 	printf("#undef	setenv\n");
 	printf("#define setenv		_ast_setenv\n");
 	printf("extern int		setenv(const char*, const char*, int);\n");

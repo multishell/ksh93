@@ -33,7 +33,7 @@ errorx(const char* loc, const char* cmd, const char* cat, const char* msg)
 {
 	char*	s;
 
-	error_info.translate = translate; /* 2007-03-19 OLD_Error_info_t workaround */
+	if (!error_info.translate) error_info.translate = translate; /* 2007-03-19 OLD_Error_info_t workaround */
 	if (ERROR_translating())
 	{
 		if (!loc)

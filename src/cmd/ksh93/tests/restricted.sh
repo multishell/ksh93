@@ -63,15 +63,15 @@ chmod +x ./script
 ! check_restricted script ||  err_exit 'script without builtins should run in restricted mode'
 check_restricted ./script ||  err_exit 'script with / in name should not run in restricted mode'
 print '/bin/echo hello' > script
-check_restricted script ||  err_exit 'script with pathnames should not run in restricted mode'
+! check_restricted script ||  err_exit 'script with pathnames should run in restricted mode'
 print 'echo hello> file' > script
-check_restricted script ||  err_exit 'script with output redirection should not run in restricted mode'
+! check_restricted script ||  err_exit 'script with output redirection should run in restricted mode'
 print 'PATH=/bin' > script
-check_restricted script ||  err_exit 'script with PATH assignment should not run in restricted mode'
+! check_restricted script ||  err_exit 'script with PATH assignment should run in restricted mode'
 cat > script <<!
 #! $SHELL
 print hello
 !
-check_restricted 'script;:' ||  err_exit 'script with #! pathname should not run in restricted mode'
-check_restricted 'script' ||  err_exit 'script with #! pathname should not run in restricted mode even if last command in script'
+! check_restricted 'script;:' ||  err_exit 'script with #! pathname should run in restricted mode'
+! check_restricted 'script' ||  err_exit 'script with #! pathname should run in restricted mode even if last command in script'
 exit $((Errors))

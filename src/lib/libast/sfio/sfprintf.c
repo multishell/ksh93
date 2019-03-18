@@ -69,20 +69,19 @@ va_list	args;
                         -1,SF_WRITE|SF_STRING)) )
 		return -1;
 
-	if((rv = sfvprintf(f,form,args)) < 0 )
-		return -1;
-	if(s && n > 0)
-	{	if((rv+1) >= n)
-			n--;
-		else
-			n = rv;
-		memcpy(s, f->data, n);
-		s[n] = 0;
+	if((rv = sfvprintf(f,form,args)) >= 0 )
+	{	if(s && n > 0)
+		{	if((rv+1) >= n)
+				n--;
+			else
+				n = rv;
+			memcpy(s, f->data, n);
+			s[n] = 0;
+		}
+		_Sfi = rv;
 	}
 
 	sfclose(f);
-
-	_Sfi = rv;
 
 	return rv;
 }

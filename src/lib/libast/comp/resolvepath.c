@@ -38,7 +38,7 @@
 #define extern	__EXPORT__
 #endif
 
-extern char*
+extern int
 resolvepath(const char* file, char* path, size_t size)
 {
 	register char*	s;
@@ -66,5 +66,5 @@ resolvepath(const char* file, char* path, size_t size)
 		*s++ = '/';
 	}
 	strcpy(s, file);
-	return pathcanon(path, PATH_PHYSICAL|PATH_DOTDOT|PATH_EXISTS) ? path : (char*)0;
+	return pathcanon(path, PATH_PHYSICAL|PATH_DOTDOT|PATH_EXISTS) ? strlen(path) : -1;
 }

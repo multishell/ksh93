@@ -357,7 +357,7 @@ S2I_function(a, e, base) const char* a; char** e; int base;
 				c = 0;
 				break;
 			}
-			else if (c != thousand || !S2I_valid(s))
+			else if (!S2I_valid(s) || c != thousand)
 				break;
 			else if (!p && (s - b) > 4)
 			{

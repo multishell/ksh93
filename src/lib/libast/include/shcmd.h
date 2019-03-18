@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1992-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -16,6 +16,7 @@
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
 *                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
@@ -56,6 +57,8 @@ typedef struct Shbltin_s
 	Namval_t	*vnode;
 	char		*data;
 	int		flags;
+	char		*(*shgetenv)(const char*);
+	char		*(*shsetenv)(const char*);
 } Shbltin_t;
 
 #if defined(SH_VERSION) ||  defined(_SH_PRIVATE)
@@ -76,5 +79,13 @@ typedef struct Shbltin_s
 	    (((Shbltin_t*)(c))->notify = ((flg)&ERROR_NOTIFY)?1:0);} while(0)
 #   endif
 #endif
+
+#if _BLD_ast && defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
+
+extern int		astintercept(Shbltin_t*, int);
+
+#undef	extern
 
 #endif

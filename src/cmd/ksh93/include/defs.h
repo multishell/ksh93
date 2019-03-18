@@ -25,6 +25,8 @@
  * Shell interface private definitions
  *
  */
+#ifndef defs_h_defined
+#define defs_h_defined
 
 #include	<ast.h>
 #include	<sfio.h>
@@ -42,6 +44,8 @@
 #ifndef pointerof
 #define pointerof(x)		((void*)((char*)0+(x)))
 #endif
+
+#define Empty			((char*)(e_sptbnl+3))
 
 #define	env_change()		(++ast.env_serial)
 #if SHOPT_ENV
@@ -86,6 +90,7 @@ struct sh_scoped
 	char		**trapcom;
 	char		**otrapcom;
 	void		*timetrap;
+	struct Ufunction *real_fun;	/* current 'function name' function */
 };
 
 struct limits
@@ -103,6 +108,7 @@ struct limits
 #define _SH_PRIVATE \
 	struct sh_scoped st;		/* scoped information */ \
 	struct limits	lim;		/* run time limits */ \
+	Stk_t		*stk;		/* stack poiter */ \
 	Sfio_t		*heredocs;	/* current here-doc temp file */ \
 	Sfio_t		*funlog;	/* for logging function definitions */ \
 	int		**fdptrs;	/* pointer to file numbers */ \
@@ -111,7 +117,6 @@ struct limits
 	char		*lastpath;	/* last alsolute path found */ \
 	int		path_err;	/* last error on path search */ \
 	Dt_t		*track_tree;	/* for tracked aliases*/ \
-	Namval_t	*bltin_nodes;	/* pointer to built-in variables */ \
 	Dt_t		*var_base;	/* global level variables */ \
 	Namval_t	*namespace;	/* current active namespace*/ \
 	Namval_t	*last_table;	/* last table used in last nv_open  */ \
@@ -119,10 +124,12 @@ struct limits
 	long		timeout;	/* read timeout */ \
 	short		curenv;		/* current subshell number */ \
 	short		jobenv;		/* subshell number for jobs */ \
+	int		infd;		/* input file descriptor */ \
 	int		nextprompt;	/* next prompt is PS<nextprompt> */ \
+	int		bltin_nnodes;	/* number of bltins nodes */ \
+	Namval_t	*bltin_nodes;	/* pointer to built-in variables */ \
 	Namval_t	*bltin_cmds;	/* pointer to built-in commands */ \
 	Namval_t	*posix_fun;	/* points to last name() function */ \
-	int		infd;		/* input file descriptor */ \
 	char		*outbuff;	/* pointer to output buffer */ \
 	char		*errbuff;	/* pointer to stderr buffer */ \
 	char		*prompt;	/* pointer to prompt string */ \
@@ -150,7 +157,11 @@ struct limits
 	char		forked;	\
 	char		binscript; \
 	char		deftype; \
+	char		funload; \
 	char		used_pos;	/* used postional parameter */\
+	char		universe; \
+	char		winch; \
+	char		indebug; 	/* set when in debug trap */ \
 	unsigned char	lastsig;	/* last signal received */ \
 	char		*readscript;	/* set before reading a script */ \
 	int		*inpipe;	/* input pipe pointer */ \
@@ -180,7 +191,6 @@ struct limits
 	void		*cdpathlist; \
 	char		**argaddr; \
 	void		*optlist; \
-	int		optcount ; \
 	struct sh_scoped global; \
 	struct checkpt	checkbase; \
 	Shinit_f	userinit; \
@@ -190,20 +200,25 @@ struct limits
 	char		*cur_line; \
 	char		*rcfile; \
 	char		**login_files; \
-	short		offsets[10]; \
+	int		offsets[10]; \
 	Sfio_t		**sftable; \
 	unsigned char	*fdstatus; \
 	const char	*pwd; \
 	History_t	*hist_ptr; \
-	char		universe; \
 	void		*jmpbuffer; \
 	void		*mktype; \
 	Sfio_t		*strbuf; \
+	Sfio_t		*strbuf2; \
 	Dt_t		*last_root; \
+	Dt_t		*fpathdict; \
 	char		ifstable[256]; \
 	unsigned char	sigruntime[2]; \
 	unsigned long	test; \
-	Shopt_t		offoptions;
+	Shopt_t		offoptions; \
+	Shopt_t		glob_options; \
+	Namval_t	*typeinit; \
+	int		*stats; \
+	Namfun_t	nvfun;
 
 #include	<shell.h>
 
@@ -311,13 +326,22 @@ struct limits
 
 #define MATCH_MAX		64
 
+#define SH_READEVAL		0x4000	/* for sh_eval */
+
+extern Shell_t		*nv_shell(Namval_t*);
 extern int		sh_addlib(void*);
+extern void		sh_applyopts(Shell_t*,Shopt_t);
+extern char 		**sh_argbuild(Shell_t*,int*,const struct comnod*,int);
+extern struct dolnod	*sh_argfree(Shell_t *, struct dolnod*,int);
+extern struct dolnod	*sh_argnew(Shell_t*,char*[],struct dolnod**);
 extern void 		*sh_argopen(Shell_t*);
+extern void 		sh_argreset(Shell_t*,struct dolnod*,struct dolnod*);
 extern Namval_t		*sh_assignok(Namval_t*,int);
+extern struct dolnod	*sh_arguse(Shell_t*);
 extern char		*sh_checkid(char*,char*);
-extern int		sh_debug(const char*,const char*,const char*,char *const[],int);
+extern int		sh_debug(Shell_t *shp,const char*,const char*,const char*,char *const[],int);
 extern int 		sh_echolist(Sfio_t*, int, char**);
-extern struct argnod	*sh_endword(int);
+extern struct argnod	*sh_endword(Shell_t*,int);
 extern char 		**sh_envgen(void);
 #if SHOPT_ENV
 extern void 		sh_envput(Env_t*, Namval_t*);
@@ -327,17 +351,20 @@ extern Sfdouble_t	sh_arith(const char*);
 extern void		*sh_arithcomp(char*);
 extern pid_t 		sh_fork(int,int*);
 extern pid_t		_sh_fork(pid_t, int ,int*);
-extern char 		*sh_mactrim(char*,int);
-extern int 		sh_macexpand(struct argnod*,struct argnod**,int);
-extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
+extern char 		*sh_mactrim(Shell_t*,char*,int);
+extern int 		sh_macexpand(Shell_t*,struct argnod*,struct argnod**,int);
+extern int		sh_macfun(Shell_t*,const char*,int);
+extern void 		sh_machere(Shell_t*,Sfio_t*, Sfio_t*, char*);
 extern void 		*sh_macopen(Shell_t*);
-extern char 		*sh_macpat(struct argnod*,int);
-extern char 		*sh_mactry(char*);
+extern char 		*sh_macpat(Shell_t*,struct argnod*,int);
+extern char 		*sh_mactry(Shell_t*,char*);
 extern void		sh_printopts(Shopt_t,int,Shopt_t*);
 extern int 		sh_readline(Shell_t*,char**,int,int,long);
 extern Sfio_t		*sh_sfeval(char*[]);
 extern void		sh_setmatch(const char*,int,int,int[]);
 extern Dt_t		*sh_subaliastree(int);
+extern void             sh_scope(Shell_t*, struct argnod*, int);
+extern Namval_t		*sh_scoped(Shell_t*, Namval_t*);
 extern Dt_t		*sh_subfuntree(int);
 extern int		sh_subsavefd(int);
 extern void		sh_subtmpfile(void);
@@ -346,6 +373,7 @@ extern const char	*_sh_translate(const char*);
 extern int		sh_trace(char*[],int);
 extern void		sh_trim(char*);
 extern int		sh_type(const char*);
+extern void             sh_unscope(Shell_t*);
 extern void		sh_utol(const char*, char*);
 extern int 		sh_whence(char**,int);
 
@@ -380,7 +408,32 @@ extern const char	e_dict[];
 /* sh_printopts() mode flags -- set --[no]option by default */
 
 #define PRINT_VERBOSE	0x01	/* option on|off list		*/
-#define PRINT_ALL	0x02	/* list unset iptions too	*/
+#define PRINT_ALL	0x02	/* list unset options too	*/
 #define PRINT_NO_HEADER	0x04	/* omit listing header		*/
 #define PRINT_SHOPT	0x08	/* shopt -s|-u			*/
 #define PRINT_TABLE	0x10	/* table of all options		*/
+
+#ifdef SHOPT_STATS
+    /* performance statistics */
+#   define	STAT_ARGHITS	0
+#   define	STAT_ARGEXPAND	1
+#   define	STAT_COMSUB	2
+#   define	STAT_FORKS	3
+#   define	STAT_FUNCT	4
+#   define	STAT_GLOBS	5
+#   define	STAT_READS	6
+#   define	STAT_NVHITS	7
+#   define	STAT_NVOPEN	8
+#   define	STAT_PATHS	9
+#   define	STAT_SVFUNCT	10
+#   define	STAT_SCMDS	11
+#   define	STAT_SPAWN	12
+#   define	STAT_SUBSHELL	13
+    extern const Shtable_t shtab_stats[];
+#   define sh_stats(x)	(sh.stats[(x)]++)
+#else
+#   define sh_stats(x)
+#endif /* SHOPT_STATS */
+
+
+#endif

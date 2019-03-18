@@ -1,14 +1,14 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
-*                  Common Public License, Version 1.0                  *
+*                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
 *                                                                      *
 *                A copy of the License is available at                 *
-*            http://www.opensource.org/licenses/cpl1.0.txt             *
-*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*          http://www.eclipse.org/org/documents/epl-v10.html           *
+*         (with md5 checksum b35adb5213ca9657e911e9befb180842)         *
 *                                                                      *
 *              Information and Software Systems Research               *
 *                            AT&T Research                             *
@@ -19,43 +19,38 @@
 *                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
-#include	"dthdr.h"
+#pragma prototyped
 
-/*	Return the # of objects in the dictionary
-**
-**	Written by Kiem-Phong Vo (5/25/96)
-*/
+#include "asohdr.h"
 
-#if __STD_C
-static int treecount(reg Dtlink_t* e)
+#if defined(_UWIN) && defined(_BLD_ast)
+
+NoN(asorelax)
+
 #else
-static int treecount(e)
-reg Dtlink_t*	e;
-#endif
-{	return e ? treecount(e->left) + treecount(e->right) + 1 : 0;
-}
 
-#if __STD_C
-int dtsize(Dt_t* dt)
+#if _PACKAGE_ast
+#include <tv.h>
 #else
-int dtsize(dt)
-Dt_t*	dt;
+#include <time.h>
 #endif
+
+int
+asorelax(long nsec)
 {
-	reg Dtlink_t*	t;
-	reg int		size;
+#if _PACKAGE_ast
+	Tv_t		tv;
 
-	UNFLATTEN(dt);
+	tv.tv_sec = 0;
+	tv.tv_nsec = nsec;
+	return tvsleep(&tv, 0);
+#else
+	struct timespec	ts;
 
-	if(dt->data->size < 0) /* !(dt->data->type&(DT_SET|DT_BAG)) */
-	{	if(dt->data->type&(DT_OSET|DT_OBAG))
-			dt->data->size = treecount(dt->data->here);
-		else if(dt->data->type&(DT_LIST|DT_STACK|DT_QUEUE))
-		{	for(size = 0, t = dt->data->head; t; t = t->right)
-				size += 1;
-			dt->data->size = size;
-		}
-	}
-
-	return dt->data->size;
+	ts.tv_sec = 0;
+	ts.tv_nsec = nsec;
+	return nanosleep(&ts, 0);
+#endif
 }
+
+#endif

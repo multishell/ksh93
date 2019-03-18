@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                     Copyright (c) 1994-2011 AT&T                     *
+*                     Copyright (c) 1994-2012 AT&T                     *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                               by AT&T                                *
@@ -17,8 +17,10 @@
 *                 Glenn Fowler <gsf@research.att.com>                  *
 *                                                                      *
 ***********************************************************************/
+#ifndef DONTCARE
 #include <wchar.h>
 #include <wctype.h>
+#endif
 
 int
 main()

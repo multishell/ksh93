@@ -1,14 +1,14 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2011 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2012 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
-#                  Common Public License, Version 1.0                  #
+#                 Eclipse Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
 #                                                                      #
 #                A copy of the License is available at                 #
-#            http://www.opensource.org/licenses/cpl1.0.txt             #
-#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#          http://www.eclipse.org/org/documents/epl-v10.html           #
+#         (with md5 checksum b35adb5213ca9657e911e9befb180842)         #
 #                                                                      #
 #              Information and Software Systems Research               #
 #                            AT&T Research                             #
@@ -571,5 +571,18 @@ arr2[1]=def
 unset foo
 typeset foo[7]
 [[ ${#foo[@]} == 0 ]] || err_exit 'typeset foo[7] should not have one element' 
+
+a=123 $SHELL  2> /dev/null -c 'integer a[5]=3 a[2]=4; unset a;x=0; ((a[++x]++));:' || err_exit 'unsetting array variable leaves side effect'
+
+unset foo
+foo=(aa bb cc)
+foo=( ${foo[@]:1} )
+[[ ${foo[@]} == 'bb cc' ]] || err_exit "indexed array assignment using parts of array for values gives wrong result of ${foo[@]}"
+
+unset foo
+foo=([xx]=aa [yy]=bb [zz]=cc)
+foo=( ${foo[yy]} ${foo[zz]} )
+[[ ${foo[@]} == 'bb cc' ]] || err_exit "associative array assignment using parts of array for values gives wrong result of ${foo[@]}"
+
 
 exit $((Errors<125?Errors:125))

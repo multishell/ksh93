@@ -1,14 +1,14 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
-*                  Common Public License, Version 1.0                  *
+*                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
 *                                                                      *
 *                A copy of the License is available at                 *
-*            http://www.opensource.org/licenses/cpl1.0.txt             *
-*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*          http://www.eclipse.org/org/documents/epl-v10.html           *
+*         (with md5 checksum b35adb5213ca9657e911e9befb180842)         *
 *                                                                      *
 *              Information and Software Systems Research               *
 *                            AT&T Research                             *
@@ -359,6 +359,7 @@ void sh_machere(Shell_t *shp,Sfio_t *infile, Sfio_t *outfile, char *string)
 				Fcin_t	save2;
 				int	offset = stktell(stkp);
 				int	offset2;
+				fcnotify(0,lp);
 				sfputc(stkp,c);
 				if(n==S_LBRA)
 				{
@@ -1102,6 +1103,7 @@ static int varsub(Mac_t *mp)
 	Namarr_t	*ap=0;
 	int		dolmax=0, vsize= -1, offset= -1, nulflg, replen=0, bysub=0;
 	char		idbuff[3], *id = idbuff, *pattern=0, *repstr, *arrmax=0;
+	char		*idx = 0;
 	int		var=1,addsub=0,oldpat=mp->pattern,idnum=0,flag=0,d;
 	Stk_t		*stkp = mp->shp->stk;
 retry1:
@@ -1491,7 +1493,7 @@ retry1:
 		if(type==M_NAMESCAN || type==M_NAMECOUNT)
 		{
 			mp->shp->last_root = mp->shp->var_tree;
-			id = prefix(mp->shp,id);
+			id = idx = prefix(mp->shp,id);
 			stkseek(stkp,offset);
 			if(type==M_NAMECOUNT)
 			{
@@ -1571,7 +1573,7 @@ retry1:
 		{
 			int newops = (c=='#' || c == '%' || c=='/');
 			offset = stktell(stkp);
-			if(newops && sh_isoption(SH_NOUNSET) && *id && (!np || nv_isnull(np)))
+			if(newops && sh_isoption(SH_NOUNSET) && *id && id!=idbuff  && (!np || nv_isnull(np)))
 				errormsg(SH_DICT,ERROR_exit(1),e_notset,id);
 			if(c=='/' ||c==':' || ((!v || (nulflg && *v==0)) ^ (c=='+'||c=='#'||c=='%')))
 			{
@@ -1919,8 +1921,6 @@ retry2:
 		}
 		if(arrmax)
 			free((void*)arrmax);
-		if(pattern)
-			free((void*)pattern);
 	}
 	else if(argp)
 	{
@@ -1975,6 +1975,10 @@ retry2:
 	}
 	if(np)
 		nv_close(np);
+	if(pattern)
+		free(pattern);
+	if(idx)
+		free(idx);
 	return(1);
 nosub:
 	if(type==M_BRACE && sh_lexstates[ST_NORM][c]==S_BREAK)

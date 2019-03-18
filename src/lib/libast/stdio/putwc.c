@@ -24,7 +24,7 @@
 #include "stdhdr.h"
 
 wint_t
-putwc(wchar_t c, Sfio_t* f)
+(putwc)(wchar_t c, Sfio_t* f)
 {
 	return fputwc(c, f);
 }

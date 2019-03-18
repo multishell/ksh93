@@ -24,7 +24,7 @@
 #include "stdhdr.h"
 
 wint_t
-putwchar(wchar_t c)
+(putwchar)(wchar_t c)
 {
 	return fputwc(c, sfstdout);
 }

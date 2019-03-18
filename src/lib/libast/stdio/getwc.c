@@ -24,7 +24,7 @@
 #include "stdhdr.h"
 
 wint_t
-getwc(Sfio_t* f)
+(getwc)(Sfio_t* f)
 {
 	return fgetwc(f);
 }

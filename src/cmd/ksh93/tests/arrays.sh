@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2007 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2008 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -155,7 +155,6 @@ fi
 if	(( s[$y] != 4 ))
 then	err_exit '(( s[$y] != 4 ))'
 fi
-unset y
 set -A y 2 4 6
 typeset -i y
 z=${y[@]}
@@ -422,10 +421,16 @@ typeset -a foo=([1]=ok [2]=no)
 [[ $foo[bar] == ok ]] || err_exit 'typeset -a not working for simple assignment'
 unset foo
 typeset -a foo=([1]=(x=ok) [2]=(x=no))
+[[ $(typeset | grep 'foo$') == *index* ]] || err_exit 'typeset -a not creating an indexed array'
+foo+=([5]=good)
+[[ $(typeset | grep 'foo$') == *index* ]] || err_exit 'append to indexed array not preserving array type'
 unset foo
 typeset -A foo=([1]=ok [2]=no)
 [[ $foo[bar] == ok ]] && err_exit 'typeset -A not working for simple assignment'
 unset foo
 typeset -A foo=([1]=(x=ok) [2]=(x=no))
 [[ ${foo[bar].x} == ok ]] && err_exit 'typeset -A not working for compound assignment'
+[[ $($SHELL -c 'typeset -a foo;typeset | grep "foo$"'  2> /dev/null) == *index* ]] || err_exit 'typeset fails for indexed array with no elements'
+xxxxx=(one)
+[[ $(typeset | grep xxxxx$) == *'indexed array'* ]] || err_exit 'array of one element not an indexed array'
 exit $((Errors))

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -486,7 +486,7 @@ again:
 	    case A_PLUS:
 		goto again;
 	    case A_EOF:
-		if(precedence>5)
+		if(precedence>2)
 			ERROR(vp,e_moretokens);
 		return(1);
 	    case A_MINUS:

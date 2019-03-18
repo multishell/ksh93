@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
 <HEAD>
-<META name="generator" content="mm2html (AT&T Research) 2007-02-09">
+<META name="generator" content="mm2html (AT&T Research) 2007-12-11">
 <META name="description" content="ast-ksh package">
 <META name="keywords" content="software, package">
 <TITLE> ast-ksh package </TITLE>
@@ -193,7 +193,66 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-07-11-05  --- Release ksh93s+  ---
+08-01-31  --- Release ksh93s+  ---
+08-01-31  A bug in which command substitution inside ((...)) could cause
+	  syntax errors or lead to core dumps has been fixed.
+08-01-17  A bug in which discipline functions could be deleted when invoked
+	  from a subshell has been fixed.
+08-01-17  A bug in which a command substitution consisting only of
+	  assignments was treated as a noop has been fixed.
+08-01-17  A bug in which discipline functions invoked from withing a
+	  compound assignment could fail has been fixed.
+08-01-16  Incomplete arithmetic assigments, for example ((x += )), now
+	  generate an error message.
+08-01-16  A bug in which a set discipline defined for a variable before
+	  an array assignment could cause a core dump has been fixed. 
+08-01-03  A bug in on some systems in which exit status 0 is incorrectly
+	  returned by a process that catches the SIGCONT signal is stopped 
+	  and then continued.
+07-12-13  A race condition in which a program that has been stopped and then
+	  continued could loose the exit status has been fixed.
+07-12-12  Code to check for file system out of space write errors for all
+	  writes has been added.
+07-12-11  A bug in the macro expander for multibyte characters in which
+	  part of the character contains a file pattern byte has been fixed. 
+07-12-06  A bug in the emacs edit mode when multiline was set that output
+	  a backspace before the newline to the screen has been fixed.
+07-12-04  A bug in which using &lt;n&gt;TAB after a variable name listing expansion
+	  in the edit modes would cause the $ to disappear has been fixed.
+07-11-28  A bug in which setting IFS to readonly could cause a subsequent
+	  command substitution to fail has been fixed.
+07-11-27  A work around for a gcc 4.* C99 "feature" that could cause a job
+	  control shell to go into an infinite loop by adding the volatile
+	  attribute to some auto vars in functions that call setjmp().
+07-11-27  A bug in which the shell could read ahead on a pipe causing the
+	  standard input to be incorrectly positioned has been fixed.
+07-11-27  A bug in which compound variable UTF-8 multibyte values were not
+	  expanded or traced properly has been fixed.
+07-11-21  A bug where an unbalanced '&#0091;' in a command argument was not treated
+	  properly has been fixed.
+07-11-15  A bug in which compatibility mode (no long option names) getopts(1)
+	  incorrectly set the value of OPTARG for flag options has been fixed.
+07-11-15  A bug in which "hash -- name" treated "--" as an invalid name operand
+	  has been fixed.
+07-11-15  typeset now handles "-t -- &#0091;-r&#0093; &#0091;--&#0093;" for s5r4 hash(1) compatibility.
+07-11-15  A bug in which the umask builtin mis-handled symbolic mode operands
+	  has been fixed.
+07-11-15  Bugs in which shell arithmetic and the printf builtin mis-handled the
+	  signs of { -NaN -Inf -0.0 } have been fixed.
+07-11-15  The full { SIGRTMIN SIGRTMIN+1 ... SIGRTMAX-1 SIGRTMAX } range
+	  of signals, determined at runtime, are now supported.
+07-11-15  A bug in which creating an index array with only subscript 0 created
+	  only a simple variable has been fixed.
+07-11-14  A bug in which appending to an indexed array using the form
+	  name+=(&#0091;sub&#0093;=value) could cause the array to become an associative
+	  array has been fixed.
+07-11-14  A bug in which typeset without arguments could coredump if a
+	  variable is declared as in indexed array and  has no elements has
+	  been fixed.
+07-11-14  A bug in which creating a local SECONDS variable with typeset in
+	  a function could corrupt memory has been fixed.
+07-11-14  A bug which could cause a core dump when a script invoked by name
+	  from a function used compound variables has been fixed.
 07-11-05  A bug in which printf %d "'AB" did not diagnose unconverted characters
 	  has been fixed.
 07-11-05  printf %g "'A" support added for all floating point formats.
@@ -1722,6 +1781,15 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+08-02-02 string/strmatch.c: fix str="" pat="" sub values
+08-01-31 comp/conf.sh,conf.tab: handle /bin/sh &nbsp;in read data, redir subshell
+08-01-18 misc/magic.tab: amd-x68, 64-bit =&gt; x86-64
+08-01-18 string/strnton.c,strntonll.c: add
+07-12-10 string/strelapsed.c: "0" is a valid elapsed time!
+07-12-02 sfio/sfreserve.c: preserve SF_SHARE sfrd() via sfreserve(f,0,0)
+07-11-21 comp/setlocale.c: add sjis_mbtowc() to work around &#0091;\~&#0093; translation
+07-11-15 features/signal.c: RT(1) .. RT(MAX-1) =&gt; RTMIN+1 .. RTMAX-1
+07-11-14 features/float: favor sscanf() due to gnu strto&#0091;l&#0093;d() nan bugs
 07-10-31 regex/regcomp.c: fix REX_COLL_CLASS node allocation size
 07-10-31 sfio/sfcvt.c: use signbit() if available
 07-10-31 features/isoc99: _ISOC99_SOURCE tests
@@ -3188,6 +3256,13 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+08-01-30 expr.c: fix &lt;=0 type that broke substr * 1 * -- wow
+07-12-13 cp.c: fix builtin state reinitialization
+07-11-29 rev.c: honor multibyte locales
+07-11-27 cp.c: open non-existent destination with O_EXCL
+07-11-27 stty.c: add -t,--terminal-group to list tty pgrp
+07-11-27 cksum.c: --silent -s =&gt; -S, -s == -x sys5 for gnu compatibility
+07-11-11 tee.c: drop ancient bsd compatibility "-" operand =&gt; SIGINT
 07-10-29 cksum.c: add SUM_LEGACY for -r
 07-10-12 cp.c: plug usage string memory leak by using per-builtin state
 07-09-21 cksum.c: add sumprint() default scale arg, --scale, --bsd for solaris
@@ -3489,7 +3564,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>November 06, 2007</TD>
+<TD align=right>February 06, 2008</TD>
 </TR>
 </TABLE>
 <P>

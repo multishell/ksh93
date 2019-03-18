@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1992-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1992-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: expr (AT&T Research) 2004-05-27 $\n]"
+"[-?\n@(#)$Id: expr (AT&T Research) 2008-01-30 $\n]"
 USAGE_LICENSE
 "[+NAME?expr - evaluate arguments as an expression]"
 "[+DESCRIPTION?\bexpr\b evaluates an expression given as arguments and writes "
@@ -240,7 +240,7 @@ static int getnode(State_t* state, Node_t *np)
 				if (!(cp = *state->arglist++))
 					error(ERROR_exit(2), "position argument expected");
 				i = strtol(cp, &ep, 10);
-				if (*ep || --i <= 0)
+				if (*ep || --i < 0)
 					i = -1;
 				if (!(cp = *state->arglist++))
 					error(ERROR_exit(2), "length argument expected");

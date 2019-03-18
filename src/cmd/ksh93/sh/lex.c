@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -742,7 +742,10 @@ int sh_lex(void)
 				/* FALL THRU */
 			case S_QUOTE:
 				if(oldmode()==ST_NONE && lexd.arith)	/*  in ((...)) */
-					continue;
+				{
+					if(n!=S_GRAVE || fcpeek(0)=='\'')
+						continue;
+				}
 				if(n==S_QUOTE)
 					wordflags |=ARG_QUOTED;
 				if(mode!=ST_QUOTE)

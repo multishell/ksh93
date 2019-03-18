@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2007 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2008 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -214,4 +214,5 @@ function fun
 fun
 [[ $(export | grep foo) == 'foo=hello' ]] || err_exit 'export not working in functions'
 [[ $(export | grep bar) ]] && err_exit 'typeset -x not local'
+[[ $($SHELL -c 'typeset -r IFS=;print -r $(pwd)' 2> /dev/null) == "$(pwd)" ]] || err_exit 'readonly IFS causes command substitution to fail'
 exit	$((Errors))

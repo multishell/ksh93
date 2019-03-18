@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -201,6 +201,8 @@ struct limits
 	Sfio_t		*strbuf; \
 	Dt_t		*last_root; \
 	char		ifstable[256]; \
+	unsigned char	sigruntime[2]; \
+	unsigned long	test; \
 	Shopt_t		offoptions;
 
 #include	<shell.h>

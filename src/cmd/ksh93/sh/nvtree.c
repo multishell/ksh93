@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -326,22 +326,13 @@ void nv_attribute(register Namval_t *np,Sfio_t *out,char *prefix,int noname)
 				if(val==NV_ARRAY)
 				{
 					Namarr_t *ap = nv_arrayptr(np);
-					if(array_assoc(ap))
+					if(ap && array_assoc(ap))
 					{
 						if(tp->sh_name[1]!='A')
 							continue;
 					}
 					else if(tp->sh_name[1]=='A')
 						continue;
-#if 0
-						cp = "associative";
-					else
-						cp = "indexed";
-					if(!prefix)
-						sfputr(out,cp,' ');
-					else if(*cp=='i')
-						tp++;
-#endif
 				}
 				if(prefix)
 				{

@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.2 2007-10-18
+info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-02-02
 setv INSTALLROOT ../../..
 setv PACKAGE_ast_INCLUDE ${INSTALLROOT}/include/ast
 setv PACKAGE_ast_LIB ${INSTALLROOT}/lib
@@ -1216,7 +1216,7 @@ prev ${PACKAGE_ast_INCLUDE}/ast.h implicit
 done data/testops.c
 meta testops.o %.c>%.o data/testops.c testops
 prev data/testops.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2007 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -DSHOPT_MULTIBYTE -D_PACKAGE_ast -DSHOPT_PFSH  -c data/testops.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2008 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -DSHOPT_MULTIBYTE -D_PACKAGE_ast -DSHOPT_PFSH  -c data/testops.c
 done testops.o generated
 make keywords.o
 make data/keywords.c
@@ -1276,7 +1276,7 @@ prev include/shell.h implicit
 done data/builtins.c
 meta builtins.o %.c>%.o data/builtins.c builtins
 prev data/builtins.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_KIA -DSHOPT_PFSH -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2007 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -DSHOPT_BRACEPAT -DSHOPT_HISTEXPAND -D_PACKAGE_ast -DSHOPT_MULTIBYTE -D_BLD_shell -DKSHELL -DSHOPT_DYNAMIC -DERROR_CONTEXT_T=Error_context_t -DSHOPT_ESH  -c data/builtins.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_KIA -DSHOPT_PFSH -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2008 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -DSHOPT_BRACEPAT -DSHOPT_HISTEXPAND -D_PACKAGE_ast -DSHOPT_MULTIBYTE -D_BLD_shell -DKSHELL -DSHOPT_DYNAMIC -DERROR_CONTEXT_T=Error_context_t -DSHOPT_ESH  -c data/builtins.c
 done builtins.o generated
 make variables.o
 make data/variables.c
@@ -1350,7 +1350,7 @@ prev +ljobs
 prev +li
 prev ${mam_libsocket}
 prev ${mam_libsecdb}
-exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib}  -o ksh pmain.o ${mam_libshell} ${mam_libnsl} ${mam_libdl} ${mam_libast}
+exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib} -o ksh pmain.o ${mam_libshell} ${mam_libnsl} ${mam_libdl} ${mam_libast}
 done ksh generated
 make shcomp
 make shcomp.o
@@ -1365,7 +1365,7 @@ setv CC.DLL -UCC.DLL
 setv SH_DICT -DSH_DICT="\"libshell\""
 setv _BLD_shell -U_BLD_shell
 setv _BLD_DLL -U_BLD_DLL
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_BRACEPAT -DSH_DICT=\""libshell"\" -DSHOPT_KIA -D_PACKAGE_ast -DSHOPT_HISTEXPAND -DSHOPT_DYNAMIC -DERROR_CONTEXT_T=Error_context_t -DSHOPT_ESH -DSHOPT_MULTIBYTE -DSHOPT_PFSH -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2007 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -c sh/shcomp.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_BRACEPAT -DSH_DICT=\""libshell"\" -DSHOPT_KIA -D_PACKAGE_ast -DSHOPT_HISTEXPAND -DSHOPT_DYNAMIC -DERROR_CONTEXT_T=Error_context_t -DSHOPT_ESH -DSHOPT_MULTIBYTE -DSHOPT_PFSH -DUSAGE_LICENSE=\""[-author?David Korn <dgk@research.att.com>][-copyright?Copyright (c) 1982-2008 AT&T Intellectual Property][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?libshell]"\" -c sh/shcomp.c
 done shcomp.o generated
 prev libshell.a archive
 prev +ljobs
@@ -1374,7 +1374,7 @@ prev ${mam_libsocket}
 prev ${mam_libsecdb}
 setv CC.DLL -UCC.DLL
 setv SH_DICT -DSH_DICT="\"libshell\""
-exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib}  -o shcomp shcomp.o ${mam_libshell} ${mam_libnsl} ${mam_libdl} ${mam_libast}
+exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib} -o shcomp shcomp.o ${mam_libshell} ${mam_libnsl} ${mam_libdl} ${mam_libast}
 done shcomp generated
 make suid_exec
 make suid_exec.o
@@ -1397,7 +1397,7 @@ prev +li
 prev ${mam_libsocket}
 prev ${mam_libsecdb}
 setv CC.DLL -UCC.DLL
-exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib}  -o suid_exec suid_exec.o ${mam_libast} ${mam_libnsl} ${mam_libdl} ${mam_libast}
+exec - ${CC} ${CCLDFLAGS} ${mam_cc_FLAGS} ${CCFLAGS} ${LDFLAGS} ${mam_cc_L+-L.} ${mam_cc_L+-L${INSTALLROOT}/lib} -o suid_exec suid_exec.o ${mam_libast} ${mam_libnsl} ${mam_libdl} ${mam_libast}
 done suid_exec generated
 make shell
 prev libshell.a archive

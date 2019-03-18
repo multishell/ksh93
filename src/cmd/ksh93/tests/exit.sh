@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2007 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2008 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -78,4 +78,5 @@ then	err_exit 'subshell trap on exit overwrites parent trap'
 fi
 cd ~- || err_exit "cd back failed"
 rm -r /tmp/ksh$$ || err_exit "rm -r /tmp/ksh$$ failed"
+$SHELL -c 'builtin -f cmd getconf; getconf --"?-version"; exit 0' >/dev/null 2>&1 || err_exit 'ksh plugin exit failed -- was ksh built with CCFLAGS+=$(CC.EXPORT.DYNAMIC)?'
 exit $((Errors))

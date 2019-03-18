@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -1407,7 +1407,7 @@ static void draw(register Emacs_t *ep,Draw_t option)
 	i = (ncursor-nscreen) - ep->offset;
 	setcursor(ep,i,0);
 	if(option==FINAL && ep->ed->e_multiline)
-		setcursor(ep,nscend-nscreen,0);
+		setcursor(ep,nscend+1-nscreen,0);
 	ep->scvalid = 1;
 	return;
 }

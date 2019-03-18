@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2007 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -63,6 +63,10 @@ typedef void (*SH_SIGTYPE)(int,void(*)(int));
 #define SH_SIGTSTP		0200	/* tstp signal received */
 #define SH_SIGALRM		0200	/* timer alarm received */
 #define SH_SIGTERM		SH_SIGOFF /* term signal received */
+#define SH_SIGRUNTIME		0400	/* runtime value */
+
+#define SH_SIGRTMIN		0	/* sh.sigruntime[] index */
+#define SH_SIGRTMAX		1	/* sh.sigruntime[] index */
 
 /*
  * These are longjmp values

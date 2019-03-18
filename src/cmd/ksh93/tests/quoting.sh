@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2007 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2008 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -328,4 +328,7 @@ x=x
 x=${x:-`id | sed 's/^[^(]*(\([^)]*\)).*/\1/'`}
 } 2> /dev/null || err_exit 'skipping over `` failed' 
 [[ $x == x ]] || err_exit 'assignment ${x:=`...`} failed'
+[[ $($SHELL -c 'print a[') == 'a[' ]] || err_exit "unbalanced '[' in command arg fails"
+$SHELL -c $'false && (( `wc -l /dev/null | nawk \'{print $1}\'` > 2 )) && true;:' 2> /dev/null ||  err_exit 'syntax error with ` in arithmetic expression'
+{ $SHELL  -c '((  1`: "{ }"` ))' ;} 2> /dev/null || err_exit 'problem with ` inside (())'
 exit $((Errors))

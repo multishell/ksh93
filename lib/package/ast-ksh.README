@@ -92,7 +92,13 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-09-11-30  --- Release ksh93t+  ---
+09-12-04  --- Release ksh93t+  ---
+09-12-04  A bug in which in some cases a trap in a function executed in
+	  a subshell could trigger twice has been fixed.
+09-12-03  A bug in which SHLVL exported with some attributes could cause
+	  the shell to abort at startup has been fixed.
+09-12-02  A bug with pipefail in which the shell could hang waiting for the
+	  writer to complete before the last reader command has been fixed.
 09-11-30  A bug in which a trap could be inherited by the first element of
 	  a pipeline when the command had more than 63 arguments that did
 	  not contain any macro expansions has been fixed.
@@ -2258,6 +2264,8 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+09-12-04 features/options: add "opt map-libc" check
+09-12-03 tm/tmxdate.c: fix 'next month final day' for dec -> jan
 09-11-21 misc/magic.tab: add gimp XCF
 09-11-20 vmalloc/vmtrace.c: add pid to assertion disgnostics
 09-11-11 regex.h,regcomp.c: add REG_CLASS_ESCAPE, \ inside [...] literal by default
@@ -3845,9 +3853,11 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
+09-12-04 cmd.h: fix CMD_DYNAMIC logic
+09-12-04 cut.c: handle -d mb
+09-12-03 mkdir.c: add --verbose
 09-11-30 cat.c,date.c,cksum.c: drop setlocale() call already done by optget()
 09-11-30 join.c: handle -t mb
-09-11-30 TODO cut.c: handle -d mb
 09-11-28 wclib.c: { -w -L } mb independent of -m
 09-11-28 paste.c: handle -d mb
 09-11-28 uniq.c: handle -s mb

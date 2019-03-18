@@ -1,10 +1,10 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+*                     Copyright (c) 1994-2011 AT&T                     *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
-*                    by AT&T Intellectual Property                     *
+*                               by AT&T                                *
 *                                                                      *
 *                A copy of the License is available at                 *
 *            http://www.opensource.org/licenses/cpl1.0.txt             *
@@ -14,7 +14,14 @@
 *                            AT&T Research                             *
 *                           Florham Park NJ                            *
 *                                                                      *
-*                  David Korn <dgk@research.att.com>                   *
+*                 Glenn Fowler <gsf@research.att.com>                  *
 *                                                                      *
 ***********************************************************************/
-#define SH_RELEASE	"93u 2011-02-08"
+#include <wchar.h>
+
+int
+main()
+{
+	wchar_t	w = ' ';
+	return iswspace(w) == 0;
+}

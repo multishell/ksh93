@@ -53,7 +53,7 @@
  */
 
 #define STK_ALIGN	ALIGN_BOUND
-#define STK_FSIZE	(1024*sizeof(int))
+#define STK_FSIZE	(1024*sizeof(char*))
 #define STK_HDRSIZE	(sizeof(Sfio_t)+sizeof(Sfdisc_t))
 
 typedef char* (*_stk_overflow_)(int);

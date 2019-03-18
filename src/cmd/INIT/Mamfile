@@ -1063,8 +1063,10 @@ make ${INSTALLROOT}/lib/lib/w
 make w.req
 make w.c
 done w.c
+make w2.c
+done w2.c
 exec - r='-'
-exec - for i in w.c
+exec - for i in w.c w2.c
 exec - do	if	${CC} -c $i > /dev/null
 exec - 	then	g=
 exec - 		for p in w -
@@ -1084,7 +1086,7 @@ exec - 		done
 exec - 	fi
 exec - done 2>/dev/null
 exec - echo " $r" > w.req
-exec - rm -f w.exe w
+exec - rm -f w.exe w w2
 done w.req generated
 exec - test '' = 'w.req' || ${STDCMP} 2>/dev/null -s w.req ${INSTALLROOT}/lib/lib/w || { ${STDMV} ${INSTALLROOT}/lib/lib/w ${INSTALLROOT}/lib/lib/w.old 2>/dev/null || true; ${STDCP} w.req ${INSTALLROOT}/lib/lib/w  		    		    ;}
 done ${INSTALLROOT}/lib/lib/w generated

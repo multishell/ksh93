@@ -331,4 +331,5 @@ function main
 }
 
 main
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

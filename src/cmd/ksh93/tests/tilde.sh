@@ -92,4 +92,5 @@ print $'print ~+\n[[ $1 ]] && $0' > $tmp/tilde
 chmod +x $tmp/tilde
 nl=$'\n'
 [[ $($tmp/tilde foo) == "$PWD$nl$PWD" ]] 2> /dev/null  || err_exit 'tilde fails inside a script run by name'
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

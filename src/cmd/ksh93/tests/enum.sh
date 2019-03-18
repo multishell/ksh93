@@ -64,4 +64,5 @@ typeset -T X_t=( typeset name=aha )
 typeset -a[X_t] arr
 ) 2> /dev/null
 [[ $? == 1 ]] || err_exit 'typeset -a[X_t] should generate an error message when X-t is not an enumeriation type'
-exit $Errors
+
+exit $((Errors<125?Errors:125))

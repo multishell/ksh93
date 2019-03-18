@@ -66,4 +66,5 @@ r[one]=(ur=(x=4 y=4))
 (( r[one].area == 16 )) || err_exit 'area of r[one] should be 16'
 [[ ${r[one].area} == 16 ]] || err_exit '${r[one].area} should be 16'
 unset r
-exit $Errors
+
+exit $((Errors<125?Errors:125))

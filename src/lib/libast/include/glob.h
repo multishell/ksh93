@@ -114,6 +114,8 @@ struct _glob_
 #define GLOB_ALTDIRFUNC	0x4000		/* gnu discipline functions	*/
 #define GLOB_DISC	0x8000		/* discipline initialized	*/
 
+#define GLOB_GROUP	0x10000		/* REG_SHELL_GROUP		*/
+
 /* gl_status */
 #define GLOB_NOTDIR	0x0001		/* last gl_dirnext() not a dir	*/
 

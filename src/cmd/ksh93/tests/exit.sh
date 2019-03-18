@@ -77,4 +77,4 @@ fi
 cd ~- || err_exit "cd back failed"
 $SHELL -c 'builtin -f cmd getconf; getconf --"?-version"; exit 0' >/dev/null 2>&1 || err_exit 'ksh plugin exit failed -- was ksh built with CCFLAGS+=$(CC.EXPORT.DYNAMIC)?'
 
-exit $((Errors))
+exit $((Errors<125?Errors:125))

@@ -122,4 +122,5 @@ done
 for i in ""~(N)/dev/non_existent_file
 do	[[ ! $i ]] || err_exit '""~(N)/dev/non_existent_file not null'
 done
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

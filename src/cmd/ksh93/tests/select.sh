@@ -63,4 +63,5 @@ do	case $i in
 done  3>&2 2> $tmp/2 <<!
 foo
 !
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

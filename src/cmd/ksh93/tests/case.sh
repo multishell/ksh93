@@ -78,4 +78,5 @@ esac') != b ]] && err_exit 'bug in ;& at end of script'
 		esac
 	done
 ') == foo.h ]] || err_exit "optimizer bug"
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

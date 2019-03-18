@@ -101,4 +101,5 @@ There are only two line with out foo but with bar.
 if	(( $(grep -c 'foo*bar' $tmp/grep ) != 6))
 then	err_exit
 fi
-exit $((Errors))
+
+exit $((Errors<125?Errors:125))

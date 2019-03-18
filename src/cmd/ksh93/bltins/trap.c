@@ -30,7 +30,6 @@
  */
 
 #include	"defs.h"
-#include	<ctype.h>
 #include	"jobs.h"
 #include	"builtins.h"
 
@@ -260,6 +259,12 @@ static int sig_number(const char *string)
 		{
 			sig = 1;
 			o += 3;
+			if(isdigit(*stakptr(o)))
+			{
+				n = strtol(stakptr(o),&last,10);
+				if(!*last)
+					return(n);
+			}
 		}
 		tp = sh_locate(stakptr(o),(const Shtable_t*)shtab_signals,sizeof(*shtab_signals));
 		n = tp->sh_number;
@@ -348,7 +353,7 @@ static char* sig_name(int sig, char* buf, int pfx)
 static void sig_list(register Shell_t *shp,register int flag)
 {
 	register const struct shtable2	*tp;
-	register int sig = shp->sigmax+1;
+	register int sig;
 	register char *sname;
 	char name[10];
 	const char *names[SH_TRAP];
@@ -357,7 +362,7 @@ static void sig_list(register Shell_t *shp,register int flag)
 	if(flag<=0)
 	{
 		/* not all signals may be defined, so initialize */
-		while(--sig >= 0)
+		for(sig=shp->sigmax; sig>=0; sig--)
 			names[sig] = 0;
 		for(sig=SH_DEBUGTRAP; sig>=0; sig--)
 			traps[sig] = 0;
@@ -374,7 +379,7 @@ static void sig_list(register Shell_t *shp,register int flag)
 		}
 		else if(sig&SH_TRAP)
 			traps[sig&~SH_TRAP] = (char*)tp->sh_name;
-		else if(sig < sizeof(names)/sizeof(char*))
+		else if(sig-- && sig < elementsof(names))
 			names[sig] = (char*)tp->sh_name;
 		tp++;
 	}
@@ -391,7 +396,7 @@ static void sig_list(register Shell_t *shp,register int flag)
 		{
 			if(!(trap=trapcom[sig]))
 				continue;
-			if(!(sname=(char*)names[sig+1]))
+			if(sig > shp->sigmax || !(sname=(char*)names[sig]))
 				sname = sig_name(sig,name,1);
 			sfprintf(sfstdout,trapfmt,sh_fmtq(trap),sname);
 		}
@@ -405,9 +410,9 @@ static void sig_list(register Shell_t *shp,register int flag)
 	else
 	{
 		/* print all the signal names */
-		for(sig=2; sig <= shp->sigmax; sig++)
+		for(sig=1; sig <= shp->sigmax; sig++)
 		{
-			if(!(sname=(char*)names[sig+1]))
+			if(!(sname=(char*)names[sig]))
 				sname = sig_name(sig,name,1);
 			sfputr(sfstdout,sname,'\n');
 		}

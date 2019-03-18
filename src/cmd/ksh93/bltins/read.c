@@ -28,7 +28,6 @@
 
 #include	<ast.h>
 #include	<error.h>
-#include	<ctype.h>
 #include	"defs.h"
 #include	"variables.h"
 #include	"lexstates.h"
@@ -227,7 +226,7 @@ int sh_readline(register Shell_t *shp,char **names, int fd, int flags,long timeo
 	{
 		if(val= strchr(name,'?'))
 			*val = 0;
-		np = nv_open(name,shp->var_tree,NV_NOASSIGN|NV_VARNAME);
+		np = nv_open(name,shp->var_tree,NV_NOASSIGN|NV_VARNAME|NV_ARRAY);
 		if((flags&V_FLAG) && shp->ed_context)
 			((struct edit*)shp->ed_context)->e_default = np;
 		if(flags&A_FLAG)
@@ -375,7 +374,6 @@ int sh_readline(register Shell_t *shp,char **names, int fd, int flags,long timeo
 					{
 						int	x;
 						int	z;
-						int	y = cur - up;
 
 						mbinit();
 						*cur = 0;

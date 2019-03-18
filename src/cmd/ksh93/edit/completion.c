@@ -24,13 +24,37 @@
  */
 
 #include	"defs.h"
-#include	<ctype.h>
 #include	<ast_wchar.h>
 #include	"lexstates.h"
 #include	"path.h"
 #include	"io.h"
 #include	"edit.h"
 #include	"history.h"
+
+#if !SHOPT_MULTIBYTE
+#define mbchar(p)       (*(unsigned char*)p++)
+#endif
+
+static char *fmtx(const char *string)
+{
+	register const char	*cp = string;
+	register int	 	n,c;
+	unsigned char 		*state = (unsigned char*)sh_lexstates[2]; 
+	int offset;
+	while((c=mbchar(cp)),(c>UCHAR_MAX)||(n=state[c])==0);
+	if(n==S_EOF)
+		return((char*)string);
+	offset = staktell();
+	stakwrite(string,--cp-string);
+	while(c=mbchar(cp))
+	{
+		if(state[c])
+			stakputc('\\');
+		stakputc(c);
+	}
+	stakputc(0);
+	return(stakptr(offset));
+}
 
 static int charcmp(int a, int b, int nocase)
 {
@@ -337,7 +361,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			{
 				char **savcom = com;
 				while (*com)
-					size += strlen(cp=sh_fmtq(*com++));
+					size += strlen(cp=fmtx(*com++));
 				com = savcom;
 			}
 		}
@@ -364,7 +388,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 				var = 0;
 			}
 			else
-				out = strcopy(begin,sh_fmtq(*com));
+				out = strcopy(begin,fmtx(*com));
 			com++;
 		}
 		else
@@ -394,7 +418,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 					out = strcopy(begin,cp);
 				}
 				/* add quotes if necessary */
-				if((cp=sh_fmtq(begin))!=begin)
+				if((cp=fmtx(begin))!=begin)
 					out = strcopy(begin,cp);
 				if(var=='$' && begin[-1]=='{')
 					*out = '}';
@@ -402,7 +426,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 					*out = ' ';
 				*++out = 0;
 			}
-			else if(out[-1]=='/' && (cp=sh_fmtq(begin))!=begin)
+			else if(out[-1]=='/' && (cp=fmtx(begin))!=begin)
 			{
 				out = strcopy(begin,cp);
 				if(out[-1] =='"' || out[-1]=='\'')
@@ -416,7 +440,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			while (*com)
 			{
 				*out++  = ' ';
-				out = strcopy(out,sh_fmtq(*com++));
+				out = strcopy(out,fmtx(*com++));
 			}
 		}
 		if(ep->e_nlist)

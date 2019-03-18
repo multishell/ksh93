@@ -151,7 +151,7 @@ pathkey(char* key, char* attr, const char* lang, const char* tool, const char* a
 		if (!(k = getenv("PROBE_ATTRIBUTES")))
 			k = getenv("VERSION_ENVIRONMENT");
 		if (k)
-			while (c < elementsof(usr))
+			while (c < (elementsof(usr) - 1))
 			{
 				while (*k && (*k == ':' || *k == ' '))
 					k++;

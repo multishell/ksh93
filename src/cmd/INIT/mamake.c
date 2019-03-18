@@ -104,6 +104,7 @@ USAGE_LICENSE
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <time.h>
 
 #if !_PACKAGE_ast && defined(__STDC__)
 #include <stdlib.h>

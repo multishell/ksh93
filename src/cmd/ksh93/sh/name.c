@@ -26,7 +26,6 @@
 #define putenv	___putenv
 
 #include	"defs.h"
-#include	<ctype.h>
 #include	"variables.h"
 #include	"path.h"
 #include	"lexstates.h"
@@ -496,17 +495,25 @@ void nv_setlist(register struct argnod *arg,register int flags)
 				else
 					shp->prefix = cp;
 				shp->last_table = 0;
-				memset(&nr,0,sizeof(nr));
-				memcpy(&node,L_ARGNOD,sizeof(node));
-				L_ARGNOD->nvalue.nrp = &nr;
-				nr.np = np;
-				nr.root = shp->last_root;
-				nr.table = shp->last_table;
-				L_ARGNOD->nvflag = NV_REF|NV_NOFREE;
-				L_ARGNOD->nvfun = 0;
+				if(shp->prefix)
+				{
+					if(*shp->prefix=='_' && shp->prefix[1]=='.' && nv_isref(L_ARGNOD))
+					{
+						sfprintf(stkstd,"%s%s",nv_name(L_ARGNOD->nvalue.nrp->np),shp->prefix+1);
+						shp->prefix = stkfreeze(stkstd,1);
+					}
+					memset(&nr,0,sizeof(nr));
+					memcpy(&node,L_ARGNOD,sizeof(node));
+					L_ARGNOD->nvalue.nrp = &nr;
+					nr.np = np;
+					nr.root = shp->last_root;
+					nr.table = shp->last_table;
+					L_ARGNOD->nvflag = NV_REF|NV_NOFREE;
+					L_ARGNOD->nvfun = 0;
+				}
 				sh_exec(tp,sh_isstate(SH_ERREXIT));
 #if SHOPT_TYPEDEF
-				if(!maketype)
+				if(shp->prefix)
 #endif
 				{
 					L_ARGNOD->nvalue.nrp = node.nvalue.nrp;
@@ -1387,7 +1394,7 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 					up->ldp = new_of(Sfdouble_t,0);
 				else if(flags&NV_APPEND)
 					old = *(up->ldp);
-				*(up->ldp) = ld+old;
+				*(up->ldp) = old?ld+old:ld;
 			}
 			else
 			{
@@ -1407,7 +1414,7 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 					up->dp = new_of(double,0);
 				else if(flags&NV_APPEND)
 					od = *(up->dp);
-				*(up->dp) = d+od;
+				*(up->dp) = od?d+od:d;
 			}
 		}
 		else
@@ -2822,6 +2829,7 @@ int nv_rename(register Namval_t *np, int flags)
 	Namval_t		*last_table = shp->last_table;
 	Dt_t			*last_root = shp->last_root;
 	Dt_t			*hp = 0;
+	char			*nvenv = 0;
 	if(nv_isattr(np,NV_PARAM) && shp->st.prevst)
 	{
 		if(!(hp=(Dt_t*)shp->st.prevst->save_tree))
@@ -2859,7 +2867,10 @@ int nv_rename(register Namval_t *np, int flags)
 			mp->nvenv = (void*)np;
 	}
 	if(mp)
+	{
+		nvenv = (char*)np;
 		np = mp;
+	}
 	if(nr==np)
 	{
 		if(index<0)
@@ -2868,6 +2879,8 @@ int nv_rename(register Namval_t *np, int flags)
 			cp = strdup(cp);
 	}
 	_nv_unset(np,0);
+	if(!nv_isattr(np,NV_MINIMAL))
+		np->nvenv = nvenv;
 	if(nr==np)
 	{
 		nv_putsub(np,(char*)0, index);

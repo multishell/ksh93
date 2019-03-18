@@ -31,7 +31,6 @@
 #include	<fcin.h>
 #include	<ls.h>
 #include	<stdarg.h>
-#include	<ctype.h>
 #include	<regex.h>
 #include	"variables.h"
 #include	"path.h"
@@ -717,6 +716,12 @@ int sh_open(register const char *path, int flags, ...)
 	}
 	if (fd >= 0)
 	{
+		int nfd = open(path,flags);
+		if(nfd>=0)
+		{
+			fd = nfd;
+			goto ok;
+		}
 		if((mode=sh_iocheckfd(shp,fd))==IOCLOSE)
 			return(-1);
 		flags &= O_ACCMODE;
@@ -730,9 +735,7 @@ int sh_open(register const char *path, int flags, ...)
 	else while((fd = open(path, flags, mode)) < 0)
 		if(errno!=EINTR || sh.trapnote)
 			return(-1);
-#ifdef O_SERVICE
  ok:
-#endif
 	flags &= O_ACCMODE;
 	if(flags==O_WRONLY)
 		mode = IOWRITE;

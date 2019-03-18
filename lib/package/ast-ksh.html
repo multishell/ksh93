@@ -192,7 +192,33 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-09-10-16  --- Release ksh93t+  ---
+09-11-30  --- Release ksh93t+  ---
+09-11-30  A bug in which a trap could be inherited by the first element of
+	  a pipeline when the command had more than 63 arguments that did
+	  not contain any macro expansions has been fixed.
+09-11-19  When read from a terminal was called from with a while or foo loop,
+	  and an edit mode was on, a backspace or erase no longer will
+	  overwrite the prompt.
+09-11-17  Change .paths parse to handle BUILTIN_LIB=foo BUILTIN_LIB=foo-1.2.
+09-11-17  Inside a function, typeset foo.bar will bind foo to global variable
+	  foo if local variable foo does not exist, instead of creating a 
+	  local variable.
+09-11-17  "read -n1" from the terminal has been fixed to read exactly one character.
+09-11-11  Job control now works for subshell commands, (...).
+09-11-11  If set -e is on for an interractive shell errors in special builtins
+	  now cause the shell to exit.
+09-11-11  A bug in which an interrupt handler processed during the read builtin
+	  when IFS did not contain a new line has been fixed.
+09-11-09  A bug in which a variable that has been unset in a subshell and then
+	  exported from that subshell does not show up in the environment
+	  has been fixed.
+09-11-02  ``,2'' is now a valid numeric constant for locales with
+	  decimal_point=','.
+09-11-02  A bug where "return" in .profile did not restore the shell state
+	  has been fixed.
+09-10-31  A bug that corrupted saved exit status when pids wrapped around has
+	  been fixed.
+09-10-26  A bug in { LANG LC_ALL LC_category } ordering has been fixed in -last.
 09-10-16  A bug where notification to libast that the environment has changed
           has been fixed.
 09-10-12  A bug in which a function loaded in a subshell could leave side
@@ -2148,7 +2174,7 @@ All recorded changes follow.
 95-04-31  The expansion of "$@" was incorrect when $1 was the null
 	  string.
 95-04-31  A bug which could incorrectly report a syntax error in
-	  a backquoted expression when a $ was preceded by \\
+	  a backquoted expression when a $ was preceded by 
 	  has been fixed.
 95-04-31  A bug which prevented the shell from exiting after
 	  reporting an error when failing to open a script
@@ -2335,6 +2361,12 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+09-11-21 misc/magic.tab: add gimp XCF
+09-11-20 vmalloc/vmtrace.c: add pid to assertion disgnostics
+09-11-11 regex.h,regcomp.c: add REG_CLASS_ESCAPE, &nbsp;inside &#0091;...&#0093; literal by default
+09-11-03 regex/regcache.c: change to variable length pattern strings
+09-10-28 include/error.h: fix ERROR_translate() arg parens
+09-10-26 port/lcgen.c,comp/setlocale.c: handle LANG init after LC_* already defined
 09-10-05 _sfopen.c: add but ignore 'F' flags for stdio compatibility
 09-09-28 fts.h,ftwalk.h,fts.c: promote { namelen pathlen level } to (s)size_t
 09-09-28 locales: add AST_LC_LANG for $LANG
@@ -2650,7 +2682,7 @@ All recorded changes follow.
 	 magic.tab: ammend bsd db magic
 05-05-23 regex: REX_NEST (?%&#0091;D.&#0093;&#0091;E.&#0093;&#0091;L.&#0093;&#0091;Q.&#0093;&#0091;oc&#0093;...)
 05-05-21 regex: state.fold&#0091;&#0093; is now locale specific -- doh
-05-05-19 regex: add REX_NEST (?%\\()&lt;&gt;&#0091;&#0093;""...) %(...) nested match
+05-05-19 regex: add REX_NEST (?%lt;&gt;&#0091;&#0093;""...) %(...) nested match
 05-05-15 recfmt.h: add recstr() reclen() fmtrec()
 05-05-13 optget.c: allow boolean options to take numeric values
 05-05-12 recfmt.c: add to recfmt.h, adjust Recfmt_t encodings
@@ -3909,7 +3941,7 @@ All recorded changes follow.
 95-01-01 add this RELEASE file
 	 fix strperm() to properly handle "644 file"
 	 fix tokline() to return last '&nbsp;' terminated line in string
-	 fix tokscan() to properly handle \\n splice
+	 fix tokscan() to properly handle  splice
 	 add fmtesc() to complement stresc()
 	 add LS_NUMBER to fmtls()
 	 drop spurious optusage() ' '
@@ -3919,6 +3951,13 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+09-11-30 cat.c,date.c,cksum.c: drop setlocale() call already done by optget()
+09-11-30 join.c: handle -t mb
+09-11-30 TODO cut.c: handle -d mb
+09-11-28 wclib.c: { -w -L } mb independent of -m
+09-11-28 paste.c: handle -d mb
+09-11-28 uniq.c: handle -s mb
+09-11-28 cksum.c: FTS_SEEDOTDIR by default
 09-09-09 fds.c: add --unit=fd
 09-08-25 tail.c: initialize Tail_t.fifo=0 !!
 09-08-15 tail.c: fix fifo logic
@@ -4228,6 +4267,7 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libdll changes">libdll changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+09-11-17 dllscan.c: handle name&#0091;-.&#0093;version in dlsopen()
 09-04-15 dllopen.c: add, use dllopen() internally to wrap dlopen()
 08-05-12 dllscan.c: LIBSUFFIX==.dylib =&gt; default plugin version match 0.0
 06-10-11 dllscan.c: check sfstruse() return values -- doh
@@ -4277,7 +4317,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>October 21, 2009</TD>
+<TD align=right>December 02, 2009</TD>
 </TR>
 </TABLE>
 <P>

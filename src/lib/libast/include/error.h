@@ -55,7 +55,7 @@
 
 #ifndef ERROR_translate
 #define ERROR_translating()		(error_info.translate&&(ast.locale.set&(1<<AST_LC_MESSAGES)))
-#define ERROR_translate(l,i,d,m)	(ERROR_translating()?errorx((const char*)l,(const char*)i,(const char*)d,(const char*)m):(m))
+#define ERROR_translate(l,i,d,m)	(ERROR_translating()?errorx((const char*)(l),(const char*)(i),(const char*)(d),(const char*)(m)):(char*)(m))
 #endif
 
 #define ERROR_INFO	0		/* info message -- no err_id	*/

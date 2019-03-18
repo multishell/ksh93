@@ -219,6 +219,7 @@ long		n2;
 		if (n2)
 			bufp = trstrcpy(bufp, tritoa(n2, 0), ':');
 	}
+	bufp = trstrcpy(bufp, tritoa((long)getpid(), 1), ':');
 	*bufp++ = '\n';
 	write(2,buf,(bufp-buf));
 }

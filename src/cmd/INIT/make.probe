@@ -2,7 +2,7 @@
 # Glenn Fowler
 # AT&T Research
 #
-# @(#)make.probe (AT&T Research) 2009-09-22
+# @(#)make.probe (AT&T Research) 2009-11-14
 #
 # C probe for make
 #
@@ -912,7 +912,21 @@ case $cc_dll:$cc_pic:$so:$dynamic:$static in
 		done
 	fi
 	case $so in
-	?*)	if	$cc -c require.$src
+	?*)	rm -f xxx*
+		if	$dld $shared -g -o xxx shared.$obj 2>e
+		then	set x $probe_sdb
+			while	:
+			do	shift
+				case $1 in
+				0)	break ;;
+				esac
+				if	test -f xxx$1
+				then	sdb=$1
+					break
+				fi
+			done
+		fi
+		if	$cc -c require.$src
 		then	p='
 /usr/proberun/lib:/local/runprobe/lib
 '
@@ -1132,14 +1146,28 @@ main()
 	;;
 esac
 
-stdlib=`$cc -v doti.$src 2>&1 |
-	sed 's/  */\n/g' |
-	sed -e '/^-L/!d' -e 's/^-L//' |
-	while read dir
-	do	if	test -d "$dir"
-		then	(cd "$dir"; pwd)
+stdlib=
+a=`$cc -print-multi-directory 2>/dev/null`
+case $a in
+.)	;;
+*)	for d in `$cc -print-search-dirs 2>/dev/null | sed -e '/^libraries:/!d' -e 's/.*=//' | tr : '\n' | grep /lib/`
+	do	if	[ -d ${d}${a} ]
+		then	stdlib="$stdlib ${d}${a}"
 		fi
-	done`
+	done
+	;;
+esac
+case $stdlib in
+'')	stdlib=`$cc -v doti.$src 2>&1 |
+		sed 's/  */\n/g' |
+		sed -e '/^-L/!d' -e 's/^-L//' |
+		while read dir
+		do	if	test -d "$dir"
+			then	(cd "$dir"; pwd)
+			fi
+		done`
+	;;
+esac
 case $stdlib in
 ?*)	keepstdlib=1
 	o=$stdlib
@@ -2054,6 +2082,7 @@ CC_PREFIX_SHARED=$prefix_shared
 CC_PREFIX_SYMBOL=$symprefix
 CC_SUFFIX_ARCHIVE=.$lib
 CC_SUFFIX_COMMAND=$suffix_command
+CC_SUFFIX_DEBUG=$sdb
 CC_SUFFIX_DYNAMIC=$sd
 CC_SUFFIX_LD=$ldscript
 CC_SUFFIX_OBJECT=.$obj
@@ -2166,6 +2195,7 @@ echo CC.PREFIX.SHARED = $CC_PREFIX_SHARED
 echo CC.PREFIX.SYMBOL = $CC_PREFIX_SYMBOL
 echo CC.SUFFIX.ARCHIVE = $CC_SUFFIX_ARCHIVE
 echo CC.SUFFIX.COMMAND = $CC_SUFFIX_COMMAND
+echo CC.SUFFIX.DEBUG = $CC_SUFFIX_DEBUG
 echo CC.SUFFIX.DYNAMIC = $CC_SUFFIX_DYNAMIC
 echo CC.SUFFIX.LD = $CC_SUFFIX_LD
 echo CC.SUFFIX.OBJECT = $CC_SUFFIX_OBJECT

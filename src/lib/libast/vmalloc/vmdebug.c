@@ -177,7 +177,7 @@ int		type;	/* operation being done		*/
 		bufp = (*_Vmstrcpy)(bufp, (*_Vmitoa)(VLONG(func),-1), ':');
 	}
 
-	*bufp++ = '\n';
+	*(bufp - 1) = '\n';
 	*bufp = '\0';
 
 	vmdbwarn(vm,buf,(bufp-buf));

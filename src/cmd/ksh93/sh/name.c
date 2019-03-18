@@ -753,7 +753,7 @@ Namval_t *nv_create(const char *name,  Dt_t *root, int flags, Namfun_t *dp)
 					if(shp->var_tree->walk == shp->var_base)
 					{
 						nq = np;
-						if(flags&NV_NOSCOPE)
+						if((flags&NV_NOSCOPE) && *cp!='.')
 						{
 							if(mode==0)
 								root = shp->var_base;
@@ -2770,11 +2770,9 @@ char *getenv(const char *name)
 @*/ 
 {
 	register Namval_t *np;
-	if(!sh.var_tree)
-		return(oldgetenv(name));
-	if((np = nv_search(name,sh.var_tree,0)) && nv_isattr(np,NV_EXPORT))
+	if(sh.var_tree && (np = nv_search(name,sh.var_tree,0)) && nv_isattr(np,NV_EXPORT))
 		return(nv_getval(np));
-	if(name[0] == 'P' && name[1] == 'A' && name[2] == 'T' && name[3] == 'H' && name[4] == 0)
+	if(sh_isstate(SH_INIT) || name[0] == 'P' && name[1] == 'A' && name[2] == 'T' && name[3] == 'H' && name[4] == 0)
 		return(oldgetenv(name));
 	return(0);
 }

@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -32,7 +32,26 @@ alias err_exit='err_exit $LINENO'
 Command=$0
 integer Errors=0
 # cut here
+function fun
+{
+	while  command exec 3>&1 
+	do	break  
+	done 2>   /dev/null
+	print -u3 good
+}
+print 'read -r a;print -r -u$1 -- "$a"' >  /tmp/mycat$$
+chmod 755 /tmp/mycat$$
+for ((i=3; i < 10; i++))
+do
+	eval "a=\$(print foo | /tmp/mycat$$" $i $i'>&1 > /dev/null |cat)' 2> /dev/null
+	[[ $a == foo ]] || err_exit "bad file descriptor $i in comsub script"
+done
+rm -f /tmp/mycat$$
+exec 3> /dev/null
+[[ $(fun) == good ]] || err_exit 'file 3 closed before subshell completes'
+exec 3>&-
 mkdir /tmp/ksh$$ || err_exit "mkdir /tmp/ksh$$ failed"
+trap 'rm -rf /tmp/ksh$$' EXIT
 cd /tmp/ksh$$ || err_exit "cd /tmp/ksh$$ failed"
 print foo > file1
 print bar >> file1
@@ -82,8 +101,6 @@ $SHELL -c '
 	exec 1<> out$$
 	builtin cat
 	print -r -- "$(cat in$$)"
-cp in$$ /tmp/dgk.in
-cp out$$ /tmp/dgk.out
 	cmp -s in$$ out$$'  2> /dev/null
 [[ $? == 0 ]] || err_exit 'builtin cat truncates files'
 cd ~- || err_exit "cd back failed"
@@ -99,5 +116,5 @@ read line
 if	[[ $line != foo ]]
 then	err_exit 'file descriptor not restored after exec in subshell'
 fi
-rm -r /tmp/ksh$$ || err_exit "rm -r /tmp/ksh$$ failed"
+exec 3>&- 4>&-; cd /; rm -r /tmp/ksh$$ || err_exit "rm -r /tmp/ksh$$ failed"
 exit $((Errors))

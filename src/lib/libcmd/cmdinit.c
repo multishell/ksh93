@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -30,11 +30,10 @@
 #include <cmdlib.h>
 
 void
-cmdinit(char** argv, void* context, const char* catalog)
+cmdinit(char** argv, void* context, const char* catalog, int flags)
 {
 	register char*	cp;
 
-	NoP(context);
 	if (cp = strrchr(argv[0], '/'))
 		cp++;
 	else
@@ -43,4 +42,6 @@ cmdinit(char** argv, void* context, const char* catalog)
 	if (!error_info.catalog)
 		error_info.catalog = catalog;
 	opt_info.index = 0;
+	if (context)
+		error_info.flags |= flags;
 }

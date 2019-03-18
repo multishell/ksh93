@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -33,7 +33,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: wc (AT&T Labs Research) 1999-04-20 $\n]"
+"[-?\n@(#)$Id: wc (AT&T Labs Research) 2003-05-04 $\n]"
 USAGE_LICENSE
 "[+NAME?wc - print the number of bytes, words, and lines in files]"
 "[+DESCRIPTION?\bwc\b reads one or more input files and, by default, "
@@ -80,7 +80,9 @@ static void printout(register Wc_t *wp, register char *name,register int mode)
 		sfprintf(sfstdout," %7I*d",sizeof(wp->words),wp->words);
 	if(mode&WC_CHARS)
 		sfprintf(sfstdout," %7I*d",sizeof(wp->chars),wp->chars);
-	sfprintf(sfstdout," %s\n",name?name:"");
+	if(name)
+		sfprintf(sfstdout," %s",name);
+	sfputc(sfstdout,'\n');
 }
 
 int
@@ -94,7 +96,7 @@ b_wc(int argc,register char **argv, void* context)
 	struct stat	statb;
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG);
+	cmdinit(argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv,usage)) switch (n)
 	{
 	case 'w':

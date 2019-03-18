@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -33,14 +33,14 @@
  * the sum of the hacks {s5,v10,planix} is _____ than the parts
  */
 
-static const char id[] = "\n@(#)$Id: magic library (AT&T Labs Research) 2002-05-24 $\0\n";
+static const char id[] = "\n@(#)$Id: magic library (AT&T Labs Research) 2003-11-21 $\0\n";
 
 static const char lib[] = "libast:magic";
 
 #include <ast.h>
 #include <ctype.h>
 #include <ccode.h>
-#include <hash.h>
+#include <dt.h>
 #include <modex.h>
 #include <error.h>
 #include <regex.h>
@@ -49,121 +49,17 @@ static const char lib[] = "libast:magic";
 
 #define T(m)		(*m?ERROR_translate(NiL,NiL,lib,m):m)
 
-#define match(s,p)	strgrpmatch(s,p,NiL,0,REG_LEFT|REG_RIGHT|REG_ICASE)
-
-#if _WIN32
-
-#include <align.h>
-
-#define vmfree(v,p)
-#define vmnewof(v,o,t,n,x)	(t*)vmalloc(v,sizeof(t)*(n)+(x))
-#define vmopen(a,b,c)		_vmopen()
-#define vmpush(v)
-#define vmpop()
-
-typedef struct Vmchunk
-{
-	struct Vmchunk*	next;
-	char		data[ALIGN_CHUNK - ALIGN_BOUND];
-} Vmchunk_t;
-
-typedef struct
-{
-	Vmchunk_t	base;		
-	Vmchunk_t*	current;
-	char*		data;
-	ssize_t		size;
-} Vmalloc_t;
-
-static Vmalloc_t*
-_vmopen(void)
-{
-	Vmalloc_t*	vp;
-
-	if (vp = newof(0, Vmalloc_t, 1, 0))
-	{
-		vp->current = &vp->base;
-		vp->data = vp->current->data;
-		vp->size = sizeof(vp->current->data);
-	}
-	return vp;
-}
-
-static void
-vmclose(register Vmalloc_t* vp)
-{
-	register Vmchunk_t*	cp;
-	register Vmchunk_t*	np;
-
-	if (vp)
-	{
-		np = vp->base.next;
-		while (cp = np)
-		{
-			np = cp->next;
-			free(cp);
-		}
-		free(vp);
-	}
-}
-
-static void*
-vmalloc(register Vmalloc_t* vp, size_t size)
-{
-	char*	p;
-	size_t	n;
-
-	if (size > vp->size)
-	{
-		n = (size > sizeof(vp->current->data)) ? (size - sizeof(vp->current->data)) : 0;
-		if (!(vp->current->next = newof(0, Vmchunk_t, 1, n)))
-			return 0;
-		vp->current = vp->current->next;
-		vp->data = vp->current->data;
-		vp->size = n ? 0 : sizeof(vp->current->data);
-	}
-	p = vp->data;
-	size = roundof(size, ALIGN_BOUND);
-	if (size >= vp->size)
-		vp->size = 0;
-	else
-	{
-		vp->size -= size;
-		vp->data += size;
-	}
-	memset(p, 0, size);
-	return p;
-}
-
-static char*
-vmstrdup(Vmalloc_t* vp, const char* s)
-{
-	char*	p;
-	int	n;
-
-	n = strlen(s) + 1;
-	if (p = (char*)vmalloc(vp, n))
-		strcpy(p, s);
-	return p;
-}
-
-#else
-
-#include <vmalloc.h>
-
-#define vmpush(v)	{ Vmalloc_t* _VM_region = Vmregion; Vmregion = v;
-#define vmpop()		Vmregion = _VM_region; }
-
-#endif
+#define match(s,p)	strgrpmatch(s,p,NiL,0,STR_LEFT|STR_RIGHT|STR_ICASE)
 
 #define MAXNEST		10		/* { ... } nesting limit	*/
 #define MINITEM		4		/* magic buffer rounding	*/
 
 typedef struct				/* identifier dictionary entry	*/
 {
-	char*		name;		/* identifier name		*/
-	int		type;		/* identifier type		*/
-} Dict_t;
+	const char	name[16];	/* identifier name		*/
+	int		value;		/* identifier value		*/
+	Dtlink_t	link;		/* dictionary link		*/
+} Info_t;
 
 typedef struct Edit			/* edit substitution		*/
 {
@@ -227,17 +123,20 @@ typedef unsigned long Cctype_t;
 #define ID_NONE		0
 #define ID_ASM		1
 #define ID_C		2
-#define ID_CPLUSPLUS	3
-#define ID_FORTRAN	4
-#define ID_HTML		5
-#define ID_INCL1	6
-#define ID_INCL2	7
-#define ID_INCL3	8
-#define ID_MAM1		9
-#define ID_MAM2		10
-#define ID_MAM3		11
-#define ID_NOTEXT	12
-#define ID_YACC		13
+#define ID_COBOL	3
+#define ID_COPYBOOK	4
+#define ID_CPLUSPLUS	5
+#define ID_FORTRAN	6
+#define ID_HTML		7
+#define ID_INCL1	8
+#define ID_INCL2	9
+#define ID_INCL3	10
+#define ID_MAM1		11
+#define ID_MAM2		12
+#define ID_MAM3		13
+#define ID_NOTEXT	14
+#define ID_PL1		15
+#define ID_YACC		16
 
 #define ID_MAX		ID_YACC
 
@@ -255,10 +154,11 @@ typedef unsigned long Cctype_t;
 
 #define _MAGIC_PRIVATE_ \
 	Magicdisc_t*	disc;			/* discipline		*/ \
-	Vmalloc_t*	region;			/* vmalloc region	*/ \
+	Vmalloc_t*	vm;			/* vmalloc region	*/ \
 	Entry_t*	magic;			/* parsed magic table	*/ \
 	Entry_t*	magiclast;		/* last entry in magic	*/ \
 	char*		mime;			/* MIME type		*/ \
+	unsigned char*	x2n;			/* CC_ALIEN=>CC_NATIVE	*/ \
 	char		fbuf[SF_BUFSIZE + 1];	/* file data		*/ \
 	char		xbuf[SF_BUFSIZE + 1];	/* indirect file data	*/ \
 	char		nbuf[256];		/* !CC_NATIVE data	*/ \
@@ -276,86 +176,110 @@ typedef unsigned long Cctype_t;
 	int		fbmx;			/* fbuf max size	*/ \
 	int		xbsz;			/* xbuf size		*/ \
 	int		swap;			/* swap() operation	*/ \
+	unsigned long	flags;			/* disc+open flags	*/ \
 	long		xoff;			/* xbuf offset		*/ \
-	int		identifier[ID_MAX + 1];	/* Dict_t identifier	*/ \
+	int		identifier[ID_MAX + 1];	/* Info_t identifier	*/ \
 	Sfio_t*		fp;			/* fbuf fp		*/ \
 	Sfio_t*		tmp;			/* tmp string		*/ \
-	Hash_table_t*	idtab;			/* identifier hash	*/ \
-	Hash_table_t*	infotab;		/* info keyword hash	*/
+	regdisc_t	redisc;			/* regex discipline	*/ \
+	Dtdisc_t	dtdisc;			/* dict discipline	*/ \
+	Dt_t*		idtab;			/* identifier dict	*/ \
+	Dt_t*		infotab;		/* info keyword dict	*/
 
 #include <magic.h>
 
-static Dict_t		dict[] =		/* sorted dictionary	*/
+static Info_t		dict[] =		/* keyword dictionary	*/
 {
-	"HTML",		ID_HTML,
-	"TEXT",		ID_ASM,
-	"attr",		ID_MAM3,
-	"binary",	ID_YACC,
-	"block",	ID_FORTRAN,
-	"bss",		ID_ASM,
-	"byte",		ID_ASM,
-	"char",		ID_C,
-	"class",	ID_CPLUSPLUS,
-	"clr",		ID_NOTEXT,
-	"comm",		ID_ASM,
-	"common",	ID_FORTRAN,
-	"data",		ID_ASM,
-	"dimension",	ID_FORTRAN,
-	"done",		ID_MAM2,
-	"double",	ID_C,
-	"even",		ID_ASM,
-	"exec",		ID_MAM3,
-	"extern",	ID_C,
-	"float",	ID_C,
-	"function",	ID_FORTRAN,
-	"globl",	ID_ASM,
-	"h",		ID_INCL3,
-	"html",		ID_HTML,
-	"include",	ID_INCL1,
-	"int",		ID_C,
-	"integer",	ID_FORTRAN,
-	"jmp",		ID_NOTEXT,
-	"left",		ID_YACC,
-	"libc",		ID_INCL2,
-	"long",		ID_C,
-	"make",		ID_MAM1,
-	"mov",		ID_NOTEXT,
-	"private",	ID_CPLUSPLUS,
-	"public",	ID_CPLUSPLUS,
-	"real",		ID_FORTRAN,
-	"register",	ID_C,
-	"right",	ID_YACC,
-	"sfio",		ID_INCL2,
-	"static",	ID_C,
-	"stdio",	ID_INCL2,
-	"struct",	ID_C,
-	"subroutine",	ID_FORTRAN,
-	"sys",		ID_NOTEXT,
-	"term",		ID_YACC,
-	"text",		ID_ASM,
-	"tst",		ID_NOTEXT,
-	"type",		ID_YACC,
-	"typedef",	ID_C,
-	"u",		ID_INCL2,
-	"union",	ID_YACC,
-	"void",		ID_C,
-	0,		ID_NONE
+	{ 	"COMMON",	ID_FORTRAN	},
+	{ 	"COMPUTE",	ID_COBOL	},
+	{ 	"COMP",		ID_COPYBOOK	},
+	{ 	"COMPUTATIONAL",ID_COPYBOOK	},
+	{ 	"DCL",		ID_PL1		},
+	{ 	"DEFINED",	ID_PL1		},
+	{ 	"DIMENSION",	ID_FORTRAN	},
+	{ 	"DIVISION",	ID_COBOL	},
+	{ 	"FILLER",	ID_COPYBOOK	},
+	{ 	"FIXED",	ID_PL1		},
+	{ 	"FUNCTION",	ID_FORTRAN	},
+	{ 	"HTML",		ID_HTML		},
+	{ 	"INTEGER",	ID_FORTRAN	},
+	{ 	"MAIN",		ID_PL1		},
+	{ 	"OPTIONS",	ID_PL1		},
+	{ 	"PERFORM",	ID_COBOL	},
+	{ 	"PIC",		ID_COPYBOOK	},
+	{ 	"REAL",		ID_FORTRAN	},
+	{ 	"REDEFINES",	ID_COPYBOOK	},
+	{ 	"S9",		ID_COPYBOOK	},
+	{ 	"SECTION",	ID_COBOL	},
+	{ 	"SELECT",	ID_COBOL	},
+	{ 	"SUBROUTINE",	ID_FORTRAN	},
+	{ 	"TEXT",		ID_ASM		},
+	{ 	"VALUE",	ID_COPYBOOK	},
+	{ 	"attr",		ID_MAM3		},
+	{ 	"binary",	ID_YACC		},
+	{ 	"block",	ID_FORTRAN	},
+	{ 	"bss",		ID_ASM		},
+	{ 	"byte",		ID_ASM		},
+	{ 	"char",		ID_C		},
+	{ 	"class",	ID_CPLUSPLUS	},
+	{ 	"clr",		ID_NOTEXT	},
+	{ 	"comm",		ID_ASM		},
+	{ 	"common",	ID_FORTRAN	},
+	{ 	"data",		ID_ASM		},
+	{ 	"dimension",	ID_FORTRAN	},
+	{ 	"done",		ID_MAM2		},
+	{ 	"double",	ID_C		},
+	{ 	"even",		ID_ASM		},
+	{ 	"exec",		ID_MAM3		},
+	{ 	"extern",	ID_C		},
+	{ 	"float",	ID_C		},
+	{ 	"function",	ID_FORTRAN	},
+	{ 	"globl",	ID_ASM		},
+	{ 	"h",		ID_INCL3	},
+	{ 	"html",		ID_HTML		},
+	{ 	"include",	ID_INCL1	},
+	{ 	"int",		ID_C		},
+	{ 	"integer",	ID_FORTRAN	},
+	{ 	"jmp",		ID_NOTEXT	},
+	{ 	"left",		ID_YACC		},
+	{ 	"libc",		ID_INCL2	},
+	{ 	"long",		ID_C		},
+	{ 	"make",		ID_MAM1		},
+	{ 	"mov",		ID_NOTEXT	},
+	{ 	"private",	ID_CPLUSPLUS	},
+	{ 	"public",	ID_CPLUSPLUS	},
+	{ 	"real",		ID_FORTRAN	},
+	{ 	"register",	ID_C		},
+	{ 	"right",	ID_YACC		},
+	{ 	"sfio",		ID_INCL2	},
+	{ 	"static",	ID_C		},
+	{ 	"stdio",	ID_INCL2	},
+	{ 	"struct",	ID_C		},
+	{ 	"subroutine",	ID_FORTRAN	},
+	{ 	"sys",		ID_NOTEXT	},
+	{ 	"term",		ID_YACC		},
+	{ 	"text",		ID_ASM		},
+	{ 	"tst",		ID_NOTEXT	},
+	{ 	"type",		ID_YACC		},
+	{ 	"typedef",	ID_C		},
+	{ 	"u",		ID_INCL2	},
+	{ 	"union",	ID_YACC		},
+	{ 	"void",		ID_C		},
 };
 
-static Dict_t		info[] =
+static Info_t		info[] =
 {
-	"atime",	INFO_atime,
-	"blocks",	INFO_blocks,
-	"ctime",	INFO_ctime,
-	"fstype",	INFO_fstype,
-	"gid",		INFO_gid,
-	"mode",		INFO_mode,
-	"mtime",	INFO_mtime,
-	"name",		INFO_name,
-	"nlink",	INFO_nlink,
-	"size",		INFO_size,
-	"uid",		INFO_uid,
-	0,		0
+	{	"atime",	INFO_atime		},
+	{	"blocks",	INFO_blocks		},
+	{	"ctime",	INFO_ctime		},
+	{	"fstype",	INFO_fstype		},
+	{	"gid",		INFO_gid		},
+	{	"mode",		INFO_mode		},
+	{	"mtime",	INFO_mtime		},
+	{	"name",		INFO_name		},
+	{	"nlink",	INFO_nlink		},
+	{	"size",		INFO_size		},
+	{	"uid",		INFO_uid		},
 };
 
 /*
@@ -367,13 +291,17 @@ getdata(register Magic_t* mp, register long off, register int siz)
 {
 	register long	n;
 
-	if (off < 0) return 0;
-	if (off + siz <= mp->fbsz) return mp->fbuf + off;
+	if (off < 0)
+		return 0;
+	if (off + siz <= mp->fbsz)
+		return mp->fbuf + off;
 	if (off < mp->xoff || off + siz > mp->xoff + mp->xbsz)
 	{
-		if (off + siz > mp->fbmx) return 0;
+		if (off + siz > mp->fbmx)
+			return 0;
 		n = (off / (SF_BUFSIZE / 2)) * (SF_BUFSIZE / 2);
-		if (sfseek(mp->fp, n, SEEK_SET) != n) return 0;
+		if (sfseek(mp->fp, n, SEEK_SET) != n)
+			return 0;
 		if ((mp->xbsz = sfread(mp->fp, mp->xbuf, sizeof(mp->xbuf) - 1)) < 0)
 		{
 			mp->xoff = 0;
@@ -382,7 +310,8 @@ getdata(register Magic_t* mp, register long off, register int siz)
 		}
 		mp->xbuf[mp->xbsz] = 0;
 		mp->xoff = n;
-		if (off + siz > mp->xoff + mp->xbsz) return 0;
+		if (off + siz > mp->xoff + mp->xbsz)
+			return 0;
 	}
 	return mp->xbuf + off - mp->xoff;
 }
@@ -409,31 +338,40 @@ indirect(const char* cs, char** e, void* handle)
 			case 'b':
 			case 'B':
 				s++;
-				if (p = getdata(mp, n, 1)) n = *(unsigned char*)p;
-				else s = (char*)cs;
+				if (p = getdata(mp, n, 1))
+					n = *(unsigned char*)p;
+				else
+					s = (char*)cs;
 				break;
 			case 'h':
 			case 'H':
 				s++;
-				if (p = getdata(mp, n, 2)) n = swapget(mp->swap, p, 2);
-				else s = (char*)cs;
+				if (p = getdata(mp, n, 2))
+					n = swapget(mp->swap, p, 2);
+				else
+					s = (char*)cs;
 				break;
 			case 'q':
 			case 'Q':
 				s++;
-				if (p = getdata(mp, n, 8)) n = swapget(mp->swap, p, 8);
-				else s = (char*)cs;
+				if (p = getdata(mp, n, 8))
+					n = swapget(mp->swap, p, 8);
+				else
+					s = (char*)cs;
 				break;
 			default:
-				if (isalnum(*s)) s++;
-				if (p = getdata(mp, n, 4)) n = swapget(mp->swap, p, 4);
-				else s = (char*)cs;
+				if (isalnum(*s))
+					s++;
+				if (p = getdata(mp, n, 4))
+					n = swapget(mp->swap, p, 4);
+				else
+					s = (char*)cs;
 				break;
 			}
 		}
 		*e = s;
 	}
-	else if (mp->disc->errorf)
+	else if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 		(*mp->disc->errorf)(mp, mp->disc, 2, "%s in indirect expression", *e);
 	return n;
 }
@@ -447,7 +385,7 @@ regmessage(Magic_t* mp, regex_t* re, int code)
 {
 	char	buf[128];
 
-	if (mp->disc->errorf)
+	if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 	{
 		regerror(code, re, buf, sizeof(buf));
 		(*mp->disc->errorf)(mp, mp->disc, 3, "regex: %s", buf);
@@ -507,7 +445,8 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			mp->swap = 0;
 			b = mp->msg[0] = buf;
 			mp->mime = mp->cap[0] = 0;
-			if (ep->type == ' ') continue;
+			if (ep->type == ' ')
+				continue;
 			break;
 		case '$':
 			if (mp->keep[level] && call < (MAXNEST - 1))
@@ -519,7 +458,8 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			continue;
 		case ':':
 			ep = mp->ret[call--];
-			if (ep->op == 'l') goto fun;
+			if (ep->op == 'l')
+				goto fun;
 			continue;
 		case '|':
 			if (mp->keep[level] > 1)
@@ -534,116 +474,126 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			}
 			break;
 		}
-		if (!ep->expr) num = ep->offset + off;
-		else switch (ep->offset)
-		{
-		case 0:
-			num = strexpr(ep->expr, NiL, indirect, mp) + off;
-			break;
-		case INFO_atime:
-			num = st->st_atime;
-			ep->type = 'D';
-			break;
-		case INFO_blocks:
-			num = iblocks(st);
-			ep->type = 'N';
-			break;
-		case INFO_ctime:
-			num = st->st_ctime;
-			ep->type = 'D';
-			break;
-		case INFO_fstype:
-			p = fmtfs(st);
-			ep->type = toupper(ep->type);
-			break;
-		case INFO_gid:
-			if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
+		if (!ep->expr)
+			num = ep->offset + off;
+		else
+			switch (ep->offset)
 			{
-				p = fmtgid(st->st_gid);
-				ep->type = toupper(ep->type);
-			}
-			else
-			{
-				num = st->st_gid;
+			case 0:
+				num = strexpr(ep->expr, NiL, indirect, mp) + off;
+				break;
+			case INFO_atime:
+				num = st->st_atime;
+				ep->type = 'D';
+				break;
+			case INFO_blocks:
+				num = iblocks(st);
 				ep->type = 'N';
-			}
-			break;
-		case INFO_mode:
-			if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
-			{
-				p = fmtmode(st->st_mode, 0);
+				break;
+			case INFO_ctime:
+				num = st->st_ctime;
+				ep->type = 'D';
+				break;
+			case INFO_fstype:
+				p = fmtfs(st);
 				ep->type = toupper(ep->type);
-			}
-			else
-			{
-				num = modex(st->st_mode);
-				ep->type = 'N';
-			}
-			break;
-		case INFO_mtime:
-			num = st->st_ctime;
-			ep->type = 'D';
-			break;
-		case INFO_name:
-			if (!base)
-			{
-				if (base = strrchr(file, '/')) base++;
-				else base = (char*)file;
-			}
-			p = base;
-			ep->type = toupper(ep->type);
-			break;
-		case INFO_nlink:
-			num = st->st_nlink;
-			ep->type = 'N';
-			break;
-		case INFO_size:
-			num = st->st_size;
-			ep->type = 'N';
-			break;
-		case INFO_uid:
-			if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
-			{
-				p = fmtuid(st->st_uid);
+				break;
+			case INFO_gid:
+				if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
+				{
+					p = fmtgid(st->st_gid);
+					ep->type = toupper(ep->type);
+				}
+				else
+				{
+					num = st->st_gid;
+					ep->type = 'N';
+				}
+				break;
+			case INFO_mode:
+				if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
+				{
+					p = fmtmode(st->st_mode, 0);
+					ep->type = toupper(ep->type);
+				}
+				else
+				{
+					num = modex(st->st_mode);
+					ep->type = 'N';
+				}
+				break;
+			case INFO_mtime:
+				num = st->st_ctime;
+				ep->type = 'D';
+				break;
+			case INFO_name:
+				if (!base)
+				{
+					if (base = strrchr(file, '/'))
+						base++;
+					else
+						base = (char*)file;
+				}
+				p = base;
 				ep->type = toupper(ep->type);
-			}
-			else
-			{
-				num = st->st_uid;
+				break;
+			case INFO_nlink:
+				num = st->st_nlink;
 				ep->type = 'N';
+				break;
+			case INFO_size:
+				num = st->st_size;
+				ep->type = 'N';
+				break;
+			case INFO_uid:
+				if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
+				{
+					p = fmtuid(st->st_uid);
+					ep->type = toupper(ep->type);
+				}
+				else
+				{
+					num = st->st_uid;
+					ep->type = 'N';
+				}
+				break;
 			}
-			break;
-		}
 		switch (ep->type)
 		{
 
 		case 'b':
-			if (!(p = getdata(mp, num, 1))) goto next;
+			if (!(p = getdata(mp, num, 1)))
+				goto next;
 			num = *(unsigned char*)p;
 			break;
 
 		case 'h':
-			if (!(p = getdata(mp, num, 2))) goto next;
+			if (!(p = getdata(mp, num, 2)))
+				goto next;
 			num = swapget(ep->swap ? (~ep->swap ^ mp->swap) : mp->swap, p, 2);
 			break;
 
 		case 'd':
 		case 'l':
 		case 'v':
-			if (!(p = getdata(mp, num, 4))) goto next;
+			if (!(p = getdata(mp, num, 4)))
+				goto next;
 			num = swapget(ep->swap ? (~ep->swap ^ mp->swap) : mp->swap, p, 4);
 			break;
 
 		case 'q':
-			if (!(p = getdata(mp, num, 8))) goto next;
+			if (!(p = getdata(mp, num, 8)))
+				goto next;
 			num = swapget(ep->swap ? (~ep->swap ^ mp->swap) : mp->swap, p, 8);
 			break;
 
 		case 'e':
-			if (!(p = getdata(mp, num, 0))) goto next;
+			if (!(p = getdata(mp, num, 0)))
+				goto next;
 			/*FALLTHROUGH*/
 		case 'E':
-			if (!ep->value.sub) goto next;
+			if (!ep->value.sub)
+				goto next;
 			if ((c = regexec(ep->value.sub, p, elementsof(matches), matches, 0)) || (c = regsubexec(ep->value.sub, p, elementsof(matches), matches)))
 			{
 				c = mp->fbsz;
@@ -651,7 +601,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 					c = sizeof(mp->nbuf) - 1;
 				p = (char*)memcpy(mp->nbuf, p, c);
 				p[c] = 0;
-				ccmaps(p, c, !CC_NATIVE, CC_NATIVE);
+				ccmapstr(mp->x2n, p, c);
 				if ((c = regexec(ep->value.sub, p, elementsof(matches), matches, 0)) || (c = regsubexec(ep->value.sub, p, elementsof(matches), matches)))
 				{
 					if (c != REG_NOMATCH)
@@ -670,10 +620,12 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			goto checknest;
 
 		case 's':
-			if (!(p = getdata(mp, num, ep->mask))) goto next;
+			if (!(p = getdata(mp, num, ep->mask)))
+				goto next;
 			goto checkstr;
 		case 'm':
-			if (!(p = getdata(mp, num, 0))) goto next;
+			if (!(p = getdata(mp, num, 0)))
+				goto next;
 			/*FALLTHROUGH*/
 		case 'M':
 		case 'S':
@@ -688,7 +640,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 					goto next;
 				p = (char*)memcpy(mp->nbuf, p, ep->mask);
 				p[ep->mask] = 0;
-				ccmaps(p, ep->mask, !CC_NATIVE, CC_NATIVE);
+				ccmapstr(mp->x2n, p, ep->mask);
 			}
 			q = T(ep->desc);
 			if (mp->keep[level]++ && b > buf && *(b - 1) != ' ' && *q && *q != ',' && *q != '.' && *q != '\b')
@@ -702,14 +654,18 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			goto checknest;
 
 		}
-		if (mask = ep->mask) num &= mask;
+		if (mask = ep->mask)
+			num &= mask;
 		switch (ep->op)
 		{
 		case '=':
 		case '@':
-			if (num == ep->value.num) break;
-			if (ep->cont != '#') goto next;
-			if (!mask) mask = ~mask;
+			if (num == ep->value.num)
+				break;
+			if (ep->cont != '#')
+				goto next;
+			if (!mask)
+				mask = ~mask;
 			if (ep->type == 'h')
 			{
 				if ((num = swapget(mp->swap = 1, p, 2) & mask) == ep->value.num)
@@ -738,19 +694,23 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			goto next;
 
 		case '!':
-			if (num != ep->value.num) break;
+			if (num != ep->value.num)
+				break;
 			goto next;
 
 		case '^':
-			if (num ^ ep->value.num) break;
+			if (num ^ ep->value.num)
+				break;
 			goto next;
 
 		case '>':
-			if (num > ep->value.num) break;
+			if (num > ep->value.num)
+				break;
 			goto next;
 
 		case '<':
-			if (num < ep->value.num) break;
+			if (num < ep->value.num)
+				break;
 			goto next;
 
 		case 'l':
@@ -805,7 +765,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			{
 				if (strneq(t, "Content Type=", 13))
 				{
-					ep->mime = vmnewof(mp->region, ep->mime, char, sfvalue(rp), 0);
+					ep->mime = vmnewof(mp->vm, ep->mime, char, sfvalue(rp), 0);
 					strcpy(ep->mime, t + 13);
 					if (gp)
 						break;
@@ -816,7 +776,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 					e = sfstruse(mp->tmp);
 					if (gp = sfopen(NiL, e, "r"))
 					{
-						ep->desc = vmnewof(mp->region, ep->desc, char, strlen(t), 1);
+						ep->desc = vmnewof(mp->vm, ep->desc, char, strlen(t), 1);
 						strcpy(ep->desc, t);
 						if (*ep->mime)
 							break;
@@ -834,7 +794,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 				while (isspace(*t))
 					t++;
 				e = "application/x-ms-";
-				ep->mime = vmnewof(mp->region, ep->mime, char, strlen(t), strlen(e));
+				ep->mime = vmnewof(mp->vm, ep->mime, char, strlen(t), strlen(e));
 				e = strcopy(ep->mime, e);
 				while ((c = *t++) && c != '.' && c != ' ')
 					*e++ = isupper(c) ? tolower(c) : c;
@@ -843,7 +803,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			while (t = sfgetr(gp, '\n', 1))
 				if (*t && !streq(t, "\"\""))
 				{
-					ep->desc = vmnewof(mp->region, ep->desc, char, sfvalue(gp), 0);
+					ep->desc = vmnewof(mp->vm, ep->desc, char, sfvalue(gp), 0);
 					strcpy(ep->desc, t);
 					break;
 				}
@@ -872,19 +832,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 		if (ep->type == 'd' || ep->type == 'D')
 			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), fmttime("%?%l", (time_t)num));
 		else if (ep->type == 'v')
-		{
-			if (num >= 19700101L)
-				sfprintf(mp->tmp, "%04lu-%02lu-%02lu", (num / 10000) % 10000, (num / 100) % 100, num % 100);
-			else
-			{
-				if (c = (num >> 24) & 0xff)
-					sfprintf(mp->tmp, "%d.", c);
-				if (c = (num >> 16) & 0xff)
-					sfprintf(mp->tmp, "%d.", c);
-				sfprintf(mp->tmp, "%ld.%ld", (num >> 8) & 0xff, num & 0xff);
-			}
-			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), sfstruse(mp->tmp));
-		}
+			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), fmtversion(num));
 		else
 			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), num);
 		if (ep->mime && *ep->mime)
@@ -969,6 +917,7 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 	int			code;
 	int			pun;
 	Cctype_t		flags;
+	Info_t*			ip;
 
 	b = (unsigned char*)mp->fbuf;
 	e = b + mp->fbsz;
@@ -984,8 +933,8 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 	while (b < e)
 		flags |= mp->cctype[*b++];
 	b = (unsigned char*)mp->fbuf;
-	code = -1;
-	q = 0;
+	code = 0;
+	q = CC_ASCII;
 	n = CC_MASK;
 	for (c = 0; c < CC_MAPS; c++)
 	{
@@ -1013,7 +962,8 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 			*b = 0;
 			if ((st->st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) || match(s, "/*bin*/*") || !access(s, 0))
 			{
-				if (t = strrchr(s, '/')) s = t + 1;
+				if (t = strrchr(s, '/'))
+					s = t + 1;
 				for (t = s; *t; t++)
 					if (isspace(*t))
 					{
@@ -1069,51 +1019,52 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 			{
 				if (isalpha(c) || c == '_')
 				{
-					if (!s) s = (char*)b - 1;
+					if (!s)
+						s = (char*)b - 1;
 				}
 				else if (!isdigit(c))
 				{
 					if (s)
 					{
-						if (s > mp->fbuf) switch (*(s - 1))
-						{
-						case ':':
-							if (*b == ':')
-								mp->multi[':']++;
-							break;
-						case '.':
-							if (((char*)b - s) == 3 && (s == (mp->fbuf + 1) || *(s - 2) == '\n'))
-								mp->multi['.']++;
-							break;
-						case '\n':
-						case '\\':
-							if (*b == '{')
-								t = (char*)b + 1;
-							break;
-						case '{':
-							if (s == t && *b == '}')
-								mp->multi['X']++;
-							break;
+						if (s > mp->fbuf)
+							switch (*(s - 1))
+							{
+							case ':':
+								if (*b == ':')
+									mp->multi[':']++;
+								break;
+							case '.':
+								if (((char*)b - s) == 3 && (s == (mp->fbuf + 1) || *(s - 2) == '\n'))
+									mp->multi['.']++;
+								break;
+							case '\n':
+							case '\\':
+								if (*b == '{')
+									t = (char*)b + 1;
+								break;
+							case '{':
+								if (s == t && *b == '}')
+									mp->multi['X']++;
+								break;
+							}
+							if (!mp->idtab)
+							{
+								if (mp->idtab = dtnew(mp->vm, &mp->dtdisc, Dthash))
+									for (q = 0; q < elementsof(dict); q++)
+										dtinsert(mp->idtab, &dict[q]);
+								else if (mp->disc->errorf)
+									(*mp->disc->errorf)(mp, mp->disc, 3, "out of space");
+								q = 0;
+							}
+							if (mp->idtab)
+							{
+								*(b - 1) = 0;
+								if (ip = (Info_t*)dtmatch(mp->idtab, s))
+									mp->identifier[ip->value]++;
+								*(b - 1) = c;
+							}
+							s = 0;
 						}
-						if (!mp->idtab)
-						{
-							vmpush(mp->region);
-							if (mp->idtab = hashalloc(NiL, HASH_name, "identifiers", 0))
-								for (q = 0; dict[q].name; q++)
-									hashput(mp->idtab, dict[q].name, (void*)dict[q].type);
-							else if (mp->disc->errorf)
-								(*mp->disc->errorf)(mp, mp->disc, 3, "out of space");
-							vmpop();
-							q = 0;
-						}
-						if (mp->idtab)
-						{
-							*(b - 1) = 0;
-							mp->identifier[(int)hashget(mp->idtab, s)]++;
-							*(b - 1) = c;
-						}
-						s = 0;
-					}
 					switch (c)
 					{
 					case '\t':
@@ -1125,8 +1076,10 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 						q = c;
 						break;
 					case '/':
-						if (*b == '*') q = *b++;
-						else if (*b == '/') q = '\n';
+						if (*b == '*')
+							q = *b++;
+						else if (*b == '/')
+							q = '\n';
 						break;
 					case '$':
 						if (*b == '(' && *(b + 1) != ' ')
@@ -1168,8 +1121,33 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 	suff = (t1 = strrchr(base, '.')) ? t1 + 1 : "";
 	if (!flags)
 	{
-		if ((st->st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) && (!suff || suff != strchr(suff, '.')) || match(suff, "*sh|bat|cmd"))
+		if (match(suff, "*sh|bat|cmd"))
+			goto id_sh;
+		if (match(base, "*@(mkfile)"))
+			goto id_mk;
+		if (match(base, "*@(makefile|.mk)"))
+			goto id_make;
+		if (match(base, "*@(mamfile|.mam)"))
+			goto id_mam;
+		if (match(suff, "[cly]?(pp|xx|++)|cc|ll|yy"))
+			goto id_c;
+		if (match(suff, "f"))
+			goto id_fortran;
+		if (match(suff, "htm+(l)"))
+			goto id_html;
+		if (match(suff, "cpy"))
+			goto id_copybook;
+		if (match(suff, "cob|cbl|cb2"))
+			goto id_cobol;
+		if (match(suff, "pl[1i]"))
+			goto id_pl1;
+		if (match(suff, "tex"))
+			goto id_tex;
+		if (match(suff, "asm|s"))
+			goto id_asm;
+		if ((st->st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) && (!suff || suff != strchr(suff, '.')))
 		{
+		id_sh:
 			s = T("command script");
 			mp->mime = "application/sh";
 			goto qualify;
@@ -1182,12 +1160,14 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 		}
 		if (match(base, "*@(mkfile)"))
 		{
+		id_mk:
 			s = "mkfile";
 			mp->mime = "application/mk";
 			goto qualify;
 		}
 		if (match(base, "*@(makefile|.mk)") || mp->multi['\t'] >= mp->count[':'] && (mp->multi['$'] > 0 || mp->multi[':'] > 0))
 		{
+		id_make:
 			s = "makefile";
 			mp->mime = "application/make";
 			goto qualify;
@@ -1216,9 +1196,9 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 			c = mp->identifier[ID_INCL1];
 			if (c >= 2 && mp->identifier[ID_INCL2] >= c && mp->identifier[ID_INCL3] >= c && mp->count['.'] >= c ||
 			    mp->identifier[ID_C] >= 5 && mp->count[';'] >= 5 ||
-			    mp->count['='] >= 20 && mp->count[';'] >= 20 ||
-			    match(suff, "[cly]?(pp|xx|++)|cc|ll|yy"))
+			    mp->count['='] >= 20 && mp->count[';'] >= 20)
 			{
+			id_c:
 				t1 = "";
 				t2 = "c ";
 				t3 = T("program");
@@ -1261,30 +1241,56 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 		    (mp->fbsz < SF_BUFSIZE && mp->identifier[ID_MAM1] == mp->identifier[ID_MAM2] ||
 		     mp->fbsz >= SF_BUFSIZE && mp->identifier[ID_MAM1] >= mp->identifier[ID_MAM2]))
 		{
+		id_mam:
 			s = T("mam program");
 			mp->mime = "application/x-mam";
 			goto qualify;
 		}
-		if (mp->identifier[ID_FORTRAN] >= 8 || mp->identifier[ID_FORTRAN] > 0 && (*suff == 'f' || *suff == 'F'))
+		if (mp->identifier[ID_FORTRAN] >= 8)
 		{
+		id_fortran:
 			s = T("fortran program");
 			mp->mime = "application/x-fortran";
 			goto qualify;
 		}
-		if (match(suff, "htm+(l)") || mp->identifier[ID_HTML] > 0 && mp->count['<'] >= 8 && (c = mp->count['<'] - mp->count['>']) >= -2 && c <= 2)
+		if (mp->identifier[ID_HTML] > 0 && mp->count['<'] >= 8 && (c = mp->count['<'] - mp->count['>']) >= -2 && c <= 2)
 		{
+		id_html:
 			s = T("html input");
 			mp->mime = "text/html";
 			goto qualify;
 		}
-		if (match(suff, "tex") || mp->count['{'] >= 6 && (c = mp->count['{'] - mp->count['}']) >= -2 && c <= 2 && mp->count['\\'] >= mp->count['{'])
+		if (mp->identifier[ID_COPYBOOK] > 0 && mp->identifier[ID_COBOL] == 0 && (c = mp->count['('] - mp->count[')']) >= -2 && c <= 2)
 		{
+		id_copybook:
+			s = T("cobol copybook");
+			mp->mime = "application/x-cobol";
+			goto qualify;
+		}
+		if (mp->identifier[ID_COBOL] > 0 && mp->identifier[ID_COPYBOOK] > 0 && (c = mp->count['('] - mp->count[')']) >= -2 && c <= 2)
+		{
+		id_cobol:
+			s = T("cobol program");
+			mp->mime = "application/x-cobol";
+			goto qualify;
+		}
+		if (mp->identifier[ID_PL1] > 0 && (c = mp->count['('] - mp->count[')']) >= -2 && c <= 2)
+		{
+		id_pl1:
+			s = T("pl1 program");
+			mp->mime = "application/x-pl1";
+			goto qualify;
+		}
+		if (mp->count['{'] >= 6 && (c = mp->count['{'] - mp->count['}']) >= -2 && c <= 2 && mp->count['\\'] >= mp->count['{'])
+		{
+		id_tex:
 			s = T("TeX input");
 			mp->mime = "text/tex";
 			goto qualify;
 		}
-		if (mp->identifier[ID_ASM] >= 4 || mp->identifier[ID_ASM] > 0 && (*suff == 's' || *suff == 'S'))
+		if (mp->identifier[ID_ASM] >= 4)
 		{
+		id_asm:
 			s = T("as program");
 			mp->mime = "application/x-as";
 			goto qualify;
@@ -1347,13 +1353,16 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 	}
 	else
 		t = "";
-	if (code >= 0)
+	if (code)
 	{
-		if (code) sfsprintf(buf, PATH_MAX, "ebcdic%d %s%s", code, t, s);
-		else sfsprintf(buf, PATH_MAX, "ascii %s%s", t, s);
-		s = buf;
-		if (code)
+		if (code == CC_ASCII)
+			sfsprintf(buf, PATH_MAX, "ascii %s%s", t, s);
+		else
+		{
+			sfsprintf(buf, PATH_MAX, "ebcdic%d %s%s", code - 1, t, s);
 			mp->mime = "text/ebcdic";
+		}
+		s = buf;
 	}
 	else if (*t)
 	{
@@ -1474,7 +1483,7 @@ type(register Magic_t* mp, const char* file, struct stat* st, char* buf, int siz
  */
 
 static int
-load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
+load(register Magic_t* mp, char* file, register Sfio_t* fp)
 {
 	register Entry_t*	ep;
 	register char*		p;
@@ -1487,6 +1496,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 	int			ent;
 	int			old;
 	int			cont;
+	Info_t*			ip;
 	Entry_t*		ret;
 	Entry_t*		first;
 	Entry_t*		last = 0;
@@ -1500,7 +1510,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 	ret = 0;
 	error_info.file = file;
 	error_info.line = 0;
-	first = ep = vmnewof(mp->region, 0, Entry_t, 1, 0);
+	first = ep = vmnewof(mp->vm, 0, Entry_t, 1, 0);
 	while (p = sfgetr(fp, '\n', 1))
 	{
 		error_info.line++;
@@ -1519,7 +1529,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 		case '{':
 			if (++lev < MAXNEST)
 				ep->nest = *p;
-			else if ((flags & MAGIC_VERBOSE) && mp->disc->errorf)
+			else if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 				(*mp->disc->errorf)(mp, mp->disc, 1, "{ ... } operator nesting too deep -- %d max", MAXNEST);
 			continue;
 		case '}':
@@ -1538,16 +1548,18 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 				ep->op = ' ';
 				ep->desc = "[RETURN]";
 				last = ep;
-				ep = ret->next = vmnewof(mp->region, 0, Entry_t, 1, 0);
+				ep = ret->next = vmnewof(mp->vm, 0, Entry_t, 1, 0);
 				ret = 0;
 			}
-			else last->nest = *p;
+			else
+				last->nest = *p;
 			continue;
 		default:
 			if (*(p + 1) == '{' || *(p + 1) == '(' && *p != '+' && *p != '>' && *p != '&' && *p != '|')
 			{
 				n = *p++;
-				if (n >= 'a' && n <= 'z') n -= 'a';
+				if (n >= 'a' && n <= 'z')
+					n -= 'a';
 				else
 				{
 					if (mp->disc->errorf)
@@ -1574,8 +1586,9 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 				ep->type = ' ';
 				ep->op = ' ';
 				last = ep;
-				ep = ep->next = vmnewof(mp->region, 0, Entry_t, 1, 0);
-				if (ret) fun[n] = last->value.lab = ep;
+				ep = ep->next = vmnewof(mp->vm, 0, Entry_t, 1, 0);
+				if (ret)
+					fun[n] = last->value.lab = ep;
 				else if (!(last->value.lab = fun[n]) && mp->disc->errorf)
 					(*mp->disc->errorf)(mp, mp->disc, 2, "%c: function not defined", n + 'a');
 				continue;
@@ -1618,7 +1631,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			ep->cont = *p++;
 			break;
 		default:
-			if ((flags & MAGIC_VERBOSE) && !isalpha(*p) && mp->disc->errorf)
+			if ((mp->flags & MAGIC_VERBOSE) && !isalpha(*p) && mp->disc->errorf)
 				(*mp->disc->errorf)(mp, mp->disc, 1, "`%c': invalid line continuation operator", *p);
 			/*FALLTHROUGH*/
 		case '*':
@@ -1663,7 +1676,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			for (p2 = p; *p2 && !isspace(*p2); p2++);
 			if (!*p2)
 			{
-				if ((flags & MAGIC_VERBOSE) && mp->disc->errorf)
+				if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 					(*mp->disc->errorf)(mp, mp->disc, 1, "not enough fields: `%s'", p);
 				continue;
 			}
@@ -1673,9 +1686,9 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			 */
 
 			*p2++ = 0;
-			ep->expr = vmstrdup(mp->region, p);
+			ep->expr = vmstrdup(mp->vm, p);
 			if (isalpha(*p))
-				ep->offset = (int)hashget(mp->infotab, p);
+				ep->offset = (ip = (Info_t*)dtmatch(mp->infotab, p)) ? ip->value : 0;
 			else if (*p == '(' && ep->cont == '>')
 			{
 				/*
@@ -1709,7 +1722,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 		for (p = p2; *p2 && !isspace(*p2); p2++);
 		if (!*p2)
 		{
-			if ((flags & MAGIC_VERBOSE) && mp->disc->errorf)
+			if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 				(*mp->disc->errorf)(mp, mp->disc, 1, "not enough fields: `%s'", p);
 			continue;
 		}
@@ -1726,10 +1739,15 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 		}
 		if (*p == 's')
 		{
-			if (*(p + 1) == 'h') ep->type = 'h';
-			else ep->type = 's';
+			if (*(p + 1) == 'h')
+				ep->type = 'h';
+			else
+				ep->type = 's';
 		}
-		else ep->type = *p;
+		else if (*p == 'a')
+			ep->type = 's';
+		else
+			ep->type = *p;
 		if (p = strchr(p, '&'))
 		{
 			/*
@@ -1739,14 +1757,16 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			ep->mask = strton(++p, NiL, NiL, 0);
 		}
 		for (; isspace(*p2); p2++);
-		if (ep->mask) *--p2 = '=';
+		if (ep->mask)
+			*--p2 = '=';
 
 		/*
 		 * comparison operation
 		 */
 
 		p = p2;
-		if (p2 = strchr(p, '\t')) *p2++ = 0;
+		if (p2 = strchr(p, '\t'))
+			*p2++ = 0;
 		else
 		{
 			int	qe = 0;
@@ -1763,42 +1783,55 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 				case 0:
 					break;
 				case '{':
-					if (!qe) qe = '}';
-					if (qe == '}') qn++;
+					if (!qe)
+						qe = '}';
+					if (qe == '}')
+						qn++;
 					continue;
 				case '(':
-					if (!qe) qe = ')';
-					if (qe == ')') qn++;
+					if (!qe)
+						qe = ')';
+					if (qe == ')')
+						qn++;
 					continue;
 				case '[':
-					if (!qe) qe = ']';
-					if (qe == ']') qn++;
+					if (!qe)
+						qe = ']';
+					if (qe == ']')
+						qn++;
 					continue;
 				case '}':
 				case ')':
 				case ']':
-					if (qe == n && qn > 0) qn--;
+					if (qe == n && qn > 0)
+						qn--;
 					continue;
 				case '"':
 				case '\'':
-					if (!qe) qe = n;
-					else if (qe == n) qe = 0;
+					if (!qe)
+						qe = n;
+					else if (qe == n)
+						qe = 0;
 					continue;
 				case '\\':
-					if (*p2) p2++;
+					if (*p2)
+						p2++;
 					continue;
 				default:
 					if (!qe && isspace(n))
 						break;
 					continue;
 				}
-				if (n) *(p2 - 1) = 0;
-				else p2--;
+				if (n)
+					*(p2 - 1) = 0;
+				else
+					p2--;
 				break;
 			}
 		}
 		lge = 0;
-		if (ep->type == 'e' || ep->type == 'm' || ep->type == 's') ep->op = '=';
+		if (ep->type == 'e' || ep->type == 'm' || ep->type == 's')
+			ep->op = '=';
 		else
 		{
 			if (*p == '&')
@@ -1848,16 +1881,15 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 		{
 			if (ep->type == 'e')
 			{
-				if (ep->value.sub = vmnewof(mp->region, 0, regex_t, 1, 0))
+				if (ep->value.sub = vmnewof(mp->vm, 0, regex_t, 1, 0))
 				{
-					vmpush(mp->region);
-					if (!(n = regcomp(ep->value.sub, p, REG_DELIMITED|REG_LENIENT|REG_NULL)))
+					ep->value.sub->re_disc = &mp->redisc;
+					if (!(n = regcomp(ep->value.sub, p, REG_DELIMITED|REG_LENIENT|REG_NULL|REG_DISCIPLINE)))
 					{
 						p += ep->value.sub->re_npat;
 						if (!(n = regsubcomp(ep->value.sub, p, NiL, 0, 0)))
 							p += ep->value.sub->re_npat;
 					}
-					vmpop();
 					if (n)
 					{
 						regmessage(mp, ep->value.sub, n);
@@ -1870,7 +1902,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			else if (ep->type == 'm')
 			{
 				ep->mask = stresc(p) + 1;
-				ep->value.str = vmnewof(mp->region, 0, char, ep->mask + 1, 0);
+				ep->value.str = vmnewof(mp->vm, 0, char, ep->mask + 1, 0);
 				memcpy(ep->value.str, p, ep->mask);
 				if ((!ep->expr || !ep->offset) && !strmatch(ep->value.str, "\\!\\(*\\)"))
 					ep->value.str[ep->mask - 1] = '*';
@@ -1878,7 +1910,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			else if (ep->type == 's')
 			{
 				ep->mask = stresc(p);
-				ep->value.str = vmstrdup(mp->region, p);
+				ep->value.str = vmstrdup(mp->vm, p);
 			}
 			else if (*p == '\'')
 			{
@@ -1909,7 +1941,7 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 					}
 					else
 					{
-						ep->value.loop = vmnewof(mp->region, 0, Loop_t, 1, 0);
+						ep->value.loop = vmnewof(mp->vm, 0, Loop_t, 1, 0);
 						ep->value.loop->lab = fun[n];
 						while (*p && *p++ != ',');
 						ep->value.loop->start = strton(p, &t, NiL, 0);
@@ -1919,11 +1951,11 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 					break;
 				case 'm':
 				case 'r':
-					ep->desc = vmnewof(mp->region, 0, char, 32, 0);
-					ep->mime = vmnewof(mp->region, 0, char, 32, 0);
+					ep->desc = vmnewof(mp->vm, 0, char, 32, 0);
+					ep->mime = vmnewof(mp->vm, 0, char, 32, 0);
 					break;
 				default:
-					if ((flags & MAGIC_VERBOSE) && mp->disc->errorf)
+					if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 						(*mp->disc->errorf)(mp, mp->disc, 1, "%-.*s: unknown function", p - t, t);
 					break;
 				}
@@ -1931,7 +1963,8 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 			else
 			{
 				ep->value.num = strton(p, NiL, NiL, 0) + lge;
-				if (ep->op == '@') ep->value.num = swapget(0, (char*)&ep->value.num, sizeof(ep->value.num));
+				if (ep->op == '@')
+					ep->value.num = swapget(0, (char*)&ep->value.num, sizeof(ep->value.num));
 			}
 		}
 
@@ -1965,31 +1998,35 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp, unsigned long flags)
 				}
 			}
 			stresc(p2);
-			ep->desc = vmstrdup(mp->region, p2);
+			ep->desc = vmstrdup(mp->vm, p2);
 			if (p)
 			{
 				for (; isspace(*p); p++);
-				if (*p) ep->mime = vmstrdup(mp->region, p);
+				if (*p)
+					ep->mime = vmstrdup(mp->vm, p);
 			}
 		}
-		else ep->desc = "";
+		else
+			ep->desc = "";
 
 		/*
 		 * get next entry
 		 */
 
 		last = ep;
-		ep = ep->next = vmnewof(mp->region, 0, Entry_t, 1, 0);
+		ep = ep->next = vmnewof(mp->vm, 0, Entry_t, 1, 0);
 	}
 	if (last)
 	{
 		last->next = 0;
-		if (mp->magiclast) mp->magiclast->next = first;
-		else mp->magic = first;
+		if (mp->magiclast)
+			mp->magiclast->next = first;
+		else
+			mp->magic = first;
 		mp->magiclast = last;
 	}
-	vmfree(mp->region, ep);
-	if ((flags & MAGIC_VERBOSE) && mp->disc->errorf)
+	vmfree(mp->vm, ep);
+	if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
 	{
 		if (lev < 0)
 			(*mp->disc->errorf)(mp, mp->disc, 1, "too many } operators");
@@ -2018,9 +2055,9 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 	int			list;
 	Sfio_t*			fp;
 
-	flags |= mp->disc->flags;
+	mp->flags = mp->disc->flags | flags;
 	found = 0;
-	if (list = !(s = (char*)file) || !*s || *s == '-' && !*(s + 1))
+	if (list = !(s = (char*)file) || !*s || (*s == '-' || *s == '.') && !*(s + 1))
 	{
 		if (!(s = getenv(MAGIC_FILE_ENV)) || !*s)
 			s = MAGIC_FILE;
@@ -2069,7 +2106,7 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 			}
 		}
 		found = 1;
-		n = load(mp, s, fp, flags);
+		n = load(mp, s, fp);
 		sfclose(fp);
 		if (n && !list)
 			return -1;
@@ -2080,7 +2117,7 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 	}
 	if (!found)
 	{
-		if (flags & MAGIC_VERBOSE)
+		if (mp->flags & MAGIC_VERBOSE)
 		{
 			if (mp->disc->errorf)
 				(*mp->disc->errorf)(mp, mp->disc, 2, "cannot find magic file");
@@ -2097,39 +2134,46 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 Magic_t*
 magicopen(Magicdisc_t* disc)
 {
-	register Magic_t*		mp;
-	register int			i;
-	register int			n;
-	register int			f;
-	register int			c;
-	register Vmalloc_t*		vp;
-	const unsigned char*		map[CC_MAPS + 1];
+	register Magic_t*	mp;
+	register int		i;
+	register int		n;
+	register int		f;
+	register int		c;
+	register Vmalloc_t*	vm;
+	unsigned char*		map[CC_MAPS + 1];
 
-	if (!(vp = vmopen(Vmdcheap, Vmbest, 0)))
+	if (!(vm = vmopen(Vmdcheap, Vmbest, 0)))
 		return 0;
-	if (!(mp = vmnewof(vp, 0, Magic_t, 1, 0)))
+	if (!(mp = vmnewof(vm, 0, Magic_t, 1, 0)))
 	{
-		vmclose(vp);
+		vmclose(vm);
 		return 0;
 	}
 	mp->id = lib;
 	mp->disc = disc;
-	mp->region = vp;
-	vmpush(mp->region);
-	if (!(mp->tmp = sfstropen()) || !(mp->infotab = hashalloc(NiL, HASH_name, "info", 0)))
+	mp->vm = vm;
+	mp->flags = disc->flags;
+	mp->redisc.re_version = REG_VERSION;
+	mp->redisc.re_flags = REG_NOFREE;
+	mp->redisc.re_errorf = (regerror_t)disc->errorf;
+	mp->redisc.re_resizef = (regresize_t)vmgetmem;
+	mp->redisc.re_resizehandle = (void*)mp->vm;
+	mp->dtdisc.key = offsetof(Info_t, name);
+	mp->dtdisc.link = offsetof(Info_t, link);
+	if (!(mp->tmp = sfstropen()) || !(mp->infotab = dtnew(mp->vm, &mp->dtdisc, Dthash)))
 		goto bad;
-	for (n = 0; info[n].name; n++)
-		hashput(mp->infotab, info[n].name, (void*)info[n].type);
-	vmpop();
+	for (n = 0; n < elementsof(info); n++)
+		dtinsert(mp->infotab, &info[n]);
 	for (i = 0; i < CC_MAPS; i++)
-		map[i] = CCMAP(i, CC_ASCII);
+		map[i] = ccmap(i, CC_ASCII);
+	mp->x2n = ccmap(CC_ALIEN, CC_NATIVE);
 	for (n = 0; n <= UCHAR_MAX; n++)
 	{
 		f = 0;
 		i = CC_MAPS;
 		while (--i >= 0)
 		{
-			c = (map[i])[n];
+			c = ccmapchr(map[i], n);
 			f = (f << CC_BIT) | CCTYPE(c);
 		}
 		mp->cctype[n] = f;
@@ -2147,20 +2191,12 @@ magicopen(Magicdisc_t* disc)
 int
 magicclose(register Magic_t* mp)
 {
-#if USE_VMALLOC
-	if (mp) vmclose(mp->region);
-#else
-	if (mp)
-	{
-		if (mp->tmp)
-			sfstrclose(mp->tmp);
-		if (mp->infotab)
-			hashfree(mp->infotab);
-		if (mp->idtab)
-			hashfree(mp->idtab);
-		vmclose(mp->region);
-	}
-#endif
+	if (!mp)
+		return -1;
+	if (mp->tmp)
+		sfstrclose(mp->tmp);
+	if (mp->vm)
+		vmclose(mp->vm);
 	return 0;
 }
 
@@ -2174,6 +2210,7 @@ magictype(register Magic_t* mp, Sfio_t* fp, const char* file, register struct st
 	off_t	off;
 	char*	s;
 
+	mp->flags = mp->disc->flags;
 	mp->mime = 0;
 	if (!st)
 		s = T("cannot stat");
@@ -2184,7 +2221,7 @@ magictype(register Magic_t* mp, Sfio_t* fp, const char* file, register struct st
 		s = type(mp, file, st, mp->tbuf, sizeof(mp->tbuf));
 		if (mp->fp)
 			sfseek(mp->fp, off, SEEK_SET);
-		if (!(mp->disc->flags & MAGIC_MIME))
+		if (!(mp->flags & MAGIC_MIME))
 		{
 			if (S_ISREG(st->st_mode) && (st->st_size > 0) && (st->st_size < 128))
 				sfprintf(mp->tmp, "%s ", T("short"));
@@ -2200,7 +2237,7 @@ magictype(register Magic_t* mp, Sfio_t* fp, const char* file, register struct st
 			s = sfstruse(mp->tmp);
 		}
 	}
-	if (mp->disc->flags & MAGIC_MIME)
+	if (mp->flags & MAGIC_MIME)
 		s = mp->mime;
 	if (!s)
 		s = T("error");
@@ -2217,15 +2254,20 @@ magiclist(register Magic_t* mp, register Sfio_t* sp)
 	register Entry_t*	ep = mp->magic;
 	register Entry_t*	rp = 0;
 
+	mp->flags = mp->disc->flags;
 	sfprintf(sp, "cont\toffset\ttype\top\tmask\tvalue\tmime\tdesc\n");
 	while (ep)
 	{
 		sfprintf(sp, "%c %c\t", ep->cont, ep->nest);
-		if (ep->expr) sfprintf(sp, "%s", ep->expr);
-		else sfprintf(sp, "%ld", ep->offset);
+		if (ep->expr)
+			sfprintf(sp, "%s", ep->expr);
+		else
+			sfprintf(sp, "%ld", ep->offset);
 		sfprintf(sp, "\t%s%c\t%c\t%lo\t", ep->swap == (char)~3 ? "L" : ep->swap == (char)~0 ? "B" : "", ep->type, ep->op, ep->mask);
-		if (ep->type != 'm' && ep->type != 's') sfprintf(sp, "%lo", ep->value.num);
-		else sfputr(sp, fmtesc(ep->value.str), -1);
+		if (ep->type != 'm' && ep->type != 's')
+			sfprintf(sp, "%lo", ep->value.num);
+		else
+			sfputr(sp, fmtesc(ep->value.str), -1);
 		sfprintf(sp, "\t%s\t%s\n", ep->mime ? ep->mime : "", fmtesc(ep->desc));
 		if (ep->cont == '$' && !ep->value.lab->mask)
 		{

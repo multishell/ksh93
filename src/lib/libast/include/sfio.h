@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -26,7 +26,7 @@
 #ifndef _SFIO_H
 #define _SFIO_H	1
 
-#define SFIO_VERSION	20010201L
+#define SFIO_VERSION	20040101L
 
 /*	Public header file for the sfio library
 **
@@ -40,74 +40,6 @@ typedef struct _sfdisc_s	Sfdisc_t;
 #include	<ast_std.h>
 #else
 #include	<ast_common.h>
-
-/* to prevent stdio.h from being included */
-#ifndef __stdio_h__
-#define __stdio_h__	1
-#endif
-#ifndef _stdio_h_
-#define _stdio_h_	1
-#endif
-#ifndef _stdio_h
-#define _stdio_h	1
-#endif
-#ifndef __h_stdio__
-#define __h_stdio__	1
-#endif
-#ifndef _h_stdio_
-#define _h_stdio_	1
-#endif
-#ifndef _h_stdio
-#define _h_stdio	1
-#endif
-#ifndef __STDIO_H__
-#define __STDIO_H__	1
-#endif
-#ifndef _STDIO_H_
-#define _STDIO_H_	1
-#endif
-#ifndef _STDIO_H
-#define _STDIO_H	1
-#endif
-#ifndef __H_STDIO__
-#define __H_STDIO__	1
-#endif
-#ifndef _H_STDIO_
-#define _H_STDIO_	1
-#endif
-#ifndef _H_STDIO
-#define _H_STDIO	1
-#endif
-#ifndef _stdio_included
-#define _stdio_included	1
-#endif
-#ifndef _included_stdio
-#define _included_stdio	1
-#endif
-#ifndef _INCLUDED_STDIO
-#define _INCLUDED_STDIO	1
-#endif
-#ifndef _STDIO_INCLUDED
-#define _STDIO_INCLUDED	1
-#endif
-#ifndef _INC_STDIO
-#define _INC_STDIO	1
-#endif
-
-#ifndef FILE
-#define _FILE_DEFINED	1	/* stop MS headers from defining FILE	*/
-#define _FILEDEFED	1	/* stop SUNOS5.8 from defining FILE	*/
-#define FILE	struct _sfio_s	/* because certain stdarg.h needs FILE	*/
-#endif
-
-#if !defined(_SFSTDIO_H)
-#if __STD_C && _hdr_stdarg
-#include	<stdarg.h>
-#else
-#include	<varargs.h>
-#endif /* __STD_C */
-#endif /* !defined(_SFSTDIO_H) */
-
 #endif /* _PACKAGE_ast */
 
 /* Sfoff_t should be large enough for largest file address */
@@ -156,7 +88,7 @@ struct _sffmt_s
 
 	Void_t*		mbs;	/* multibyte state for format string	*/
 
-	Void_t*		none;	/* as yet unused			*/
+	Void_t*		none;	/* unused for now			*/
 };
 #define sffmtversion(fe,type) \
 		(type ? ((fe)->version = SFIO_VERSION) : (fe)->version)
@@ -216,9 +148,10 @@ struct _sffmt_s
 #define SF_PUBLIC	0004000	/* SF_SHARE and follow physical seek	*/
 #define SF_MTSAFE	0010000	/* need thread safety			*/
 #define SF_WHOLE	0020000	/* preserve wholeness of sfwrite/sfputr */
+#define SF_IOINTR	0040000	/* return on interrupts			*/
 
 #define SF_FLAGS	0077177	/* PUBLIC FLAGS PASSABLE TO SFNEW()	*/
-#define SF_SETS		0027163	/* flags passable to sfset()		*/
+#define SF_SETS		0077163	/* flags passable to sfset()		*/
 
 #ifndef _SF_NO_OBSOLETE
 #define SF_BUFCONST	0400000 /* unused flag - for compatibility only	*/
@@ -269,29 +202,25 @@ extern ssize_t		_Sfi;
 /* standard in/out/err streams */
 
 #if _BLD_sfio && defined(__EXPORT__)
-#define __PUBLIC_DATA__		__EXPORT__
-#else
-#if !_BLD_sfio && defined(__IMPORT__)
-#define __PUBLIC_DATA__		__IMPORT__
-#else
-#define __PUBLIC_DATA__
+#define extern		extern __EXPORT__
 #endif
+#if !_BLD_sfio && defined(__IMPORT__)
+#define extern		extern __IMPORT__
 #endif
 
-extern __PUBLIC_DATA__ Sfio_t*		sfstdin;
-extern __PUBLIC_DATA__ Sfio_t*		sfstdout;
-extern __PUBLIC_DATA__ Sfio_t*		sfstderr;
+extern Sfio_t*		sfstdin;
+extern Sfio_t*		sfstdout;
+extern Sfio_t*		sfstderr;
 
 #if _UWIN
-#undef	__PUBLIC_DATA__
-#define	__PUBLIC_DATA__
+#undef	extern
 #endif
 
-extern __PUBLIC_DATA__ Sfio_t		_Sfstdin;
-extern __PUBLIC_DATA__ Sfio_t		_Sfstdout;
-extern __PUBLIC_DATA__ Sfio_t		_Sfstderr;
+extern Sfio_t		_Sfstdin;
+extern Sfio_t		_Sfstdout;
+extern Sfio_t		_Sfstderr;
 
-#undef	__PUBLIC_DATA__
+#undef	extern
 
 #if _BLD_sfio && defined(__EXPORT__)
 #define extern	__EXPORT__
@@ -328,8 +257,8 @@ extern ssize_t		sfnputc _ARG_((Sfio_t*, int, size_t));
 extern int		sfungetc _ARG_((Sfio_t*, int));
 extern int		sfprintf _ARG_((Sfio_t*, const char*, ...));
 extern char*		sfprints _ARG_((const char*, ...));
-extern int		sfsprintf _ARG_((char*, int, const char*, ...));
-extern int		sfvsprintf _ARG_((char*, int, const char*, _ast_va_list));
+extern ssize_t		sfsprintf _ARG_((char*, size_t, const char*, ...));
+extern ssize_t		sfvsprintf _ARG_((char*, size_t, const char*, _ast_va_list));
 extern int		sfvprintf _ARG_((Sfio_t*, const char*, _ast_va_list));
 extern int		sfscanf _ARG_((Sfio_t*, const char*, ...));
 extern int		sfsscanf _ARG_((const char*, const char*, ...));

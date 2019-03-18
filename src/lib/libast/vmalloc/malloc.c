@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_malloc(){}
 
@@ -31,11 +31,27 @@ void _STUB_malloc(){}
 
 #include	"vmhdr.h"
 
-#if _std_malloc || _BLD_INSTRUMENT || cray
-
-void _STUB_malloc(){}
-
+#if __STD_C
+#define F0(f,t0)		f(t0)
+#define F1(f,t1,a1)		f(t1 a1)
+#define F2(f,t1,a1,t2,a2)	f(t1 a1, t2 a2)
 #else
+#define F0(f,t0)		f()
+#define F1(f,t1,a1)		f(a1) t1 a1;
+#define F1(f,t1,a1,t2,a2)	f(a1, a2) t1 a1; t2 a2;
+#endif
+
+/*
+ * define _AST_std_malloc=1 to force the standard malloc
+ * if _map_malloc is also defined then _ast_malloc etc.
+ * will simply call malloc etc.
+ */
+
+#if !defined(_AST_std_malloc) && ( __CYGWIN__ || __osf__ && __alpha )
+#define _AST_std_malloc	1
+#endif
+
+#if !_std_malloc && !_AST_std_malloc
 
 /*	malloc compatibility functions.
 **	These are aware of debugging/profiling and driven by the environment variables:
@@ -46,7 +62,8 @@ void _STUB_malloc(){}
 **	The pattern %p in a file name will be replaced by the process ID.
 **
 **	VMDEBUG:
-**		a:			abort on any warning
+**		a:			abort on any warning.
+**		w[decimal]:		file descriptor for warnings.
 **		[decimal]:		period to check arena.
 **		0x[hexadecimal]:	address to watch.
 **
@@ -68,13 +85,22 @@ void _STUB_malloc(){}
 #define CREAT_MODE	0644
 #endif
 
-#undef malloc
-#undef free
-#undef realloc
+#if !_map_malloc
 #undef calloc
 #undef cfree
+#undef free
+#undef mallinfo
+#undef malloc
+#undef mallopt
 #undef memalign
+#undef mstats
+#undef realloc
 #undef valloc
+#endif
+
+#if defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
 
 #if __STD_C
 static Vmulong_t atou(char** sp)
@@ -181,7 +207,14 @@ char*	file;
 
 	*next = '\0';
 #if _PACKAGE_ast
-	return open(buf,O_WRONLY|O_CREAT|O_TRUNC,CREAT_MODE);
+	{	int	fd;
+		fd = open(buf,O_WRONLY|O_CREAT|O_TRUNC,CREAT_MODE);
+#ifdef FD_CLOEXEC
+		if (fd >= 0)
+			fcntl(fd, F_SETFD, FD_CLOEXEC);
+#endif
+		return fd;
+	}
 #else
 	return creat(buf,CREAT_MODE);
 #endif
@@ -197,6 +230,25 @@ static void pfprint()
 		vmprofile(Vmregion,_Vmpffd);
 }
 
+#if _WINIX
+
+#include <ast_windows.h>
+
+#define getenv(s)	lcl_getenv(s)
+
+static char*
+lcl_getenv(const char* s)
+{
+	int		n;
+	static char	buf[512];
+
+	if (!(n = GetEnvironmentVariable(s, buf, sizeof(buf))) || n > sizeof(buf))
+		return 0;
+	return buf;
+}
+
+#endif
+
 #if __STD_C
 static int vmflinit(void)
 #else
@@ -207,9 +259,9 @@ static int vmflinit()
 	Vmalloc_t*	vm;
 	int		fd;
 	Vmulong_t	addr;
-	char*		file;
+	const char*	file;
 	int		line;
-	Void_t*		func;
+	const Void_t*	func;
 
 	/* this must be done now to avoid any inadvertent recursion (more below) */
 	_Vmflinit = 1;
@@ -224,8 +276,6 @@ static int vmflinit()
 			vm = vmopen(Vmdcsbrk,Vmprofile,0);
 		else if(strcmp(env,"Vmlast") == 0 || strcmp(env,"vmlast") == 0 )
 			vm = vmopen(Vmdcsbrk,Vmlast,0);
-		else if(strcmp(env,"Vmpool") == 0 || strcmp(env,"vmpool") == 0 )
-			vm = vmopen(Vmdcsbrk,Vmpool,0);
 		else if(strcmp(env,"Vmbest") == 0 || strcmp(env,"vmbest") == 0 )
 			vm = Vmheap;
 	}
@@ -237,7 +287,14 @@ static int vmflinit()
 
 			while(*env)
 			{	if(*env == 'a')
-					vmset(vm,VM_DBABORT,1);
+				{	vmset(vm,VM_DBABORT,1);
+					env += 1;
+				}
+				else if(*env =='w')
+				{	env += 1;
+					if((fd = atou(&env)) >= 0 )
+						vmdebug(fd);
+				}
 
 				if(*env < '0' || *env > '9')
 					env += 1;
@@ -293,62 +350,72 @@ static int vmflinit()
 	return 0;
 }
 
-#if __STD_C
-Void_t* malloc(reg size_t size)
+#if _map_malloc
+
+/* not sure of all the implications -- 0 is conservative for now */
+#define USE_NATIVE	0	/* native free/realloc on non-vmalloc ptrs */
+
 #else
-Void_t* malloc(size)
-reg size_t	size;
+
+/* intercept _* __* __libc_* variants */
+
+#if __lib__malloc
+extern Void_t*	F2(_calloc, size_t,n, size_t,m) { return calloc(n, m); }
+extern Void_t	F1(_cfree, Void_t*,p) { free(p); }
+extern Void_t	F1(_free, Void_t*,p) { free(p); }
+extern Void_t*	F1(_malloc, size_t,n) { return malloc(n); }
+#if _lib_memalign
+extern Void_t*	F2(_memalign, size_t,a, size_t,n) { return memalign(a, n); }
 #endif
-{
-	VMFLINIT();
-	return (*Vmregion->meth.allocf)(Vmregion,size);
-}
+#if _lib_pvalloc
+extern Void_t*	F1(_pvalloc, size_t,n) { return pvalloc(n); }
+#endif
+extern Void_t*	F2(_realloc, Void_t*,p, size_t,n) { return realloc(p, n); }
+#if _lib_valloc
+extern Void_t*	F1(_valloc, size_t,n) { return valloc(n); }
+#endif
+#endif
+
+#if _lib___malloc
+extern Void_t*	F2(__calloc, size_t,n, size_t,m) { return calloc(n, m); }
+extern Void_t	F1(__cfree, Void_t*,p) { free(p); }
+extern Void_t	F1(__free, Void_t*,p) { free(p); }
+extern Void_t*	F1(__malloc, size_t,n) { return malloc(n); }
+#if _lib_memalign
+extern Void_t*	F2(__memalign, size_t,a, size_t,n) { return memalign(a, n); }
+#endif
+#if _lib_pvalloc
+extern Void_t*	F1(__pvalloc, size_t,n) { return pvalloc(n); }
+#endif
+extern Void_t*	F2(__realloc, Void_t*,p, size_t,n) { return realloc(p, n); }
+#if _lib_valloc
+extern Void_t*	F1(__valloc, size_t,n) { return valloc(n); }
+#endif
+#endif
+
+#if _lib___libc_malloc
+extern Void_t*	F2(__libc_calloc, size_t,n, size_t,m) { return calloc(n, m); }
+extern Void_t	F1(__libc_cfree, Void_t*,p) { free(p); }
+extern Void_t	F1(__libc_free, Void_t*,p) { free(p); }
+extern Void_t*	F1(__libc_malloc, size_t,n) { return malloc(n); }
+#if _lib_memalign
+extern Void_t*	F2(__libc_memalign, size_t,a, size_t,n) { return memalign(a, n); }
+#endif
+#if _lib_pvalloc
+extern Void_t*	F1(__libc_pvalloc, size_t,n) { return pvalloc(n); }
+#endif
+extern Void_t*	F2(__libc_realloc, Void_t*,p, size_t,n) { return realloc(p, n); }
+#if _lib_valloc
+extern Void_t*	F1(__libc_valloc, size_t,n) { return valloc(n); }
+#endif
+#endif
+
+#endif /* _map_malloc */
 
 #if __STD_C
-Void_t* realloc(reg Void_t* data, reg size_t size)
+extern Void_t* calloc(reg size_t n_obj, reg size_t s_obj)
 #else
-Void_t* realloc(data,size)
-reg Void_t*	data;	/* block to be reallocated	*/
-reg size_t	size;	/* new size			*/
-#endif
-{
-	VMFLINIT();
-
-#if _PACKAGE_ast
-	if(data && !(Vmregion->data->mode&VM_TRUST) &&
-	   (*Vmregion->meth.addrf)(Vmregion,data) != 0 )
-	{	Void_t*	newdata;
-		if((newdata = (*Vmregion->meth.allocf)(Vmregion,size)) )
-			memcpy(newdata,data,size);
-		return newdata;
-	}
-#endif
-
-	return (*Vmregion->meth.resizef)(Vmregion,data,size,VM_RSCOPY|VM_RSMOVE);
-}
-
-#if __STD_C
-void free(reg Void_t* data)
-#else
-void free(data)
-reg Void_t*	data;
-#endif
-{
-	VMFLINIT();
-
-#if _PACKAGE_ast
-	if(data && !(Vmregion->data->mode&VM_TRUST) &&
-	   (*Vmregion->meth.addrf)(Vmregion,data) != 0 )
-		return;
-#endif
-
-	(void)(*Vmregion->meth.freef)(Vmregion,data);
-}
-
-#if __STD_C
-Void_t* calloc(reg size_t n_obj, reg size_t s_obj)
-#else
-Void_t* calloc(n_obj, s_obj)
+extern Void_t* calloc(n_obj, s_obj)
 reg size_t	n_obj;
 reg size_t	s_obj;
 #endif
@@ -358,27 +425,118 @@ reg size_t	s_obj;
 }
 
 #if __STD_C
-void cfree(reg Void_t* data)
+extern void cfree(reg Void_t* data)
 #else
-void cfree(data)
+extern void cfree(data)
 reg Void_t*	data;
 #endif
 {
-	VMFLINIT();
-
-#if _PACKAGE_ast
-	if(data && !(Vmregion->data->mode&VM_TRUST) &&
-	   (*Vmregion->meth.addrf)(Vmregion,data) != 0 )
-		return;
-#endif
-
-	(void)(*Vmregion->meth.freef)(Vmregion,data);
+	free(data);
 }
 
 #if __STD_C
-Void_t* memalign(reg size_t align, reg size_t size)
+extern Void_t* malloc(reg size_t size)
 #else
-Void_t* memalign(align, size)
+extern Void_t* malloc(size)
+reg size_t	size;
+#endif
+{
+	VMFLINIT();
+	return (*Vmregion->meth.allocf)(Vmregion,size);
+}
+
+#if __STD_C
+extern Void_t* realloc(reg Void_t* data, reg size_t size)
+#else
+extern Void_t* realloc(data,size)
+reg Void_t*	data;	/* block to be reallocated	*/
+reg size_t	size;	/* new size			*/
+#endif
+{
+#if USE_NATIVE
+#undef	realloc
+#if __STD_C
+	extern Void_t*	realloc(Void_t*, size_t);
+#else
+	extern Void_t*	realloc();
+#endif
+#endif
+
+	VMFLINIT();
+
+#if _PACKAGE_ast
+	if(data && Vmregion->meth.meth != VM_MTDEBUG &&
+#if !USE_NATIVE
+	   !(Vmregion->data->mode&VM_TRUST) &&
+#endif
+	   (*Vmregion->meth.addrf)(Vmregion,data) != 0 )
+	{	
+#if USE_NATIVE
+		return realloc(data, size);
+#else
+		Void_t*	newdata;
+		if((newdata = (*Vmregion->meth.allocf)(Vmregion,size)) )
+			memcpy(newdata,data,size);
+		return newdata;
+#endif
+	}
+#endif
+
+#if USE_NATIVE
+	{	Void_t*	newdata;
+		if (newdata = (*Vmregion->meth.resizef)(Vmregion,data,size,VM_RSCOPY|VM_RSMOVE))
+			return newdata;
+		return realloc(data, size);
+	}
+#else
+	return (*Vmregion->meth.resizef)(Vmregion,data,size,VM_RSCOPY|VM_RSMOVE);
+#endif
+}
+
+#if __STD_C
+extern void free(reg Void_t* data)
+#else
+extern void free(data)
+reg Void_t*	data;
+#endif
+{
+#if USE_NATIVE
+#undef	free
+#if __STD_C
+	extern void	free(Void_t*);
+#else
+	extern void	free();
+#endif
+#endif
+
+	VMFLINIT();
+
+#if _PACKAGE_ast
+	if(data && Vmregion->meth.meth != VM_MTDEBUG &&
+#if !USE_NATIVE
+	   !(Vmregion->data->mode&VM_TRUST) &&
+#endif
+	   (*Vmregion->meth.addrf)(Vmregion,data) != 0)
+	{
+#if USE_NATIVE
+		free(data);
+#endif
+		return;
+	}
+#endif
+
+#if USE_NATIVE
+	if ((*Vmregion->meth.freef)(Vmregion,data) != 0)
+		free(data);
+#else
+	(void)(*Vmregion->meth.freef)(Vmregion,data);
+#endif
+}
+
+#if __STD_C
+extern Void_t* memalign(reg size_t align, reg size_t size)
+#else
+extern Void_t* memalign(align, size)
 reg size_t	align;
 reg size_t	size;
 #endif
@@ -388,9 +546,9 @@ reg size_t	size;
 }
 
 #if __STD_C
-Void_t* valloc(reg size_t size)
+extern Void_t* valloc(reg size_t size)
 #else
-Void_t* valloc(size)
+extern Void_t* valloc(size)
 reg size_t	size;
 #endif
 {
@@ -399,75 +557,17 @@ reg size_t	size;
 	return (*Vmregion->meth.alignf)(Vmregion,size,_Vmpagesize);
 }
 
-#if _hdr_malloc
-
-#define calloc	______calloc
-#define free	______free
-#define malloc	______malloc
-#define realloc	______realloc
-
-#include	<malloc.h>
-
-#if _lib_mallopt
 #if __STD_C
-int mallopt(int cmd, int value)
+extern Void_t* pvalloc(reg size_t size)
 #else
-int mallopt(cmd, value)
-int	cmd;
-int	value;
+extern Void_t* pvalloc(size)
+reg size_t	size;
 #endif
 {
 	VMFLINIT();
-	return 0;
+	GETPAGESIZE(_Vmpagesize);
+	return (*Vmregion->meth.alignf)(Vmregion,ROUND(size,_Vmpagesize),_Vmpagesize);
 }
-#endif
-
-#if _lib_mallinfo
-#if __STD_C
-struct mallinfo mallinfo(void)
-#else
-struct mallinfo mallinfo()
-#endif
-{
-	Vmstat_t	sb;
-	struct mallinfo	mi;
-
-	VMFLINIT();
-	memset(&mi,0,sizeof(mi));
-	if(vmstat(Vmregion,&sb) >= 0)
-	{	mi.arena = sb.extent;
-		mi.ordblks = sb.n_busy+sb.n_free;
-		mi.uordblks = sb.s_busy;
-		mi.fordblks = sb.s_free;
-	}
-	return mi;
-}
-#endif
-
-#if _lib_mstats
-#if __STD_C
-struct mstats mstats(void)
-#else
-struct mstats mstats()
-#endif
-{
-	Vmstat_t	sb;
-	struct mstats	ms;
-
-	VMFLINIT();
-	memset(&ms,0,sizeof(ms));
-	if(vmstat(Vmregion,&sb) >= 0)
-	{	ms.bytes_total = sb.extent;
-		ms.chunks_used = sb.n_busy;
-		ms.bytes_used = sb.s_busy;
-		ms.chunks_free = sb.n_free;
-		ms.bytes_free = sb.s_free;
-	}
-	return ms;
-}
-#endif
-
-#endif/*_hdr_malloc*/
 
 #if !_lib_alloca || _mal_alloca
 #ifndef _stk_down
@@ -487,15 +587,15 @@ struct _alloca_s
 };
 
 #if __STD_C
-Void_t* alloca(size_t size)
+extern Void_t* alloca(size_t size)
 #else
-Void_t* alloca(size)
+extern Void_t* alloca(size)
 size_t	size;
 #endif
 {	char		array[ALIGN];
-	char*		file;
+	const char*	file;
 	int		line;
-	Void_t*		func;
+	const Void_t*	func;
 	reg Alloca_t*	f;
 	static Alloca_t* Frame;
 
@@ -524,6 +624,188 @@ size_t	size;
 }
 #endif /*!_lib_alloca || _mal_alloca*/
 
-#endif /*_std_malloc || _BLD_INSTRUMENT || cray*/
+#undef	extern
 
-#endif /* _UWIN */
+#if _hdr_malloc /* need the mallint interface for statistics, etc. */
+
+#undef	calloc
+#define calloc		______calloc
+#undef	cfree
+#define cfree		______cfree
+#undef	free
+#define free		______free
+#undef	malloc
+#define malloc		______malloc
+#undef	pvalloc
+#define pvalloc		______pvalloc
+#undef	realloc
+#define realloc		______realloc
+#undef	valloc
+#define valloc		______valloc
+
+#include	<malloc.h>
+
+#if defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
+
+#if _lib_mallopt
+#if __STD_C
+extern int mallopt(int cmd, int value)
+#else
+extern int mallopt(cmd, value)
+int	cmd;
+int	value;
+#endif
+{
+	VMFLINIT();
+	return 0;
+}
+#endif /*_lib_mallopt*/
+
+#if _lib_mallinfo && _mem_arena_mallinfo
+#if __STD_C
+extern struct mallinfo mallinfo(void)
+#else
+extern struct mallinfo mallinfo()
+#endif
+{
+	Vmstat_t	sb;
+	struct mallinfo	mi;
+
+	VMFLINIT();
+	memset(&mi,0,sizeof(mi));
+	if(vmstat(Vmregion,&sb) >= 0)
+	{	mi.arena = sb.extent;
+		mi.ordblks = sb.n_busy+sb.n_free;
+		mi.uordblks = sb.s_busy;
+		mi.fordblks = sb.s_free;
+	}
+	return mi;
+}
+#endif /* _lib_mallinfo */
+
+#if _lib_mstats && _mem_bytes_total_mstats
+#if __STD_C
+extern struct mstats mstats(void)
+#else
+extern struct mstats mstats()
+#endif
+{
+	Vmstat_t	sb;
+	struct mstats	ms;
+
+	VMFLINIT();
+	memset(&ms,0,sizeof(ms));
+	if(vmstat(Vmregion,&sb) >= 0)
+	{	ms.bytes_total = sb.extent;
+		ms.chunks_used = sb.n_busy;
+		ms.bytes_used = sb.s_busy;
+		ms.chunks_free = sb.n_free;
+		ms.bytes_free = sb.s_free;
+	}
+	return ms;
+}
+#endif /*_lib_mstats*/
+
+#undef	extern
+
+#endif/*_hdr_malloc*/
+
+#else
+
+/*
+ * even though there is no malloc override, still provide
+ * _ast_* counterparts for object compatibility
+ */
+
+#undef	calloc
+extern Void_t*	calloc _ARG_((size_t, size_t));
+
+#undef	cfree
+extern void	cfree _ARG_((Void_t*));
+
+#undef	free
+extern void	free _ARG_((Void_t*));
+
+#undef	malloc
+extern Void_t*	malloc _ARG_((size_t));
+
+#if _lib_memalign
+#undef	memalign
+extern Void_t*	memalign _ARG_((size_t, size_t));
+#endif
+
+#if _lib_pvalloc
+#undef	pvalloc
+extern Void_t*	pvalloc _ARG_((size_t));
+#endif
+
+#undef	realloc
+extern Void_t*	realloc _ARG_((Void_t*, size_t));
+
+#if _lib_valloc
+#undef	valloc
+extern Void_t*	valloc _ARG_((size_t));
+#endif
+
+#if defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
+
+extern Void_t*	F2(_ast_calloc, size_t,n, size_t,m) { return calloc(n, m); }
+extern Void_t	F1(_ast_cfree, Void_t*,p) { free(p); }
+extern Void_t	F1(_ast_free, Void_t*,p) { free(p); }
+extern Void_t*	F1(_ast_malloc, size_t,n) { return malloc(n); }
+#if _lib_memalign
+extern Void_t*	F2(_ast_memalign, size_t,a, size_t,n) { return memalign(a, n); }
+#endif
+#if _lib_pvalloc
+extern Void_t*	F1(_ast_pvalloc, size_t,n) { return pvalloc(n); }
+#endif
+extern Void_t*	F2(_ast_realloc, Void_t*,p, size_t,n) { return realloc(p, n); }
+#if _lib_valloc
+extern Void_t*	F1(_ast_valloc, size_t,n) { return valloc(n); }
+#endif
+
+#undef	extern
+
+#if _hdr_malloc
+
+#undef	mallinfo
+#undef	mallopt
+#undef	mstats
+
+#define calloc		______calloc
+#define cfree		______cfree
+#define free		______free
+#define malloc		______malloc
+#define pvalloc		______pvalloc
+#define realloc		______realloc
+#define valloc		______valloc
+
+#include	<malloc.h>
+
+#if defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
+
+#if _lib_mallopt
+extern int	F2(_ast_mallopt, int,cmd, int,value) { return mallopt(cmd, value); }
+#endif
+
+#if _lib_mallinfo && _mem_arena_mallinfo
+extern struct mallinfo	F0(_ast_mallinfo, void) { return mallinfo(); }
+#endif
+
+#if _lib_mstats && _mem_bytes_total_mstats
+extern struct mstats	F0(_ast_mstats, void) { return mstats(); }
+#endif
+
+#undef	extern
+
+#endif /*_hdr_malloc*/
+
+#endif /*!_std_malloc*/
+
+#endif /*_UWIN*/

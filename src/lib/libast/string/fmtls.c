@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -89,7 +89,7 @@ fmtls(char* buf, const char* name, register struct stat* st, const char* info, c
 		else
 			s += sfsprintf(s, LS_W_MAX, "%8I*u ", sizeof(st->st_size), st->st_size);
 		tm = (flags & LS_ATIME) ? st->st_atime : (flags & LS_CTIME) ? st->st_ctime : st->st_mtime;
-		s = tmform(s, "%?%l", &tm);
+		s = tmfmt(s, LS_W_LONG / 2, "%?%l", &tm);
 		*s++ = ' ';
 	}
 	if (info)

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -71,7 +71,7 @@ reg size_t	n;	/* number of bytes to be read. 	*/
 			{	/* actually read the data now */
 				f->mode &= ~SF_PKRD;
 				if(n > 0)
-					n = (r = read(f->file,f->data,n)) < 0 ? 0 : r;
+					n = (r = sysreadf(f->file,f->data,n)) < 0 ? 0 : r;
 				f->endb = f->data+n;
 				f->here += n;
 			}

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -25,7 +25,19 @@
 *******************************************************************/
 #pragma prototyped
 
+#if defined(__STDPP__directive) && defined(__STDPP__hide)
+__STDPP__directive pragma pp:hide strlcpy
+#else
+#define strlcpy		______strlcpy
+#endif
+
 #include <ast.h>
+
+#if defined(__STDPP__directive) && defined(__STDPP__hide)
+__STDPP__directive pragma pp:nohide strlcpy
+#else
+#undef	strlcpy
+#endif
 
 /*
  * copy at most n chars from t into s
@@ -33,7 +45,11 @@
  * strlen(t) returned
  */
 
-size_t
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
+extern size_t
 strlcpy(register char* s, register const char* t, register size_t n)
 {
 	const char*	o = t;

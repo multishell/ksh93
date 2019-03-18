@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,22 +23,14 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#pragma prototyped
-
 /*
- * Glenn Fowler
- * AT&T Research
- *
- * character code map
+ * strntod() implementation
  */
 
 #include <ast.h>
-#include <ccode.h>
 
-#undef	ccmapc
+#define S2F_function	strntod
+#define S2F_type	1
+#define S2F_size	1
 
-int
-ccmapc(int c, int in, int out)
-{
-	return CCMAPC(c, in, out);
-}
+#include "sfstrtof.h"

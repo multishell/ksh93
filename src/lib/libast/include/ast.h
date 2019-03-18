@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -42,10 +42,6 @@
 
 #ifndef _SFIO_H
 #include <sfio.h>
-#endif
-
-#if !defined(_WIN32) && (_UWIN || __CYGWIN__ || __EMX__)
-#define _WIN32		1
 #endif
 
 #ifndef	ast
@@ -95,6 +91,22 @@ struct _sfio_s;
 #define EXITED_TERM(x)	((x)&((1<<EXIT_BITS)|(1<<(EXIT_BITS-1))))
 
 /*
+ * astconflist() flags
+ */
+
+#define ASTCONF_parse		0x001
+#define ASTCONF_write		0x002
+#define ASTCONF_read		0x004
+#define ASTCONF_lower		0x008
+#define ASTCONF_base		0x010
+#define ASTCONF_defined		0x020
+#define ASTCONF_quote		0x040
+#define ASTCONF_table		0x080
+#define ASTCONF_matchcall	0x100
+#define ASTCONF_matchname	0x200
+#define ASTCONF_matchstandard	0x400
+
+/*
  * pathcanon() flags
  */
 
@@ -133,13 +145,23 @@ typedef struct
 } Pathcheck_t;
 
 /*
- * strmatch() flags
+ * strgrpmatch() flags
  */
 
-#define STR_MAXIMAL	01
-#define STR_LEFT	02
-#define STR_RIGHT	04
-#define STR_ICASE	010
+#define STR_MAXIMAL	01		/* maximal match		*/
+#define STR_LEFT	02		/* implicit left anchor		*/
+#define STR_RIGHT	04		/* implicit right anchor	*/
+#define STR_ICASE	010		/* ignore case			*/
+#define STR_GROUP	020		/* (|&) inside [@|&](...) only	*/
+
+/*
+ * fmtquote() flags
+ */
+
+#define FMT_ALWAYS	0x01		/* always quote			*/
+#define FMT_ESCAPED	0x02		/* already escaped		*/
+#define FMT_SHELL	0x04		/* escape $ ` too		*/
+#define FMT_WIDE	0x08		/* don't escape 8 bit chars	*/
 
 /*
  * multibyte macros
@@ -151,7 +173,7 @@ typedef struct
 #define mbcoll()	(ast.mb_xfrm!=0)
 #define mbwide()	(mbmax()>1)
 
-#define mbchar(p)	(mbwide()?((ast.tmp_int=(*ast.mb_towc)(&ast.tmp_wchar,(char*)(p),mbmax()))>0?((p+=ast.tmp_int),ast.tmp_wchar):ast.tmp_int):(*(unsigned char*)(p++)))
+#define mbchar(p)	(mbwide()?((ast.tmp_int=(*ast.mb_towc)(&ast.tmp_wchar,(char*)(p),mbmax()))>0?((p+=ast.tmp_int),ast.tmp_wchar):(p++,ast.tmp_int)):(*(unsigned char*)(p++)))
 #define mbinit()	(mbwide()?(*ast.mb_towc)((wchar_t*)0,(char*)0,mbmax()):0)
 #define mbsize(p)	(mbwide()?(*ast.mb_len)((char*)(p),mbmax()):((p),1))
 #define mbconv(s,w)	(ast.mb_conv?(*ast.mb_conv)(s,w):((*(s)=(w)),1))
@@ -169,6 +191,7 @@ typedef struct
 #define ssizeof(x)	((int)sizeof(x))
 #define streq(a,b)	(*(a)==*(b)&&!strcmp(a,b))
 #define strneq(a,b,n)	(*(a)==*(b)&&!strncmp(a,b,n))
+#define strsignal(s)	fmtsignal(s)
 
 #if defined(__STDC__) || defined(__cplusplus) || defined(c_plusplus)
 #define NiL		0
@@ -179,13 +202,9 @@ typedef struct
 #endif
 
 #if !defined(NoF)
-#if _BLD_DLL
-#define NoF(x)		void _DLL_ ## x () { }
-#if !defined(_DLL_)
-#define _DLL_
-#endif
-#else
-#define NoF(x)
+#define NoF(x)		void _DATA_ ## x () {}
+#if !defined(_DATA_)
+#define _DATA_
 #endif
 #endif
 
@@ -198,8 +217,9 @@ typedef struct
 
 #define NOT_USED(x)	NoP(x)
 
+typedef int (*Error_f)(void*, void*, int, ...);
+
 typedef int (*Ast_confdisc_f)(const char*, const char*, const char*);
-typedef int (*Ast_conferror_f)(void*, void*, int, ...);
 typedef int (*Strcmp_context_f)(const char*, const char*, void*);
 typedef int (*Strcmp_f)(const char*, const char*);
 
@@ -207,18 +227,22 @@ typedef int (*Strcmp_f)(const char*, const char*);
 #define extern		__EXPORT__
 #endif
 
-extern char*		astgetconf(const char*, const char*, const char*, Ast_conferror_f);
+extern char*		astgetconf(const char*, const char*, const char*, Error_f);
 extern char*		astconf(const char*, const char*, const char*);
 extern Ast_confdisc_f	astconfdisc(Ast_confdisc_f);
-extern void		astconflist(Sfio_t*, const char*, int);
+extern void		astconflist(Sfio_t*, const char*, int, const char*);
 extern off_t		astcopy(int, int, off_t);
 extern int		astlicense(char*, int, char*, char*, int, int, int);
 extern int		astquery(int, const char*, ...);
 extern void		astwinsize(int, int*, int*);
 
+extern ssize_t		base64encode(const void*, size_t, void**, void*, size_t, void**);
+extern ssize_t		base64decode(const void*, size_t, void**, void*, size_t, void**);
 extern int		chresc(const char*, char**);
 extern int		chrtoi(const char*);
 extern char*		fmtbase(long, int, int);
+extern char*		fmtbasell(_ast_intmax_t, int, int);
+#define fmtbase(a,b,c)	fmtbasell((_ast_intmax_t)(a),b,c) /* until 2003-09-01 */
 extern char*		fmtbuf(size_t);
 extern char*		fmtclock(Sfulong_t);
 extern char*		fmtelapsed(unsigned long, int);
@@ -240,6 +264,7 @@ extern char*		fmtscale(Sfulong_t, int);
 extern char*		fmtsignal(int);
 extern char*		fmttime(const char*, time_t);
 extern char*		fmtuid(int);
+extern char*		fmtversion(unsigned long);
 extern void*		memdup(const void*, size_t);
 extern void		memfatal(void);
 extern unsigned int	memhash(const void*, int);
@@ -254,9 +279,10 @@ extern int		pathexists(char*, int);
 extern char*		pathfind(const char*, const char*, const char*, char*, size_t);
 extern int		pathgetlink(const char*, char*, int);
 extern int		pathinclude(const char*);
-extern char*		pathkey(char*, char*, const char*, const char*);
+extern char*		pathkey(char*, char*, const char*, const char*, const char*);
 extern size_t		pathnative(const char*, char*, size_t);
 extern char*		pathpath(char*, const char*, const char*, int);
+extern size_t		pathposix(const char*, char*, size_t);
 extern char*		pathprobe(char*, char*, const char*, const char*, const char*, int);
 extern char*		pathrepl(char*, const char*, const char*);
 extern int		pathsetlink(const char*, const char*);
@@ -277,10 +303,16 @@ extern void*		strlook(const void*, size_t, const char*);
 extern int		strmatch(const char*, const char*);
 extern int		strmode(const char*);
 extern int		strnacmp(const char*, const char*, size_t);
+extern char*		strncopy(char*, const char*, size_t);
+extern double		strntod(const char*, size_t, char**);
+extern _ast_fltmax_t	strntold(const char*, size_t, char**);
+extern long		strntol(const char*, size_t, char**, int);
+extern _ast_intmax_t	strntoll(const char*, size_t, char**, int);
+extern unsigned long	strntoul(const char*, size_t, char**, int);
+extern unsigned _ast_intmax_t	strntoull(const char*, size_t, char**, int);
 extern int		stropt(const char*, const void*, int, int(*)(void*, const void*, int, const char*), void*);
 extern int		strperm(const char*, char**, int);
 extern void*		strpsearch(const void*, size_t, size_t, const char*, char**);
-extern char*		strsignal(int);
 extern void*		strsearch(const void*, size_t, size_t, Strcmp_f, const char*, void*);
 extern void		strsort(char**, int, int(*)(const char*, const char*));
 extern char*		strsubmatch(const char*, const char*, int);
@@ -290,13 +322,7 @@ extern int		strtoip4(const char*, char**, unsigned _ast_int4_t*, unsigned char*)
 extern long		strton(const char*, char**, char*, int);
 extern _ast_intmax_t	strtonll(const char*, char**, char*, int);
 extern int		struid(const char*);
-
-/*
- * obsolete ast symbols
- */
-
-extern void*		mematoe(void*, const void*, size_t);
-extern void*		memetoa(void*, const void*, size_t);
+extern int		struniq(char**, int);
 
 #undef			extern
 
@@ -308,6 +334,67 @@ extern void*		memetoa(void*, const void*, size_t);
 #define	environ		__DYNAMIC__(environ)
 #else
 extern char**		environ;
+#endif
+
+/*
+ * really handy malloc()/free() (__FILE__,__LINE__,__FUNCTION__) tracing
+ * make with VMDEBUG==1 or debug=1 or CCFLAGS=$(CC.DEBUG)
+ * VMDEBUG==0 disables
+ * at runtime export VMDEBUG or VMTRACE per vmalloc.3
+ * to list originating call locations
+ */
+
+#if !_std_malloc && !defined(VMFL) && !defined(_VMHDR_H) && \
+	(!defined(VMDEBUG) || VMDEBUG) && (VMDEBUG || _BLD_DEBUG)
+
+#define VMFL	1
+#include <vmalloc.h>
+
+#if defined(__STDPP__directive) && defined(__STDPP__ignore)
+
+__STDPP__directive pragma pp:ignore "malloc.h"
+
+#else
+
+#ifndef _malloc_h
+#define _malloc_h
+#endif
+#ifndef _malloc_h_
+#define _malloc_h_
+#endif
+#ifndef __malloc_h
+#define __malloc_h
+#endif
+#ifndef __malloc_h__
+#define __malloc_h__
+#endif
+#ifndef _MALLOC_H
+#define _MALLOC_H
+#endif
+#ifndef _MALLOC_H_
+#define _MALLOC_H_
+#endif
+#ifndef __MALLOC_H
+#define __MALLOC_H
+#endif
+#ifndef __MALLOC_H__
+#define __MALLOC_H__
+#endif
+#ifndef _MALLOC_INCLUDED
+#define _MALLOC_INCLUDED
+#endif
+#ifndef __MALLOC_INCLUDED
+#define __MALLOC_INCLUDED
+#endif
+#ifndef _H_MALLOC
+#define _H_MALLOC
+#endif
+#ifndef __H_MALLOC
+#define __H_MALLOC
+#endif
+
+#endif
+
 #endif
 
 #endif

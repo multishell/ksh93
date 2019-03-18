@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -62,9 +62,9 @@ Sfdisc_t*	disc;	/* the tee discipline */
 
 /* on close, remove the discipline */
 #if __STD_C
-static teeexcept(Sfio_t* f, int type, Void_t* data, Sfdisc_t* disc)
+static int teeexcept(Sfio_t* f, int type, Void_t* data, Sfdisc_t* disc)
 #else
-static teeexcept(f,type,data,disc)
+static int teeexcept(f,type,data,disc)
 Sfio_t*		f;
 int		type;
 Void_t*		data;
@@ -89,11 +89,13 @@ Sfio_t*	tee;	/* stream to tee to	*/
 
 	if(!(te = (Tee_t*)malloc(sizeof(Tee_t))) )
 		return -1;
-	memset(te, 0, sizeof(*te));
 
+	te->disc.readf = NIL(Sfread_f);
+	te->disc.seekf = NIL(Sfseek_f);
 	te->disc.writef = teewrite;
 	te->disc.exceptf = teeexcept;
 	te->tee = tee;
+	te->status = 0;
 
 	if(sfdisc(f,(Sfdisc_t*)te) != (Sfdisc_t*)te)
 	{	free(te);

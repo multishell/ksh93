@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -456,7 +456,8 @@ int		type;	/* >0: scanf, =0: printf, -1: internal	*/
 					else fp[n].argv.wc = va_arg(args,wchar_t);
 				}
 #endif
-				else	fp[n].argv.c = (char)va_arg(args,int);
+					/* observe promotion rule */
+				else	fp[n].argv.i = va_arg(args,int);
 				break;
 			  default: /* unknown pattern */
 				break;

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,7 +31,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: rm (AT&T Labs Research) 2001-04-17 $\n]"
+"[-?\n@(#)$Id: rm (AT&T Labs Research) 2003-09-11 $\n]"
 USAGE_LICENSE
 "[+NAME?rm - remove files]"
 "[+DESCRIPTION?\brm\b removes the named \afile\a arguments. By default it"
@@ -57,6 +57,10 @@ USAGE_LICENSE
 "	response (\bq\b or \bQ\b) causes \brm\b to exit immediately, and"
 "	all other responses skip the current file.]"
 "[r|R:recursive?Remove the contents of directories recursively.]"
+"[u:unconditional?If \b--recursive\b and \b--force\b are also enabled then"
+"	the owner read, write and execute modes are enabled (if not already"
+"	enabled) for each directory before attempting to remove directory"
+"	contents.]"
 "[v:verbose?Print the name of each file before removing it.]"
 
 "\n"
@@ -71,14 +75,13 @@ USAGE_LICENSE
 #include <ftwalk.h>
 #include <fs3d.h>
 
-#define RM_AGAIN	(1<<0)
-#define RM_ENTRY	(1<<1)
+#define RM_ENTRY	1
 
-#define beenhere(f)	((f)->local.number&RM_AGAIN)
+#define beenhere(f)	(((f)->local.number>>1)==(f)->statb.st_nlink)
 #define isempty(f)	(!((f)->local.number&RM_ENTRY))
 #define nonempty(f)	((f)->parent->local.number|=RM_ENTRY)
 #define pathchunk(n)	roundof(n,1024)
-#define retry(f)	((f)->local.number|=RM_AGAIN)
+#define retry(f)	((f)->local.number=((f)->statb.st_nlink<<1))
 
 static struct				/* program state		*/
 {
@@ -87,15 +90,13 @@ static struct				/* program state		*/
 	int		force;		/* force actions		*/
 	int		fs3d;		/* 3d enabled			*/
 	int		interactive;	/* prompt for approval		*/
+	int		interrupt;	/* interrupt -- unwind		*/
 	int		recursive;	/* remove subtrees too		*/
 	int		terminal;	/* attached to terminal		*/
 	int		uid;		/* caller uid			*/
+	int		unconditional;	/* enable dir rwx on preorder	*/
 	int		verbose;	/* display each file		*/
 } state;
-
-#if _lib_fsync
-extern int	fsync(int);
-#endif
 
 /*
  * remove a single file
@@ -109,6 +110,8 @@ rm(register Ftw_t* ftw)
 	int		v;
 	struct stat	st;
 
+	if (state.interrupt)
+		return -1;
 	if (ftw->info == FTW_NS)
 	{
 		if (!state.force)
@@ -120,7 +123,16 @@ rm(register Ftw_t* ftw)
 	{
 	case FTW_DNR:
 	case FTW_DNX:
-		if (!state.force)
+		if (state.unconditional)
+		{
+			if (!chmod(ftw->name, (ftw->statb.st_mode & S_IPERM)|S_IRWXU))
+			{
+				ftw->status = FTW_AGAIN;
+				break;
+			}
+			error_info.errors++;
+		}
+		else if (!state.force)
 			error(2, "%s: cannot %s directory", ftw->path, (ftw->info & FTW_NR) ? "read" : "search");
 		else
 			error_info.errors++;
@@ -147,18 +159,21 @@ rm(register Ftw_t* ftw)
 		}
 		if (!beenhere(ftw))
 		{
+			if (state.unconditional && (ftw->statb.st_mode ^ S_IRWXU))
+				chmod(path, (ftw->statb.st_mode & S_IPERM)|S_IRWXU);
 			if (ftw->level > 0)
 			{
-				if (ftw->status == FTW_NAME)
-					n = ftw->namelen;
+				char*	s;
+
+				if (ftw->status == FTW_NAME || !(s = strrchr(ftw->path, '/')))
+					v = !stat(".", &st);
 				else
 				{
 					path = ftw->path;
-					n = ftw->pathlen;
+					*s = 0;
+					v = !stat(path, &st);
+					*s = '/';
 				}
-				memcpy(path + n, "/..", 4);
-				v = !stat(path, &st);
-				path[n] = 0;
 				if (v)
 					v = st.st_nlink <= 2 || st.st_ino == ftw->parent->statb.st_ino && st.st_dev == ftw->parent->statb.st_dev || strchr(astconf("PATH_ATTRIBUTES", path, NiL), 'l');
 			}
@@ -309,8 +324,13 @@ rm(register Ftw_t* ftw)
 int
 b_rm(int argc, register char** argv, void* context)
 {
-	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG);
+	if (argc < 0)
+	{
+		state.interrupt = 1;
+		return -1;
+	}
+	memset(&state, 0, sizeof(state));
+	cmdinit(argv, context, ERROR_CATALOG, ERROR_NOTIFY);
 	state.fs3d = fs3d(FS3D_TEST);
 	state.terminal = isatty(0);
 	for (;;)
@@ -344,6 +364,9 @@ b_rm(int argc, register char** argv, void* context)
 			error(1, "%s not implemented on this system", opt_info.name);
 #endif
 			continue;
+		case 'u':
+			state.unconditional = 1;
+			continue;
 		case 'v':
 			state.verbose = 1;
 			continue;
@@ -369,6 +392,7 @@ b_rm(int argc, register char** argv, void* context)
 	if (state.interactive)
 		state.verbose = 0;
 	state.uid = geteuid();
+	state.unconditional = state.unconditional && state.recursive && state.force;
 	ftwalk((char*)argv, rm, FTW_MULTIPLE|FTW_PHYSICAL|FTW_TWICE, NiL);
 	return error_info.errors != 0;
 }

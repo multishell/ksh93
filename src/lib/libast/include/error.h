@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -38,7 +38,7 @@
 #include <option.h>
 #include <errno.h>
 
-#define ERROR_VERSION	20000401L
+#define ERROR_VERSION	20030214L
 
 #ifndef	error_info
 #define error_info	_error_info_
@@ -83,8 +83,9 @@
 #define ERROR_NOID	0x2000		/* omit err_id			*/
 #define ERROR_LIBRARY	0x4000		/* library routine error	*/
 
-#define ERROR_INTERACTIVE	000001	/* context is interactive	*/
-#define ERROR_SILENT		000002	/* context is silent		*/
+#define ERROR_INTERACTIVE	0x0001	/* context is interactive	*/
+#define ERROR_SILENT		0x0002	/* context is silent		*/
+#define ERROR_NOTIFY		0x0004	/* main(-sig,0,ctx) on signal	*/
 
 #define errorpush(p,f)	(*(p)=*ERROR_CONTEXT_BASE,*ERROR_CONTEXT_BASE=error_info.empty,error_info.context=(p),error_info.flags=(f))
 #define errorpop(p)	(*ERROR_CONTEXT_BASE=*(p))
@@ -100,14 +101,16 @@
 	char*	file;			/* input|output file name	*/ \
 	char*	id;			/* command id			*/
 
-typedef struct errorcontext Error_context_t;
+#define errorcontext Error_context_s	/* compatibility til 2004	*/
 
-struct errorcontext			/* context stack element	*/
+typedef struct Error_context_s Error_context_t;
+
+struct Error_context_s			/* context stack element	*/
 {
 	ERROR_CONTEXT
 };
 
-typedef struct				/* error state			*/
+typedef struct Error_info_s		/* error state			*/
 {
 	int	fd;			/* write(2) fd			*/
 
@@ -145,18 +148,15 @@ extern int	errno;			/* system call error status	*/
 #endif
 
 #if _BLD_ast && defined(__EXPORT__)
-#define __PUBLIC_DATA__		__EXPORT__
-#else
+#define extern		extern __EXPORT__
+#endif
 #if !_BLD_ast && defined(__IMPORT__)
-#define __PUBLIC_DATA__		__IMPORT__
-#else
-#define __PUBLIC_DATA__
-#endif
+#define extern		extern __IMPORT__
 #endif
 
-extern __PUBLIC_DATA__ Error_info_t	error_info;
+extern Error_info_t	error_info;
 
-#undef	__PUBLIC_DATA__
+#undef	extern
 
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		__EXPORT__

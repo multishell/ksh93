@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -69,14 +69,18 @@
 #ifndef E2BIG
 #define E2BIG			ENOMEM
 #endif
+#ifndef EILSEQ
+#define EILSEQ			EIO
+#endif
 
-#define RETURN(n,fn) \
-	if (n || !*fn) return n; \
-	errno = E2BIG; \
-	return (size_t)(-1)
+#define RETURN(e,n,fn) \
+	if (*fn && !e) e = E2BIG; \
+	if (e) { errno = e; return (size_t)(-1); } \
+	return n;
 
 typedef struct Map_s
 {
+	char*			name;
 	const unsigned char*	map;
 	_ast_iconv_f		fun;
 	int			index;
@@ -91,6 +95,12 @@ typedef struct Conv_s
 	Map_t			to;
 } Conv_t;
 
+static Conv_t*			freelist[4];
+static int			freeindex;
+
+static const char		name_local[] = "local";
+static const char		name_native[] = "native";
+
 static const _ast_iconv_list_t	codes[] =
 {
 	{
@@ -104,29 +114,47 @@ static const _ast_iconv_list_t	codes[] =
 
 	{
 	"ebcdic",
-	"(e|ebcdic?(-)?(1))",
+	"(e|ebcdic?(-)?([1e]))",
 	"X/Open ebcdic",
 	"EBCDIC",
 	0,
-	CC_EBCDIC1,
+	CC_EBCDIC_E,
+	},
+
+	{
+	"ebcdic-o",
+	"(o|ebcdic?(-)[3o]|?(cp|ibm)1047|mvs|openedition)",
+	"mvs OpenEdition ebcdic",
+	"EBCDIC-O",
+	0,
+	CC_EBCDIC_O,
+	},
+
+	{
+	"ebcdic-h",
+	"(h|ebcdic?(-)h|?(cp|ibm)?(00)37|[oa]s?(/-)400)",
+	"ibm OS/400 AS/400 ebcdic",
+	"EBCDIC-H",
+	0,
+	CC_EBCDIC_H,
+	},
+
+	{
+	"ebcdic-s",
+	"(s|ebcdic?(-)s|siemens|posix-bc)",
+	"siemens posix-bc ebcdic",
+	"EBCDIC-S",
+	0,
+	CC_EBCDIC_S,
 	},
 
 	{
 	"ebcdic-2",
-	"(i|ebcdic?(-)2|ibm)",
+	"(i|ebcdic?(-)[2i]|ibm)",
 	"X/Open ibm",
-	"EBCDIC-2",
+	"EBCDIC-I",
 	0,
-	CC_EBCDIC2,
-	},
-
-	{
-	"ebcdic-3",
-	"(o|ebcdic?(-)3|?(cp|ibm)1047|mvs|openedition)",
-	"mvs OpenEdition ebcdic",
-	"EBCDIC-3",
-	0,
-	CC_EBCDIC3,
+	CC_EBCDIC_I,
 	},
 
 	{
@@ -197,7 +225,7 @@ static const _ast_iconv_list_t	codes[] =
 
 #if _UWIN
 
-#include <windows.h>
+#include <ast_windows.h>
 
 #ifndef CP_UCS2
 #define CP_UCS2	0x0000
@@ -215,7 +243,6 @@ _win_codeset(const char* name)
 {
 	register char*	s;
 	char*		e;
-	char*		prefix;
 	int		n;
 	Sfio_t*		sp;
 	char		aka[128];
@@ -224,7 +251,7 @@ _win_codeset(const char* name)
 #if DEBUG_TRACE
 error(DEBUG_TRACE, "AHA#%d _win_codeset name=%s", __LINE__, name);
 #endif
-	if (!name[0] || name[0] == '-' && !name[1] || !strcasecmp(name, "local") || !strcasecmp(name, "native"))
+	if (name == name_native)
 		return CP_ACP;
 	if (!strcasecmp(name, "utf") || !strcasecmp(name, "utf8") || !strcasecmp(name, "utf-8"))
 		return CP_UTF8;
@@ -232,12 +259,20 @@ error(DEBUG_TRACE, "AHA#%d _win_codeset name=%s", __LINE__, name);
 		return CP_UCS2;
 	if (name[0] == '0' && name[1] == 'x' && (n = strtol(name, &e, 0)) > 0 && !*e)
 		return n;
-	prefix = isdigit(name[0]) ? "windows-" : "";
 	for (;;)
 	{
-		sfsprintf(tmp, sizeof(tmp), "%s/%s%s", _win_maps, prefix, name);
+		sfsprintf(tmp, sizeof(tmp), "%s/%s", _win_maps, name);
 		if (!(sp = sfopen(0, tmp, "r")))
-			break;
+		{
+			s = (char*)name;
+			if ((s[0] == 'c' || s[0] == 'C') && (s[1] == 'p' || s[1] == 'P'))
+				s += 2;
+			if (!isdigit(s[0]))
+				break;
+			sfsprintf(tmp, sizeof(tmp), "%s/windows-%s", _win_maps, s);
+			if (!(sp = sfopen(0, tmp, "r")))
+				break;
+		}
 		for (;;)
 		{
 			if (!(s = sfgetr(sp, '\n', 0)))
@@ -442,6 +477,7 @@ error(DEBUG_TRACE, "AHA#%d _win_iconv *fn=%u fz=%u[%u] *tn=%u tz=%u\n", __LINE__
  nope:
 	if (ub && ub != (LPWSTR)*fb)
 		free(ub);
+	errno = EINVAL;
 	return (size_t)(-1);
 }
 
@@ -471,8 +507,6 @@ _ast_iconv_name(register const char* m, register char* b, size_t n)
 	e = b + n - 1;
 	bp = 0;
 	n = 0;
-	if (!*m || *m == '-' && !*(m + 1))
-		m = "native";
 	for (cp = codes; cp->name; cp++)
 		if (strgrpmatch(m, cp->match, sub, elementsof(sub) / 2, STR_MAXIMAL|STR_LEFT|STR_ICASE))
 		{
@@ -506,14 +540,14 @@ _ast_iconv_name(register const char* m, register char* b, size_t n)
 			if ((locales[AST_LC_CTYPE]->flags & LC_default) || !locales[AST_LC_CTYPE]->charset || !(m = locales[AST_LC_CTYPE]->charset->code) || streq(m, "iso8859-1"))
 				switch (CC_NATIVE)
 				{
-				case CC_EBCDIC1:
+				case CC_EBCDIC:
 					m = (const char*)"EBCDIC";
 					break;
-				case CC_EBCDIC2:
-					m = (const char*)"EBCDIC-2";
+				case CC_EBCDIC_I:
+					m = (const char*)"EBCDIC-I";
 					break;
-				case CC_EBCDIC3:
-					m = (const char*)"EBCDIC-3";
+				case CC_EBCDIC_O:
+					m = (const char*)"EBCDIC-O";
 					break;
 				default:
 					m = (const char*)"ISO-8859-1";
@@ -549,7 +583,9 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register int			c;
 	register int			w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
@@ -563,6 +599,7 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			if (!(c & 0x40))
 			{
 				f = p;
+				e = EILSEQ;
 				break;
 			}
 			if (c & 0x20)
@@ -571,12 +608,14 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				if (f >= fe)
 				{
 					f = p;
+					e = EINVAL;
 					break;
 				}
 				c = *f++;
 				if (c & 0x40)
 				{
 					f = p;
+					e = EILSEQ;
 					break;
 				}
 				w |= (c & 0x3F) << 6;
@@ -586,6 +625,7 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			if (f >= fe)
 			{
 				f = p;
+				e = EINVAL;
 				break;
 			}
 			c = *f++;
@@ -599,7 +639,7 @@ utf2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	*fb = (char*)f;
 	*tn -= (n = (char*)t - (*tb));
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -616,7 +656,9 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register int			c;
 	wchar_t				w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
@@ -624,11 +666,17 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	while (f < fe && t < te)
 	{
 		if (!mbwide())
-			w = *f++;
-		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) <= 0)
+		{
+			c = 1;
+			w = *f;
+		}
+		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) < 0)
+		{
+			e = EINVAL;
 			break;
-		else
-			f += c;
+		}
+		else if (!c)
+			c = 1;
 		if (!(w & ~0x7F))
 			*t++ = w;
 		else
@@ -636,26 +684,36 @@ bin2utf(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			if (!(w & ~0x7FF))
 			{
 				if (t >= (te - 2))
+				{
+					e = E2BIG;
 					break;
+				}
 				*t++ = 0xC0 + (w >> 6);
 			}
 			else if (!(w & ~0xffff))
 			{
 				if (t >= (te - 3))
+				{
+					e = E2BIG;
 					break;
+				}
 				*t++ = 0xE0 + (w >> 12);
 				*t++ = 0x80 + ((w >> 6 ) & 0x3F);
 			}
 			else
+			{
+				e = EILSEQ;
 				break;
+			}
 			*t++ = 0x80 + (w & 0x3F);
 		}
+		f += c;
 	}
 	*fn -= (n = (char*)f - (*fb));
 	*fb = (char*)f;
 	*tn -= (char*)t - (*tb);
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 static const unsigned char	ume_D[] =
@@ -705,11 +763,14 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register unsigned char*		fe;
 	register unsigned char*		t;
 	register unsigned char*		te;
+	register unsigned char*		p;
 	register int			s;
 	register int			c;
 	register int			w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	UMEINIT();
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
@@ -718,6 +779,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	s = 0;
 	while (f < fe && t < te)
 	{
+		p = f;
 		c = *f++;
 		if (s)
 		{
@@ -729,7 +791,11 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				*t++ = c;
 			}
 			else if (f >= (fe - 2))
+			{
+				f = p;
+				e = EINVAL;
 				break;
+			}
 			else
 			{
 				s = 2;
@@ -738,7 +804,11 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 				if (!(w & ~0xFF))
 					*t++ = w;
 				else if (t >= (te - 1))
+				{
+					f = p;
+					e = E2BIG;
 					break;
+				}
 				else
 				{
 					*t++ = (w >> 8) & 0xFF;
@@ -755,7 +825,7 @@ ume2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	*fb = (char*)f;
 	*tn -= (n = (char*)t - (*tb));
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -773,7 +843,9 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register int			s;
 	wchar_t				w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	UMEINIT();
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
@@ -783,11 +855,17 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	while (f < fe && t < (te - s))
 	{
 		if (!mbwide())
-			w = *f++;
-		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) <= 0)
+		{
+			c = 1;
+			w = *f;
+		}
+		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) < 0)
+		{
+			e = EINVAL;
 			break;
-		else
-			f += c;
+		}
+		else if (!c)
+			c = 1;
 		if (!(w & ~0x7F) && ume_d[w])
 		{
 			if (s)
@@ -798,7 +876,10 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			*t++ = w;
 		}
 		else if (t >= (te - (4 + s)))
-				break;
+		{
+			e = E2BIG;
+			break;
+		}
 		else
 		{
 			if (!s)
@@ -810,6 +891,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 			*t++ = ume_M[(w >> 6) & 0x3F];
 			*t++ = ume_M[w & 0x3F];
 		}
+		f += c;
 	}
 	if (s)
 		*t++ = '-';
@@ -817,7 +899,7 @@ bin2ume(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	*fb = (char*)f;
 	*tn -= (char*)t - (*tb);
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -831,25 +913,25 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register unsigned char*		fe;
 	register unsigned char*		t;
 	register unsigned char*		te;
-	register unsigned char*		p;
 	register int			w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
 	te = t + (*tn);
-	p = 0;
 	while (f < (fe - 1) && t < te)
 	{
-		p = f;
 		w = *f++;
 		w = (w << 8) | *f++;
 		if (!(w & ~0xFF))
 			*t++ = w;
 		else if (t >= (te - 1))
 		{
-			f = p;
+			f -= 2;
+			e = E2BIG;
 			break;
 		}
 		else
@@ -862,7 +944,7 @@ ucs2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	*fb = (char*)f;
 	*tn -= (n = (char*)t - (*tb));
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -879,7 +961,9 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register int			c;
 	wchar_t				w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
@@ -887,19 +971,26 @@ bin2ucs(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	while (f < fe && t < (te - 1))
 	{
 		if (!mbwide())
-			w = *f++;
-		if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) <= 0)
+		{
+			c = 1;
+			w = *f;
+		}
+		if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) < 0)
+		{
+			e = EINVAL;
 			break;
-		else
-			f += c;
+		}
+		else if (!c)
+			c = 1;
 		*t++ = (w >> 8) & 0xFF;
 		*t++ = w & 0xFF;
+		f += c;
 	}
 	*fn -= (n = (char*)f - (*fb));
 	*fb = (char*)f;
 	*tn -= (char*)t - (*tb);
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -913,25 +1004,25 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register unsigned char*		fe;
 	register unsigned char*		t;
 	register unsigned char*		te;
-	register unsigned char*		p;
 	register int			w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
 	te = t + (*tn);
-	p = 0;
 	while (f < (fe - 1) && t < te)
 	{
-		p = f;
 		w = *f++;
 		w = w | (*f++ << 8);
 		if (!(w & ~0xFF))
 			*t++ = w;
 		else if (t >= (te - 1))
 		{
-			f = p;
+			f -= 2;
+			e = E2BIG;
 			break;
 		}
 		else
@@ -944,7 +1035,7 @@ scu2bin(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	*fb = (char*)f;
 	*tn -= (n = (char*)t - (*tb));
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -961,7 +1052,9 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	register int			c;
 	wchar_t				w;
 	size_t				n;
+	int				e;
 
+	e = 0;
 	f = (unsigned char*)(*fb);
 	fe = f + (*fn);
 	t = (unsigned char*)(*tb);
@@ -969,19 +1062,26 @@ bin2scu(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	while (f < fe && t < (te - 1))
 	{
 		if (!mbwide())
-			w = *f++;
-		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) <= 0)
+		{
+			c = 1;
+			w = *f;
+		}
+		else if ((c = (*_ast_info.mb_towc)(&w, (char*)f, fe - f)) < 0)
+		{
+			e = EINVAL;
 			break;
-		else
-			f += c;
+		}
+		else if (!c)
+			c = 1;
 		*t++ = w & 0xFF;
 		*t++ = (w >> 8) & 0xFF;
+		f += c;
 	}
 	*fn -= (n = (char*)f - (*fb));
 	*fb = (char*)f;
 	*tn -= (char*)t - (*tb);
 	*tb = (char*)t;
-	RETURN(n, fn);
+	RETURN(e, n, fn);
 }
 
 /*
@@ -994,6 +1094,7 @@ _ast_iconv_open(const char* t, const char* f)
 	register Conv_t*	cc;
 	int			fc;
 	int			tc;
+	int			i;
 
 	char			fr[64];
 	char			to[64];
@@ -1001,33 +1102,61 @@ _ast_iconv_open(const char* t, const char* f)
 #if DEBUG_TRACE
 error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s t=%s\n", __LINE__, f, t);
 #endif
-	if (!(cc = newof(0, Conv_t, 1, 0)))
-		return (iconv_t)(-1);
-	cc->cvt = (iconv_t)(-1);
+	if (!t || !*t || *t == '-' && !*(t + 1) || !strcasecmp(t, name_local) || !strcasecmp(t, name_native))
+		t = name_native;
+	if (!f || !*f || *f == '-' && !*(f + 1) || !strcasecmp(t, name_local) || !strcasecmp(f, name_native))
+		f = name_native;
+
+	/*
+	 * the ast identify is always (iconv_t)(0)
+	 */
+
+	if (t == f)
+		return (iconv_t)(0);
 	fc = _ast_iconv_name(f, fr, sizeof(fr));
 	tc = _ast_iconv_name(t, to, sizeof(to));
 #if DEBUG_TRACE
 error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s:%s:%d t=%s:%s:%d\n", __LINE__, f, fr, fc, t, to, tc);
 #endif
+	if (fc != CC_ICONV && fc == tc || streq(fr, to))
+		return (iconv_t)(0);
 
 	/*
-	 * (soft) fail if to is "" or "-" and conversion is the identity
+	 * first check the free list
 	 */
 
-	if ((!*t || *t == '-' && !*(t + 1)) && streq(fr, to))
-	{
-		free(cc);
+	for (i = 0; i < elementsof(freelist); i++)
+		if ((cc = freelist[i]) && streq(to, cc->to.name) && streq(fr, cc->from.name))
+		{
+			freelist[i] = 0;
+#if _lib_iconv_open
+			/*
+			 * reset the shift state if any
+			 */
+
+			if (cc->cvt != (iconv_t)(-1))
+				iconv(cc->cvt, NiL, NiL, NiL, NiL);
+#endif
+			return cc;
+		}
+
+	/*
+	 * allocate a new one
+	 */
+
+	if (!(cc = newof(0, Conv_t, 1, strlen(to) + strlen(fr) + 2)))
 		return (iconv_t)(-1);
-	}
+	cc->to.name = (char*)(cc + 1);
+	cc->from.name = strcopy(cc->to.name, to) + 1;
+	strcpy(cc->from.name, fr);
+	cc->cvt = (iconv_t)(-1);
 
 	/*
 	 * 8 bit maps are the easiest
 	 */
 
-	if (fc == tc)
-		/*identity*/;
-	else if (fc >= 0 && tc >= 0)
-		cc->from.map = CCMAP(fc, tc);
+	if (fc >= 0 && tc >= 0)
+		cc->from.map = ccmap(fc, tc);
 #if _lib_iconv_open
 	else if ((cc->cvt = iconv_open(to, fr)) != (iconv_t)(-1))
 		cc->from.fun = (_ast_iconv_f)iconv;
@@ -1057,7 +1186,7 @@ error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s:%s:%d t=%s:%s:%d\n", __LINE__, f
 		default:
 			if (fc < 0)
 				goto nope;
-			cc->from.map = CCMAP(fc, CC_ASCII);
+			cc->from.map = ccmap(fc, CC_ASCII);
 			break;
 		}
 		switch (tc)
@@ -1079,13 +1208,12 @@ error(DEBUG_TRACE, "AHA#%d _ast_iconv_open f=%s:%s:%d t=%s:%s:%d\n", __LINE__, f
 		default:
 			if (tc < 0)
 				goto nope;
-			cc->to.map = CCMAP(CC_ASCII, tc);
+			cc->to.map = ccmap(CC_ASCII, tc);
 			break;
 		}
 	}
 	return (iconv_t)cc;
  nope:
-	free(cc);
 	return (iconv_t)(-1);
 }
 
@@ -1097,18 +1225,49 @@ int
 _ast_iconv_close(_ast_iconv_t cd)
 {
 	Conv_t*	cc;
+	Conv_t*	oc;
+	int	i;
 	int	r = 0;
 
 	if (cd == (_ast_iconv_t)(-1))
 		return -1;
-	cc = (Conv_t*)cd;
+	if (!(cc = (Conv_t*)cd))
+		return 0;
+
+	/*
+	 * add to the free list
+	 */
+
+	i = freeindex;
+	for (;;)
+	{
+		if (++ i >= elementsof(freelist))
+			i = 0;
+		if (!freelist[i])
+			break;
+		if (i == freeindex)
+		{
+			if (++ i >= elementsof(freelist))
+				i = 0;
+
+			/*
+			 * close the oldest
+			 */
+
+			if (oc = freelist[i])
+			{
 #if _lib_iconv_open
-	if (cc->cvt != (iconv_t)(-1))
-		r = iconv_close(cc->cvt);
+				if (oc->cvt != (iconv_t)(-1))
+					r = iconv_close(oc->cvt);
 #endif
-	if (cc->buf)
-		free(cc->buf);
-	free(cc);
+				if (oc->buf)
+					free(oc->buf);
+				free(oc);
+			}
+			break;
+		}
+	}
+	freelist[freeindex = i] = cc;
 	return r;
 }
 
@@ -1131,64 +1290,75 @@ _ast_iconv(_ast_iconv_t cd, char** fb, size_t* fn, char** tb, size_t* tn)
 	size_t				tfn;
 	size_t				i;
 
-	n = *tn;
-	if (cc->from.fun)
+	if (!fb || !*fb)
 	{
-		if (cc->to.fun)
+		/* TODO: reset to the initial state */
+		if (!tb || !*tb)
+			return 0;
+		/* TODO: write the initial state shift sequence */
+		return 0;
+	}
+	n = *tn;
+	if (cc)
+	{
+		if (cc->from.fun)
 		{
+			if (cc->to.fun)
+			{
+				if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SF_BUFSIZE, 0)))
+				{
+					errno = ENOMEM;
+					return -1;
+				}
+				b = cc->buf;
+				i = cc->size;
+				tfb = *fb;
+				tfn = *fn;
+				if ((*cc->from.fun)(cc->cvt, &tfb, &tfn, &b, &i) == (size_t)(-1))
+					return -1;
+				tfn = b - cc->buf;
+				tfb = cc->buf;
+				n = (*cc->to.fun)(cc->cvt, &tfb, &tfn, tb, tn);
+				i = tfb - cc->buf;
+				*fb += i;
+				*fn -= i;
+				return n;
+			}
+			if ((*cc->from.fun)(cc->cvt, fb, fn, tb, tn) == (size_t)(-1))
+				return -1;
+			n -= *tn;
+			if (m = cc->to.map)
+			{
+				e = (unsigned char*)(*tb);
+				for (t = e - n; t < e; t++)
+					*t = m[*t];
+			}
+			return n;
+		}
+		else if (cc->to.fun)
+		{
+			if (!(m = cc->from.map))
+				return (*cc->to.fun)(cc->cvt, fb, fn, tb, tn);
 			if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SF_BUFSIZE, 0)))
 			{
 				errno = ENOMEM;
 				return -1;
 			}
-			b = cc->buf;
-			i = cc->size;
-			tfb = *fb;
-			tfn = *fn;
-			if ((*cc->from.fun)(cc->cvt, &tfb, &tfn, &b, &i) == (size_t)(-1))
-				return -1;
-			tfn = b - cc->buf;
-			tfb = cc->buf;
-			n = (*cc->to.fun)(cc->cvt, &tfb, &tfn, tb, tn);
-			i = tfb - cc->buf;
-			*fb += i;
-			*fn -= i;
+			if ((n = *fn) > cc->size)
+				n = cc->size;
+			f = (unsigned char*)(*fb);
+			e = f + n;
+			t = (unsigned char*)(b = cc->buf);
+			while (f < e)
+				*t++ = m[*f++];
+			n = (*cc->to.fun)(cc->cvt, &b, fn, tb, tn);
+			*fb += b - cc->buf;
 			return n;
 		}
-		if ((*cc->from.fun)(cc->cvt, fb, fn, tb, tn) == (size_t)(-1))
-			return -1;
-		n -= *tn;
-		if (m = cc->to.map)
-		{
-			e = (unsigned char*)(*tb);
-			for (t = e - n; t < e; t++)
-				*t = m[*t];
-		}
-		return n;
-	}
-	else if (cc->to.fun)
-	{
-		if (!(m = cc->from.map))
-			return (*cc->to.fun)(cc->cvt, fb, fn, tb, tn);
-		if (!cc->buf && !(cc->buf = oldof(0, char, cc->size = SF_BUFSIZE, 0)))
-		{
-			errno = ENOMEM;
-			return -1;
-		}
-		if ((n = *fn) > cc->size)
-			n = cc->size;
-		f = (unsigned char*)(*fb);
-		e = f + n;
-		t = (unsigned char*)(b = cc->buf);
-		while (f < e)
-			*t++ = m[*f++];
-		n = (*cc->to.fun)(cc->cvt, &b, fn, tb, tn);
-		*fb += b - cc->buf;
-		return n;
 	}
 	if (n > *fn)
 		n = *fn;
-	if (m = cc->from.map)
+	if (cc && (m = cc->from.map))
 	{
 		f = (unsigned char*)(*fb);
 		e = f + n;
@@ -1231,7 +1401,7 @@ _ast_iconv_write(_ast_iconv_t cd, Sfio_t* op, char** fb, size_t* fn, size_t* e)
 error(DEBUG_TRACE, "AHA#%d iconv_write ts=%p tn=%d", __LINE__, ts, tn);
 		for (;;)
 #else
-		while (_ast_iconv(cd, fb, fn, &ts, &tn) != (size_t)(-1) && *fn > 0)
+		while (_ast_iconv(cd, fb, fn, &ts, &tn) == (size_t)(-1))
 #endif
 		{
 #if DEBUG_TRACE
@@ -1239,22 +1409,23 @@ error(DEBUG_TRACE, "AHA#%d iconv_write ts=%p tn=%d", __LINE__, ts, tn);
 error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d `%-.*s'", __LINE__, *fn, tn, *fn, *fb);
 			_r = _ast_iconv(cd, fb, fn, &ts, &tn);
 error(DEBUG_TRACE, "AHA#%d iconv_write %d => %d [%d]", __LINE__, *fn, tn, _r);
-			if (_r == (size_t)(-1) || *fn <= 0)
+			if (_r != (size_t)(-1))
 				break;
 #endif
-			if (tn > 0)
-			{
-				*ts++ = '_';
-				tn--;
-			}
+			if (errno == E2BIG)
+				break;
 			if (e)
 				(*e)++;
-			(*fb)++;
+			if (!tn)
+				break;
+			*ts++ = *(*fb)++;
+			tn--;
 			(*fn)--;
 		}
 #if DEBUG_TRACE
 error(DEBUG_TRACE, "AHA#%d iconv_write %d", __LINE__, ts - tb);
 #endif
+
 		sfwrite(op, tb, ts - tb);
 		r += ts - tb;
 	}
@@ -1275,14 +1446,17 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, size_t* e)
 	size_t		fn;
 	size_t		fo;
 	size_t		tn;
+	size_t		i;
 	ssize_t		r = 0;
+	int		locked;
 
 	fn = n;
 	for (;;)
 	{
 		if (fn != SF_UNBOUND)
 			fn = -((ssize_t)(fn & (((size_t)(~0))>>1)));
-		if (!(fb = (char*)sfreserve(ip, fn, SF_LOCKR)))
+		if (!(fb = (char*)sfreserve(ip, fn, locked = SF_LOCKR)) &&
+		    !(fb = (char*)sfreserve(ip, fn, locked = 0)))
 			break;
 		fs = fb;
 		fn = fo = sfvalue(ip);
@@ -1307,7 +1481,11 @@ _ast_iconv_move(_ast_iconv_t cd, Sfio_t* ip, Sfio_t* op, size_t n, size_t* e)
 		}
 		sfwrite(op, tb, ts - tb);
 		r += ts - tb;
-		sfread(ip, fb, fs - fb);
+		if (locked)
+			sfread(ip, fb, fs - fb);
+		else
+			for (i = fn; --i >= (fs - fb);)
+				sfungetc(ip, fb[i]);
 		if (n != SF_UNBOUND)
 		{
 			if (n <= (fs - fb))

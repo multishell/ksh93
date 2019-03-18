@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -24,7 +24,7 @@
 *                                                                  *
 *******************************************************************/
 #include	"sfhdr.h"
-static char*	Version = "\n@(#)sfio (AT&T Labs - kpv) 2002-05-31\0\n";
+static char*	Version = "\n@(#)sfio (AT&T Labs - kpv) 2004-01-01\0\n";
 
 /*	Functions to set a given stream to some desired mode
 **
@@ -44,6 +44,11 @@ static char*	Version = "\n@(#)sfio (AT&T Labs - kpv) 2002-05-31\0\n";
 **		09/09/1999 (thread-safe)
 **		02/01/2001 (adaptive buffering)
 **		05/31/2002 (multi-byte handling in sfvprintf/vscanf)
+**		09/06/2002 (SF_IOINTR flag)
+**		11/15/2002 (%#c for sfvprintf)
+**		05/31/2003 (sfsetbuf(f,f,align_size) to set alignment for data)
+**			   (%I1d is fixed to handle "signed char" correctly)
+**		01/01/2004 Porting issues to various platforms resolved.
 */
 
 /* the below is for protecting the application from SIGPIPE */
@@ -229,21 +234,17 @@ int		stdio;	/* stdio popen() does not reset SIGPIPE handler */
 	p->rdata = NIL(uchar*);
 	p->file = fd;
 	p->sigp = (!stdio && pid >= 0 && (f->flags&SF_WRITE)) ? 1 : 0;
-#if _PACKAGE_ast
-	if(stdio)
-		f->mode |= SF_STDIO;
-#endif
 
 #ifdef SIGPIPE	/* protect from broken pipe signal */
 	if(p->sigp)
 	{	Sfsignal_f	handler;
 
-		vtmtxlock(_Sfmutex);
+		(void)vtmtxlock(_Sfmutex);
 		if((handler = signal(SIGPIPE, ignoresig)) != SIG_DFL &&
 		    handler != ignoresig)
 			signal(SIGPIPE, handler); /* honor user handler */
 		_Sfsigp += 1;
-		vtmtxunlock(_Sfmutex);
+		(void)vtmtxunlock(_Sfmutex);
 	}
 #endif
 
@@ -276,18 +277,18 @@ reg Sfio_t*	f;	/* stream to close */
 
 		/* wait for process termination */
 #if _PACKAGE_ast
-		sigcritical(1);
+		sigcritical(SIG_REG_EXEC|SIG_REG_PROC);
 #endif
 		while ((pid = waitpid(p->pid,&status,0)) == -1 && errno == EINTR)
 			;
-		if(pid < 0)
+		if(pid == -1)
 			status = -1;
 #if _PACKAGE_ast
 		sigcritical(0);
 #endif
 
 #ifdef SIGPIPE
-		vtmtxlock(_Sfmutex);
+		(void)vtmtxlock(_Sfmutex);
 		if(p->sigp && (_Sfsigp -= 1) <= 0)
 		{	Sfsignal_f	handler;
 			if((handler = signal(SIGPIPE,SIG_DFL)) != SIG_DFL &&
@@ -295,7 +296,7 @@ reg Sfio_t*	f;	/* stream to close */
 				signal(SIGPIPE,handler); /* honor user handler */
 			_Sfsigp = 0;
 		}
-		vtmtxunlock(_Sfmutex);
+		(void)vtmtxunlock(_Sfmutex);
 #endif
 	}
 

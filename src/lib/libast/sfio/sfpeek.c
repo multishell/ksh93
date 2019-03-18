@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,10 +31,14 @@
 **	Written by Kiem-Phong Vo (06/27/90).
 */
 
+#if _BLD_sfio && defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
 #if __STD_C
-ssize_t sfpeek(reg Sfio_t* f, Void_t** bp, reg size_t size)
+extern ssize_t sfpeek(reg Sfio_t* f, Void_t** bp, reg size_t size)
 #else
-ssize_t sfpeek(f,bp,size)
+extern ssize_t sfpeek(f,bp,size)
 reg Sfio_t*	f;	/* file to peek */
 Void_t**	bp;	/* start of data area */
 reg size_t	size;	/* size of peek */

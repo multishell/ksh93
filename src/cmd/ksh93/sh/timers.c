@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -43,8 +43,9 @@ typedef struct _timer
 #define IN_ADDTIMEOUT	1
 #define IN_SIGALRM	2
 #define DEFER_SIGALRM	4
+#define SIGALRM_CALL	8
 
-static Timer_t *tptop, *tpmin;
+static Timer_t *tptop, *tpmin, *tpfree;
 static char time_state;
 
 static double getnow(void)
@@ -94,6 +95,10 @@ static void sigalrm(int sig)
 	static double left;
 	NOT_USED(sig);
 	left = 0;
+	if(time_state&SIGALRM_CALL)
+		time_state &= ~SIGALRM_CALL;
+	else if(alarm(0))
+		sh_fault(SIGALRM|SH_TRAP);
 	if(time_state)
 	{
 		if(time_state&IN_ADDTIMEOUT)
@@ -129,7 +134,8 @@ static void sigalrm(int sig)
 					tplast->next = tp->next;
 				else
 					tptop = tp->next;
-				free((void*)tp);
+				tp->next = tpfree;
+				tpfree = tp;
 			}
 		}
 		if((tp=tpold) && tp->incr)
@@ -162,6 +168,8 @@ static void sigalrm(int sig)
 		else
 			break;
 	}
+	if(!tpmin)
+		signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
 	time_state &= ~IN_SIGALRM;
 	errno = EINTR;
 }
@@ -179,7 +187,11 @@ void *sh_timeradd(unsigned long msec,int flags,void (*action)(void*),void *handl
 	double t;
 	Handler_t fn;
 	t = ((double)msec)/1000.;
-	if(t<=0 || !action || !(tp=(Timer_t*)malloc(sizeof(Timer_t))))
+	if(t<=0 || !action)
+		return((void*)0);
+	if(tp=tpfree)
+		tpfree = tp->next;
+	else if(!(tp=(Timer_t*)malloc(sizeof(Timer_t))))
 		return((void*)0);
 	tp->wakeup = getnow() + t;
 	tp->incr = (flags?t:0);
@@ -208,7 +220,7 @@ void *sh_timeradd(unsigned long msec,int flags,void (*action)(void*),void *handl
 	time_state &= ~IN_ADDTIMEOUT;
 	if(time_state&DEFER_SIGALRM)
 	{
-		time_state=0;
+		time_state=SIGALRM_CALL;
 		sigalrm(SIGALRM);
 		if(tp!=tptop)
 			tp=0;
@@ -233,6 +245,7 @@ void	timerdel(void *handle)
 			tpmin = 0;
 			setalarm((double)0);
 		}
+		signal(SIGALRM,(sh.sigflag[SIGALRM]&SH_SIGFAULT)?sh_fault:SIG_DFL);
 	}
 }
 

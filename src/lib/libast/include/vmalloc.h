@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,7 +31,7 @@
 **	Written by Kiem-Phong Vo, kpv@research.att.com, 01/16/94.
 */
 
-#define VMALLOC_VERSION	20020531L
+#define VMALLOC_VERSION	20040101L
 
 #if _PACKAGE_ast
 #include	<ast_std.h>
@@ -76,9 +76,9 @@ struct _vmethod_s
 
 struct _vmalloc_s
 {	Vmethod_t	meth;		/* method for allocation	*/
-	char*		file;		/* file name			*/
+	const char*	file;		/* file name			*/
 	int		line;		/* line number			*/
-	Void_t*		func;		/* calling function		*/
+	const Void_t*	func;		/* calling function		*/
 #ifdef _VM_PRIVATE_
 	_VM_PRIVATE_
 #endif
@@ -107,13 +107,16 @@ struct _vmalloc_s
 #define VM_NOMEM	2		/* can't obtain memory		*/
 #define VM_BADADDR	3		/* bad addr in vmfree/vmresize	*/
 #define VM_DISC		4		/* discipline being changed	*/
+#define VM_ALLOC	5		/* announcement from vmalloc()	*/
+#define VM_FREE		6		/* announcement from vmfree()	*/
+#define VM_RESIZE	7		/* announcement from vmresize()	*/
 
 _BEGIN_EXTERNS_	 /* public data */
 #if _BLD_vmalloc && defined(__EXPORT__)
-#define extern	__EXPORT__
+#define extern		extern __EXPORT__
 #endif
 #if !_BLD_vmalloc && defined(__IMPORT__)
-#define extern	__IMPORT__
+#define extern		extern __IMPORT__
 #endif
 
 extern Vmethod_t*	Vmbest;		/* best allocation		*/
@@ -143,12 +146,13 @@ extern int		vmcompact _ARG_(( Vmalloc_t* ));
 
 extern Vmdisc_t*	vmdisc _ARG_(( Vmalloc_t*, Vmdisc_t* ));
 
-extern Vmalloc_t*	vmmopen _ARG_(( char*, Void_t* ));
+extern Vmalloc_t*	vmmopen _ARG_(( char*, Void_t*, size_t ));
 extern Void_t*		vmmset _ARG_((Vmalloc_t*, int, Void_t*, int));
 
 extern Void_t*		vmalloc _ARG_(( Vmalloc_t*, size_t ));
 extern Void_t*		vmalign _ARG_(( Vmalloc_t*, size_t, size_t ));
 extern Void_t*		vmresize _ARG_(( Vmalloc_t*, Void_t*, size_t, int ));
+extern Void_t*		vmgetmem _ARG_(( Vmalloc_t*, Void_t*, size_t ));
 extern int		vmfree _ARG_(( Vmalloc_t*, Void_t* ));
 
 extern long		vmaddr _ARG_(( Vmalloc_t*, Void_t* ));
@@ -160,6 +164,7 @@ extern int		vmset _ARG_(( Vmalloc_t*, int, int ));
 
 extern Void_t*		vmdbwatch _ARG_(( Void_t* ));
 extern int		vmdbcheck _ARG_(( Vmalloc_t* ));
+extern int		vmdebug _ARG_(( int ));
 
 extern int		vmprofile _ARG_(( Vmalloc_t*, int ));
 
@@ -194,9 +199,9 @@ _END_EXTERNS_
 #ifdef VMFL
 
 #if defined(__FILE__)
-#define _VMFILE_(vm)	(_VM_(vm)->file = (char*)__FILE__)
+#define _VMFILE_(vm)	(_VM_(vm)->file = __FILE__)
 #else
-#define _VMFILE_(vm)	(_VM_(vm)->file = (char*)0)
+#define _VMFILE_(vm)	(_VM_(vm)->file = 0)
 #endif
 
 #if defined(__LINE__)
@@ -206,9 +211,9 @@ _END_EXTERNS_
 #endif
 
 #if defined(__FUNCTION__)
-#define _VMFUNC_(vm)	(_VM_(vm)->func = (Void_t*)__FUNCTION__)
+#define _VMFUNC_(vm)	(_VM_(vm)->func = (const Void_t*)__FUNCTION__)
 #else
-#define _VMFUNC_(vm)	(_VM_(vm)->func = (Void_t*)0)
+#define _VMFUNC_(vm)	(_VM_(vm)->func = 0)
 #endif
 
 #define _VMFL_(vm)	(_VMFILE_(vm), _VMLINE_(vm), _VMFUNC_(vm))
@@ -223,29 +228,63 @@ _END_EXTERNS_
 #define vmalign(vm,sz,align)	(_VMFL_(vm), \
 				 (*(_VM_(vm)->meth.alignf))((vm),(sz),(align)) )
 
-#if __STD_C || defined(__STDPP__) || defined(__GNUC__)
-#define malloc(s)		(_VMFL_(Vmregion), malloc((size_t)(s)) )
-#define realloc(d,s)		(_VMFL_(Vmregion), realloc((Void_t*)(d),(size_t)(s)) )
-#define calloc(n,s)		(_VMFL_(Vmregion), calloc((size_t)n, (size_t)(s)) )
-#define free(d)			(_VMFL_(Vmregion), free((Void_t*)(d)) )
-#define memalign(a,s)		(_VMFL_(Vmregion), memalign((size_t)(a),(size_t)(s)) )
-#define valloc(s)		(_VMFL_(Vmregion), valloc((size_t)(s) )
+#undef malloc
+#undef realloc
+#undef calloc
+#undef free
+#undef memalign
+#undef valloc
+
+#if _map_malloc
+
+#define malloc(s)		(_VMFL_(Vmregion), _ast_malloc((size_t)(s)) )
+#define realloc(d,s)		(_VMFL_(Vmregion), _ast_realloc((Void_t*)(d),(size_t)(s)) )
+#define calloc(n,s)		(_VMFL_(Vmregion), _ast_calloc((size_t)n, (size_t)(s)) )
+#define free(d)			(_VMFL_(Vmregion), _ast_free((Void_t*)(d)) )
+#define memalign(a,s)		(_VMFL_(Vmregion), _ast_memalign((size_t)(a),(size_t)(s)) )
+#define valloc(s)		(_VMFL_(Vmregion), _ast_valloc((size_t)(s) )
+
 #else
+
+#if !_std_malloc
+
+#if __STD_C || defined(__STDPP__) || defined(__GNUC__)
+#define malloc(s)		( _VMFL_(Vmregion), (malloc)((size_t)(s)) )
+#define realloc(d,s)		( _VMFL_(Vmregion), (realloc)((Void_t*)(d),(size_t)(s)) )
+#define calloc(n,s)		( _VMFL_(Vmregion), (calloc)((size_t)n, (size_t)(s)) )
+#define free(d)			( _VMFL_(Vmregion), (free)((Void_t*)(d)) )
+#define memalign(a,s)		( _VMFL_(Vmregion), (memalign)((size_t)(a),(size_t)(s)) )
+#define valloc(s)		( _VMFL_(Vmregion), (valloc)((size_t)(s)) )
+#ifndef strdup
+#define strdup(s)		( _VMFL_(Vmregion), (strdup)((char*)(s)) )
+#endif
+
+#else
+
 #define _VMNM_(a,b,c,d,e,f)	a/**/b/**/c/**/d/**/e/**/f
-#define malloc(s)		(_VMFL_(Vmregion), _VMNM_(mallo,/,*,*,/,c)\
-						((size_t)(s)) )
-#define realloc(d,s)		(_VMFL_(Vmregion), _VMNM_(reallo,/,*,*,/,c)\
-						((Void_t*)(d),(size_t)(s)) )
-#define calloc(n,s)		(_VMFL_(Vmregion), _VMNM_(callo,/,*,*,/,c)\
-						((size_t)n, (size_t)(s)) )
-#define free(d)			(_VMFL_(Vmregion), _VMNM_(fre,/,*,*,/,e)((Void_t*)(d)) )
-#define memalign(a,s)		(_VMFL_(Vmregion), _VMNM_(memalig,/,*,*,/,n)\
-						((size_t)(a),(size_t)(s)) )
-#define valloc(s)		(_VMFL_(Vmregion), _VMNM_(vallo,/,*,*,/,c)\
-						((size_t)(s) )
+#define malloc(s)		( _VMFL_(Vmregion), _VMNM_(mallo,/,*,*,/,c)\
+						( (size_t)(s)) )
+#define realloc(d,s)		( _VMFL_(Vmregion), _VMNM_(reallo,/,*,*,/,c)\
+						( (Void_t*)(d),(size_t)(s)) )
+#define calloc(n,s)		( _VMFL_(Vmregion), _VMNM_(callo,/,*,*,/,c)\
+						( (size_t)n, (size_t)(s)) )
+#define free(d)			( _VMFL_(Vmregion), _VMNM_(fre,/,*,*,/,e)((Void_t*)(d)) )
+#define memalign(a,s)		( _VMFL_(Vmregion), _VMNM_(memalig,/,*,*,/,n)\
+						( (size_t)(a),(size_t)(s)) )
+#define valloc(s)		( _VMFL_(Vmregion), _VMNM_(vallo,/,*,*,/,c)\
+						( (size_t)(s)) )
+#ifndef strdup
+#define strdup(s)		( _VMFL_(Vmregion), _VMNM_(strdu,/,*,*,/,p)\
+						((char*)(s)) )
+#endif
+
 #endif /*__STD_C || defined(__STDPP__) || defined(__GNUC__)*/
 
 #define cfree(d)		free(d)
+
+#endif /* !_std_malloc */
+
+#endif /* _map_malloc */
 
 #endif /*VMFL*/
 

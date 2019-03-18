@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -27,10 +27,6 @@
  *
  *   David Korn
  *   AT&T Labs
- *   Room 2B-102
- *   Murray Hill, N. J. 07974
- *   Tel. x7975
- *   research!dgk
  *
  */
 
@@ -39,25 +35,54 @@
 #include	"io.h"
 #include	"history.h"
 #include	"shnodes.h"
+#include	"variables.h"
 #include	"jobs.h"
 #include	"path.h"
 
+#define abortsig(sig)	(sig==SIGABRT || sig==SIGBUS || sig==SIGILL || sig==SIGSEGV)
+
 static char	indone;
+
+#if !_std_malloc
+#   include	<vmalloc.h>
+#endif
+#if  defined(VMFL) && (VMALLOC_VERSION>=20031205L)
+    /*
+     * This exception handler is called after vmalloc() unlocks the region
+     */
+    static int malloc_done(Vmalloc_t* vm, int type, Void_t* val, Vmdisc_t* dp)
+    {
+	dp->exceptf = 0;
+	sh_exit(SH_EXITSIG);
+	return(0);
+    }
+#endif
 
 /*
  * Most signals caught or ignored by the shell come here
 */
 void	sh_fault(register int sig)
 {
-	register int 	flag;
+	register int 	flag=0;
 	register char	*trap;
 	register struct checkpt	*pp = (struct checkpt*)sh.jmplist;
+	int	action=0;
 	/* reset handler */
-#ifdef DEBUGSIG
-	if (sig == SIGBUS || sig == SIGILL || sig == SIGSEGV)
-		return;
-#endif
-	signal(sig, sh_fault);
+	if(!(sig&SH_TRAP))
+		signal(sig, sh_fault);
+	sig &= ~SH_TRAP;
+#ifdef SIGWINCH
+	if(sig==SIGWINCH && !sh_isoption(SH_POSIX))
+	{
+		int rows=0, cols=0;
+		astwinsize(2,&rows,&cols);
+		if(cols)
+			nv_putval(COLUMNS, (char*)&cols, NV_INTEGER);
+		if(rows)
+			nv_putval(LINES, (char*)&rows, NV_INTEGER);
+	}
+#endif  /* SIGWINCH */
+
 	/* handle ignored signals */
 	if((trap=sh.st.trapcom[sig]) && *trap==0)
 		return;
@@ -68,6 +93,7 @@ void	sh_fault(register int sig)
 			return;
 		if(flag&SH_SIGDONE)
 		{
+			void *ptr=0;
 			if((flag&SH_SIGINTERACTIVE) && sh_isstate(SH_INTERACTIVE) && !sh_isstate(SH_FORKED) && ! sh.subshell)
 			{
 				/* check for TERM signal between fork/exec */
@@ -81,7 +107,29 @@ void	sh_fault(register int sig)
 				pp->mode = SH_JMPFUN;
 			else
 				pp->mode = SH_JMPEXIT;
-			sh_exit(SH_EXITSIG);
+			if(sig==SIGABRT || (abortsig(sig) && (ptr = malloc(1))))
+			{
+				if(ptr)
+					free(ptr);
+				if(!sh.subshell)
+					sh_done(sig);
+				sh_exit(SH_EXITSIG);
+			}
+			/* mark signal and continue */
+			sh.trapnote |= SH_SIGSET;
+			if(sig < sh.sigmax)
+				sh.sigflag[sig] |= SH_SIGSET;
+#if  defined(VMFL) && (VMALLOC_VERSION>=20031205L)
+			if(abortsig(sig))
+			{
+				/* abort inside malloc, process when malloc returns */
+				/* VMFL defined when using vmalloc() */
+				Vmdisc_t* dp = vmdisc(Vmregion,0);
+				if(dp)
+					dp->exceptf = malloc_done;
+			}
+#endif
+			return;
 		}
 	}
 	errno = 0;
@@ -90,7 +138,7 @@ void	sh_fault(register int sig)
 	if(trap)
 	{
 		/*
-		 * propogage signal to foreground group
+		 * propogate signal to foreground group
 		 */
 		if(sig==SIGHUP && job.curpgid)
 			killpg(job.curpgid,SIGHUP);
@@ -113,11 +161,19 @@ void	sh_fault(register int sig)
 		}
 #endif /* SIGTSTP */
 	}
+#ifdef ERROR_NOTIFY
+	if((error_info.flags&ERROR_NOTIFY) && sh.bltinfun)
+		action = (*sh.bltinfun)(-sig,(char**)0,(void*)0);
+#endif
+	if(action>0)
+		return;
 	sh.trapnote |= flag;
 	if(sig < sh.sigmax)
 		sh.sigflag[sig] |= flag;
 	if(pp->mode==SH_JMPCMD && sh_isstate(SH_STOPOK))
 	{
+		if(action<0)
+			return;
 		sigrelease(sig);
 		sh_exit(SH_EXITSIG);
 	}
@@ -175,19 +231,24 @@ void sh_siginit(void)
 void	sh_sigtrap(register int sig)
 {
 	register int flag;
+	void (*fun)(int);
 	sh.st.otrapcom = 0;
 	if(sig==0)
 		sh_sigdone();
 	else if(!((flag=sh.sigflag[sig])&(SH_SIGFAULT|SH_SIGOFF)))
 	{
 		/* don't set signal if already set or off by parent */
-		if(signal(sig,sh_fault)==SIG_IGN) 
+		if((fun=signal(sig,sh_fault))==SIG_IGN) 
 		{
 			signal(sig,SIG_IGN);
 			flag |= SH_SIGOFF;
 		}
 		else
+		{
 			flag |= SH_SIGFAULT;
+			if(sig==SIGALRM && fun!=SIG_DFL && fun!=sh_fault)
+				signal(sig,fun);
+		}
 		flag &= ~(SH_SIGSET|SH_SIGTRAP);
 		sh.sigflag[sig] = flag;
 	}
@@ -298,7 +359,7 @@ void	sh_chktrap(void)
 			sh_exit(sh.exitval);
 		}
 	}
-	if(sh.sigflag[SIGALRM]&SH_SIGTRAP)
+	if(sh.sigflag[SIGALRM]&SH_SIGALRM)
 		sh_timetraps();
 	while(--sig>=0)
 	{
@@ -319,13 +380,15 @@ void	sh_chktrap(void)
 int sh_trap(const char *trap, int mode)
 {
 	int	jmpval, savxit = sh.exitval;
-	int	save_states= sh_isstate(SH_HISTORY|SH_VERBOSE);
+	int	was_history = sh_isstate(SH_HISTORY);
+	int	was_verbose = sh_isstate(SH_VERBOSE);
 	int	staktop = staktell();
 	char	*savptr = stakfreeze(0);
 	struct	checkpt buff;
 	Fcin_t	savefc;
 	fcsave(&savefc);
-	sh_offstate(SH_HISTORY|SH_VERBOSE);
+	sh_offstate(SH_HISTORY);
+	sh_offstate(SH_VERBOSE);
 	sh.intrap++;
 	sh_pushcontext(&buff,SH_JMPTRAP);
 	jmpval = sigsetjmp(buff.buff,0);
@@ -361,7 +424,10 @@ int sh_trap(const char *trap, int mode)
 		sh.exitval=savxit;
 	stakset(savptr,staktop);
 	fcrestore(&savefc);
-	sh_onstate(save_states);
+	if(was_history)
+		sh_onstate(SH_HISTORY);
+	if(was_verbose)
+		sh_onstate(SH_VERBOSE);
 	exitset();
 	if(jmpval>SH_JMPTRAP)
 		siglongjmp(*sh.jmplist,jmpval);
@@ -411,7 +477,8 @@ void sh_exit(register int xno)
 			if(sh.subshell)
 				sh_subfork();
 			/* child process, put to sleep */
-			sh_offstate(SH_MONITOR|SH_STOPOK);
+			sh_offstate(SH_STOPOK);
+			sh_offstate(SH_MONITOR);
 			sh.sigflag[SIGTSTP] = 0;
 			/* stop child job */
 			killpg(job.curpgid,SIGTSTP);
@@ -453,6 +520,8 @@ void sh_done(register int sig)
 	indone=1;
 	if(sig==0)
 		sig = sh.lastsig;
+	if(sh.userinit)
+		(*sh.userinit)(-1);
 	if(t=sh.st.trapcom[0])
 	{
 		sh.st.trapcom[0]=0; /*should free but not long */
@@ -467,11 +536,11 @@ void sh_done(register int sig)
 		sh_chktrap();
 	}
 	sh_freeup();
-#ifdef SHOPT_ACCT
+#if SHOPT_ACCT
 	sh_accend();
 #endif	/* SHOPT_ACCT */
 #if SHOPT_VSH || SHOPT_ESH
-	if(sh_isoption(SH_EMACS|SH_VI|SH_GMACS))
+	if(sh_isoption(SH_EMACS)||sh_isoption(SH_VI)||sh_isoption(SH_GMACS))
 		tty_cooked(-1);
 #endif
 #ifdef JOBS
@@ -492,7 +561,7 @@ void sh_done(register int sig)
 		kill(getpid(),sig);
 		pause();
 	}
-#ifdef SHOPT_KIA
+#if SHOPT_KIA
 	if(sh_isoption(SH_NOEXEC))
 		kiaclose();
 #endif /* SHOPT_KIA */

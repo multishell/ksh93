@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -43,6 +43,7 @@
 #endif
 
 #define NOCAT			((nl_catd)-1)
+#define GAP			100
 
 typedef	struct 
 {	
@@ -187,6 +188,11 @@ init(register char* s)
 		 * different packages can share the same message catalog
 		 * name by using different message set numbers
 		 * see <mc.h> mcindex()
+		 *
+		 * this method requires a scan of each catalog, and the
+		 * catalog do not advertize the max message number, so
+		 * we assume there are no messages after a gap of GAP
+		 * missing messages
 		 */
 
 		if (cp->messages = dtopen(&state.message_disc, Dtset))
@@ -195,6 +201,8 @@ init(register char* s)
 			for (n = 1; n < NL_MSGMAX; n++) 
 				if ((s = catgets(d, AST_MESSAGE_SET, n, state.null)) != state.null && entry(cp->messages, AST_MESSAGE_SET, n, s))
 					m = n;
+				else if ((n - m) > GAP)
+					break;
 			if (!m)
 			{
 				dtclose(cp->messages);
@@ -381,8 +389,16 @@ sfprintf(sfstderr, "AHA#%d:%s cp->cat %p cp->debug %d NOCAT %p\n", __LINE__, __F
 	r = catgets(cp->cat, mp->set, mp->seq, msg);
 	if (ast.locale.set & AST_LC_translate)
 		sfprintf(sfstderr, "translate locale=%s catalog=%s set=%d seq=%d \"%s\" => \"%s\"\n", cp->locale, cp->name, mp->set, mp->seq, msg, r == (char*)msg ? "NOPE" : r);
-	if (r != (char*)msg && streq(r, (char*)msg))
-		r = (char*)msg;
+	if (r != (char*)msg)
+	{
+		if (streq(r, (char*)msg))
+			r = (char*)msg;
+		else if (strcmp(fmtfmt(r), fmtfmt(msg)))
+		{
+			sfprintf(sfstderr, "locale %s catalog %s message %d.%d \"%s\" does not match \"%s\"\n", cp->locale, cp->name, mp->set, mp->seq, r, msg);
+			r = (char*)msg;
+		}
+	}
 	if (ast.locale.set & AST_LC_debug)
 	{
 		p = tempget(state.tmp);

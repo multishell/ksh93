@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -37,6 +37,16 @@
 #include	"FEATURE/setjmp"
 #include	"FEATURE/sigfeatures"
 
+#ifndef SIGWINCH
+#   ifdef SIGWIND
+#	define SIGWINCH	SIGWIND
+#   else
+#	ifdef SIGWINDOW
+#	    define SIGWINCH	SIGWINDOW
+#	endif
+#   endif
+#endif
+
 typedef void (*SH_SIGTYPE)(int,void(*)(int));
 
 #define SH_FORKLIM		16	/* fork timeout interval */
@@ -55,6 +65,7 @@ typedef void (*SH_SIGTYPE)(int,void(*)(int));
 #define SH_SIGIGNORE		040	/* default is ingore signal */
 #define SH_SIGINTERACTIVE	0100	/* handle interactive specially */
 #define SH_SIGTSTP		0200	/* tstp signal received */
+#define SH_SIGALRM		0200	/* timer alarm received */
 #define SH_SIGTERM		SH_SIGOFF /* term signal received */
 
 /*
@@ -86,7 +97,11 @@ struct checkpt
 	int		topfd;
 	int		mode;
 	struct openlist	*olist;
+#if (ERROR_VERSION >= 20030214L)
+	struct Error_context_s err;
+#else
 	struct errorcontext err;
+#endif
 };
 
 #define sh_pushcontext(bp,n)	( (bp)->mode=(n) , (bp)->olist=0,  \

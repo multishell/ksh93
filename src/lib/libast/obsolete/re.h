@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -24,28 +24,56 @@
 *                                                                  *
 *******************************************************************/
 #pragma prototyped
-
 /*
  * Glenn Fowler
  * AT&T Research
  *
- * character code string map
+ * regular expression library definitions
  */
 
-#include <ast.h>
-#include <ccode.h>
+#ifndef _RE_H
+#define _RE_H
 
-#undef	ccmaps
+#include <sfio.h>
 
-void*
-ccmapcpy(void* b, const void* a, size_t n, int in, int out)
+#define RE_ALL		(1<<0)	/* substitute all occurrences		*/
+#define RE_EDSTYLE	(1<<1)	/* ed(1) style meta characters		*/
+#define RE_LOWER	(1<<2)	/* substitute to lower case		*/
+#define RE_MATCH	(1<<3)	/* record matches in Re_program_t.match	*/
+#define RE_UPPER	(1<<4)	/* substitute to upper case		*/
+#define RE_LEFTANCHOR	(1<<5)	/* match anchored on left		*/
+#define RE_RIGHTANCHOR	(1<<6)	/* match anchored on right		*/
+#define RE_EXTERNAL	8	/* first external flag bit		*/
+
+typedef struct			/* sub-expression match			*/
 {
-	register unsigned char*		ub = (unsigned char*)b;
-	register unsigned char*		ue = ub + n;
-	register const unsigned char*	ua = (const unsigned char*)a;
-	register const unsigned char*	m = CCMAP(in, out);
+	char*	sp;		/* start in source string		*/
+	char*	ep;		/* end in source string			*/
+} Re_match_t;
 
-	while (ub < ue)
-		*ub++ = m[*ua++];
-	return b;
-}
+typedef struct			/* compiled regular expression program	*/
+{
+	Re_match_t	match['9'-'0'+1];/* sub-expression match table*/
+#ifdef _RE_PROGRAM_PRIVATE_
+	_RE_PROGRAM_PRIVATE_
+#endif
+} Re_program_t, reprogram;
+
+/*
+ * interface routines
+ */
+
+#if _BLD_ast && defined(__EXPORT__)
+#define extern		__EXPORT__
+#endif
+
+extern Re_program_t*	recomp(const char*, int);
+extern int		reexec(Re_program_t*, const char*);
+extern void		refree(Re_program_t*);
+extern void		reerror(const char*);
+extern char*		resub(Re_program_t*, const char*, const char*, char*, int);
+extern void		ressub(Re_program_t*, Sfio_t*, const char*, const char*, int);
+
+#undef	extern
+
+#endif

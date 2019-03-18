@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,12 +31,14 @@
 
 #ifdef _UWIN
 
+#define _std_def_cfree	1
+
 #include <sfio_t.h>
 #include <ast.h>
 
 #undef	strcoll
 
-#include <windows.h>
+#include <ast_windows.h>
 
 extern Sfio_t	_Sfstdin;
 extern Sfio_t	_Sfstdout;
@@ -56,11 +58,10 @@ extern Sfio_t	_Sfstderr;
  * for backward compatibility with early UNIX
  */
 
-extern int
+extern void
 cfree(void* addr)
 {
 	free(addr);
-	return 1;
 }
 
 extern void
@@ -112,7 +113,7 @@ DllMain(HINSTANCE hinst, DWORD reason, VOID* reserved)
 
 #include <ast.h>
 
-#if _dll_intercept_data && ( _DLL_BLD || _BLD_DLL )
+#if _dll_data_intercept && ( _DLL_BLD || _BLD_DLL )
 
 #undef	environ
 

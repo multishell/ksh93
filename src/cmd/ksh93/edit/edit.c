@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -42,19 +42,19 @@
 #   include	<ls.h>
 #endif
 
-#ifdef KSHELL
+#if KSHELL
 #   include	"defs.h"
 #   include	"variables.h"
 #else
     extern char ed_errbuf[];
-    char e_version[] = "\n@(#)$Id: Editlib version 1993-12-28 l $\0\n";
+    char e_version[] = "\n@(#)$Id: Editlib version 1993-12-28 p- $\0\n";
 #endif	/* KSHELL */
 #include	"io.h"
 #include	"terminal.h"
 #include	"history.h"
 #include	"edit.h"
 
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 #   define is_print(c)	((c&~STRIP) || isprint(c))
 #else
 #   define is_print(c)	isprint(c)
@@ -107,7 +107,7 @@
 #define ECHOMODE	3
 #define	SYSERR	-1
 
-#ifdef SHOPT_OLDTERMIO
+#if SHOPT_OLDTERMIO
 #   undef tcgetattr
 #   undef tcsetattr
 #endif /* SHOPT_OLDTERMIO */
@@ -129,7 +129,7 @@
 #   endif /* TIOCGETP */
 #endif /* _hdr_sgtty */
 
-#ifdef KSHELL
+#if KSHELL
      static int keytrap(Edit_t *,char*, int, int, int);
 #else
      struct edit editb;
@@ -268,7 +268,7 @@ tty_raw(register int fd, int echomode)
 		return(echo?-1:0);
 	else if(ep->e_raw==ECHOMODE)
 		return(echo?0:-1);
-#ifndef SHOPT_RAWONLY
+#if !SHOPT_RAWONLY
 	if(ep->e_raw != ALTMODE)
 #endif /* SHOPT_RAWONLY */
 	{
@@ -375,7 +375,7 @@ tty_raw(register int fd, int echomode)
 	return(0);
 }
 
-#ifndef SHOPT_RAWONLY
+#if !SHOPT_RAWONLY
 
 /*
  *
@@ -580,7 +580,7 @@ void ed_crlf(register Edit_t *ep)
  *	    are not counted as part of the prompt length.
  */
 
-void	ed_setup(register Edit_t *ep, int fd)
+void	ed_setup(register Edit_t *ep, int fd, int reedit)
 {
 	register char *pp;
 	register char *last;
@@ -589,7 +589,7 @@ void	ed_setup(register Edit_t *ep, int fd)
 	register int qlen = 1;
 	char inquote = 0;
 	ep->e_fd = fd;
-#ifdef KSHELL
+#if KSHELL
 	ep->e_stkptr = stakptr(0);
 	ep->e_stkoff = staktell();
 	if(!(last = sh.prompt))
@@ -611,6 +611,7 @@ void	ed_setup(register Edit_t *ep, int fd)
 	ep->e_hline = ep->e_hismax;
 	ep->e_wsize = ed_window()-2;
 	ep->e_crlf = 1;
+	ep->e_plen = 0;
 	pp = ep->e_prompt;
 	ppmax = pp+PRSIZE-1;
 	*pp++ = '\r';
@@ -620,17 +621,29 @@ void	ed_setup(register Edit_t *ep, int fd)
 		{
 			case ESC:
 			{
+				int skip=0;
 				ep->e_crlf = 0;
+				*pp++ = c;
 				for(n=1; c = *last++; n++)
 				{
-					if(c>='0' && c<='9' && n>2)
+					if(pp < ppmax)
+						*pp++ = c;
+					if(c=='\a')
+						break;
+					if(skip || (c>='0' && c<='9'))
 						continue;
-					if(n>2 || (c!= '['  &&  c!= 'O'))
+					if(n>1 && c==';')
+						skip = 1;
+					else if(n>2 || (c!= '[' &&  c!= ']'))
 						break;
 				}
-				qlen += n;
+				qlen += (n+1);
 				break;
 			}
+			case '\b':
+				if(pp>ep->e_prompt+1)
+					pp--;
+				break;
 			case '\r':
 				if(pp == (ep->e_prompt+2)) /* quote char */
 					myquote = *(pp-1);
@@ -673,7 +686,8 @@ void	ed_setup(register Edit_t *ep, int fd)
 				}
 		}
 	}
-	ep->e_plen = pp - ep->e_prompt - qlen;
+	if(pp-ep->e_prompt > qlen)
+		ep->e_plen = pp - ep->e_prompt - qlen;
 	*pp = 0;
 	if((ep->e_wsize -= ep->e_plen) < 7)
 	{
@@ -685,6 +699,16 @@ void	ed_setup(register Edit_t *ep, int fd)
 		last[-ep->e_plen-2] = '\r';
 	}
 	sfsync(sfstderr);
+	if(fd == sffileno(sfstderr))
+	{
+		/* can't use output buffer when reading from stderr */
+		static char *buff;
+		if(!buff)
+			buff = (char*)malloc(MAXLINE);
+		ep->e_outbase = ep->e_outptr = buff;
+		ep->e_outlast = ep->e_outptr + MAXLINE;
+		return;
+	}
 	qlen = sfset(sfstderr,SF_READ,0);
 	/* make sure SF_READ not on */
 	ep->e_outbase = ep->e_outptr = (char*)sfreserve(sfstderr,SF_UNBOUND,1);
@@ -692,6 +716,7 @@ void	ed_setup(register Edit_t *ep, int fd)
 	if(qlen)
 		sfset(sfstderr,SF_READ,1);
 	sfwrite(sfstderr,ep->e_outptr,0);
+	ep->e_eol = reedit;
 }
 
 /*
@@ -703,12 +728,13 @@ void	ed_setup(register Edit_t *ep, int fd)
  * this case.  This is not necessary for systems that can handle
  * sfpkrd() correctly (i,e., those that support poll() or select()
  */
-int ed_read(int fd, char *buff, int size)
+int ed_read(void *context, int fd, char *buff, int size, int reedit)
 {
-	register Edit_t *ep = (Edit_t*)(sh_getinterp()->ed_context);
+	register Edit_t *ep = (Edit_t*)context;
 	register int rv= -1;
 	register int delim = (ep->e_raw==RAWMODE?'\r':'\n');
 	int mode = -1;
+	int (*waitevent)(int,long,int) = sh.waitevent;
 	if(ep->e_raw==ALTMODE)
 		mode = 1;
 	if(size < 0)
@@ -718,13 +744,14 @@ int ed_read(int fd, char *buff, int size)
 	}
 	sh_onstate(SH_TTYWAIT);
 	errno = EINTR;
+	sh.waitevent = 0;
 	while(rv<0 && errno==EINTR)
 	{
 		if(sh.trapnote&(SH_SIGSET|SH_SIGTRAP))
 			goto done;
 		/* an interrupt that should be ignored */
 		errno = 0;
-		if(!sh.waitevent || (rv=(*sh.waitevent)(fd,-1L,0))==0)
+		if(!waitevent || (rv=(*waitevent)(fd,-1L,0))>=0)
 			rv = sfpkrd(fd,buff,size,delim,-1L,mode);
 	}
 	if(rv < 0)
@@ -765,6 +792,7 @@ int ed_read(int fd, char *buff, int size)
 	else if(rv>=0 && mode>0)
 		rv = read(fd,buff,rv>0?rv:1);
 done:
+	sh.waitevent = waitevent;
 	sh_offstate(SH_TTYWAIT);
 	return(rv);
 }
@@ -779,7 +807,7 @@ done:
 static int putstack(Edit_t *ep,char string[], register int nbyte, int type) 
 {
 	register int c;
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	char *endp, *p=string;
 	int size, offset = ep->e_lookahead + nbyte;
 	*(endp = &p[nbyte]) = 0;
@@ -796,7 +824,7 @@ static int putstack(Edit_t *ep,char string[], register int nbyte, int type)
 			{
 				/*** user break key ***/
 				ep->e_lookahead = 0;
-#	ifdef KSHELL
+#	if KSHELL
 				sh_fault(SIGINT);
 				siglongjmp(ep->e_env, UINTR);
 #	endif   /* KSHELL */
@@ -808,14 +836,18 @@ static int putstack(Edit_t *ep,char string[], register int nbyte, int type)
 		{
 		again:
 			if((c=mbchar(p)) >=0)
+			{
 				p--;	/* incremented below */
+				if(type)
+					c = -c;
+			}
 #ifdef EILSEQ
 			else if(errno == EILSEQ)
 				errno = 0;
 #endif
 			else if((endp-p) < mbmax())
 			{
-				if ((c=ed_read(ep->e_fd,endp, 1)) == 1)
+				if ((c=ed_read(ep,ep->e_fd,endp, 1,0)) == 1)
 				{
 					*++endp = 0;
 					goto again;
@@ -850,7 +882,7 @@ static int putstack(Edit_t *ep,char string[], register int nbyte, int type)
 		{
 			/*** user break key ***/
 			ep->e_lookahead = 0;
-#	ifdef KSHELL
+#	if KSHELL
 			sh_fault(SIGINT);
 			siglongjmp(ep->e_env, UINTR);
 #	endif	/* KSHELL */
@@ -879,7 +911,7 @@ int ed_getchar(register Edit_t *ep,int mode)
 		ed_flush(ep);
 		ep->e_inmacro = 0;
 		/* The while is necessary for reads of partial multbyte chars */
-		if((n=ed_read(ep->e_fd,readin,-LOOKAHEAD)) > 0)
+		if((n=ed_read(ep,ep->e_fd,readin,-LOOKAHEAD,0)) > 0)
 			n = putstack(ep,readin,n,1);
 	}
 	if(ep->e_lookahead)
@@ -896,7 +928,7 @@ int ed_getchar(register Edit_t *ep,int mode)
 					{
 						if(!ep->e_lookahead)
 						{
-							if((c=sfpkrd(ep->e_fd,readin+n,LOOKAHEAD-n,'\r',(mode?400L:-1L),0))>0)
+							if((c=sfpkrd(ep->e_fd,readin+n,1,'\r',(mode?400L:-1L),0))>0)
 								putstack(ep,readin+n,c,1);
 						}
 						if(!ep->e_lookahead)
@@ -951,7 +983,7 @@ void	ed_putchar(register Edit_t *ep,register int c)
 	register char *dp = ep->e_outptr;
 	register int i,size=1;
 	buf[0] = c;
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	/* check for place holder */
 	if(c == MARKER)
 		return;
@@ -999,7 +1031,7 @@ ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int poff
 		if(curp == sp)
 			r = dp - phys;
 		d = (is_print(c)?1:-1);
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 		d = mbwidth((wchar_t)c);
 		if(d==1 && !is_print(c))
 			d = -1;
@@ -1045,7 +1077,7 @@ ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int poff
 	return(r);
 }
 
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 /*
  * convert external representation <src> to an array of genchars <dest>
  * <src> and <dest> can be the same
@@ -1139,63 +1171,6 @@ int	ed_genlen(register const genchar *str)
 #endif /* SHOPT_MULTIBYTE */
 #endif /* SHOPT_ESH || SHOPT_VSH */
 
-#ifdef SHOPT_MULTIBYTE
-/*
- * set the multibyte widths
- * format of string is x1[:y1][,x2[:y2][,x3[:y3]]]
- * returns 1 if string in not in this format, 0 otherwise.
- */
-
-ed_setwidth(const char *string)
-{
-	register int indx = 0;
-	register int state = 0;
-	register int c;
-	register int n = 0;
-	static char widths[6] = {1,1};
-	while(1) switch(c = *string++)
-	{
-		case ':':
-			if(state!=1)
-				return(1);
-			state++;
-			/* fall through */
-
-		case 0:
-		case ',':
-			if(state==0)
-				return(1);
-			widths[indx++] = n;
-			if(state==1)
-				widths[indx++] = n;
-			if(c==0)
-			{
-				for(n=1;n<= 3;n++)
-				{
-					int_charsize[n] = widths[c++];
-					int_charsize[n+4] = widths[c++];
-				}
-				return(0);
-			}
-			else if(c==',')
-				state = 0;
-			n = 0;
-			break;
-
-		case '0': case '1': case '2': case '3': case '4':
-			if(state&1)
-				return(1);
-			n = c - '0';
-			state++;
-			break;
-			
-		default:
-			return(1);
-	}
-	/* NOTREACHED */
-}
-#endif /* SHOPT_MULTIBYTE */
-
 #ifdef future
 /*
  * returns 1 when <n> bytes starting at <a> and <b> are equal
@@ -1211,7 +1186,7 @@ static int compare(register const char *a,register const char *b,register int n)
 }
 #endif
 
-#ifdef SHOPT_OLDTERMIO
+#if SHOPT_OLDTERMIO
 
 #   include	<sys/termio.h>
 
@@ -1287,7 +1262,7 @@ tcsetattr(int fd,int mode,struct termios *tt)
 }
 #endif /* SHOPT_OLDTERMIO */
 
-#ifdef KSHELL
+#if KSHELL
 /*
  * Execute keyboard trap on given buffer <inbuff> of given size <isize>
  * <mode> < 0 for vi insert mode
@@ -1296,7 +1271,7 @@ static int keytrap(Edit_t *ep,char *inbuff,register int insize, int bufsize, int
 {
 	register char *cp;
 	int savexit;
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	char buff[MAXLINE];
 	ed_external(ep->e_inbuf,cp=buff);
 #else

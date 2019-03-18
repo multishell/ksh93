@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -94,7 +94,7 @@ reg size_t	n;
 			{	buf = endbuf;
 				n = s = 0;
 			}
-			if((wr = write(f->file,wbuf,buf-wbuf)) > 0)
+			if((wr = syswritef(f->file,wbuf,buf-wbuf)) > 0)
 			{	w += wr;
 				f->bits &= ~SF_HOLE;
 			}
@@ -206,7 +206,7 @@ reg Sfdisc_t*	disc;
 			else
 			{
 			do_write:
-				if((w = write(f->file,(char*)buf,n)) > 0)
+				if((w = syswritef(f->file,buf,n)) > 0)
 					f->bits &= ~SF_HOLE;
 			}
 
@@ -214,8 +214,8 @@ reg Sfdisc_t*	disc;
 				errno = oerrno;
 
 			if(w > 0)
-			{	if(!(f->bits&SF_DCDOWN))
-				{	if(f->flags&(SF_APPENDWR|SF_PUBLIC) )
+			{	if(!(f->bits&SF_DCDOWN) )
+				{	if((f->flags&(SF_APPENDWR|SF_PUBLIC)) && f->extent >= 0 )
 						f->here = SFSK(f,(Sfoff_t)0,SEEK_CUR,dc);
 					else	f->here += w;
 					if(f->extent >= 0 && f->here > f->extent)

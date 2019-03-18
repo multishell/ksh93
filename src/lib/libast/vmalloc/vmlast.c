@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_vmlast(){}
 
@@ -49,7 +49,7 @@ size_t		size;
 	reg size_t	s;
 	reg Vmdata_t*	vd = vm->data;
 	reg int		local;
-	size_t		orgsize;
+	size_t		orgsize = 0;
 
 	if(!(local = vd->mode&VM_TRUST))
 	{	GETLOCAL(vd,local);
@@ -98,6 +98,7 @@ got_block:
 
 done:
 	CLRLOCK(vd,local);
+	ANNOUNCE(local, vm, VM_ALLOC, (Void_t*)tp, vm->disc);
 	return (Void_t*)tp;
 }
 
@@ -118,14 +119,15 @@ reg Void_t*	data;
 	if(!data)
 		return 0;
 	if(!(local = vd->mode&VM_TRUST) )
-	{	if(ISLOCK(vd,0))
+	{	GETLOCAL(vd, local);
+		if(ISLOCK(vd, local))
 			return -1;
-		SETLOCK(vd,0);
+		SETLOCK(vd, local);
 	}
 	if(data != (Void_t*)vd->free)
 	{	if(!local && vm->disc->exceptf)
 			(void)(*vm->disc->exceptf)(vm,VM_BADADDR,data,vm->disc);
-		CLRLOCK(vd,0);
+		CLRLOCK(vd, local);
 		return -1;
 	}
 
@@ -144,7 +146,8 @@ reg Void_t*	data;
 	seg->free = fp;
 	seg->last = NIL(Block_t*);
 
-	CLRLOCK(vd,0);
+	CLRLOCK(vd, local);
+	ANNOUNCE(local, vm, VM_FREE, data, vm->disc);
 	return 0;
 }
 
@@ -165,8 +168,8 @@ int		type;
 	reg Vmdata_t*	vd = vm->data;
 	reg int		local;
 	reg Void_t*	addr;
-	Void_t*		orgdata;
-	size_t		orgsize;
+	Void_t*		orgdata = NIL(Void_t*);
+	size_t		orgsize = 0;
 
 	if(!data)
 	{	oldsize = 0;
@@ -179,9 +182,10 @@ int		type;
 	}
 
 	if(!(local = vd->mode&VM_TRUST))
-	{	if(ISLOCK(vd,0))
+	{	GETLOCAL(vd, local);
+		if(ISLOCK(vd, local))
 			return NIL(Void_t*);
-		SETLOCK(vd,0);
+		SETLOCK(vd, local);
 		orgdata = data;
 		orgsize = size;
 	}
@@ -280,7 +284,8 @@ int		type;
 			(*_Vmtrace)(vm,(Vmuchar_t*)orgdata,(Vmuchar_t*)data,orgsize,0);
 	}
 
-	CLRLOCK(vd,0);
+	CLRLOCK(vd, local);
+	ANNOUNCE(local, vm, VM_RESIZE, data, vm->disc);
 
 done:	if(data && (type&VM_RSZERO) && size > oldsize)
 		memset((Void_t*)((Vmuchar_t*)data + oldsize), 0, size-oldsize);
@@ -354,7 +359,7 @@ Vmalloc_t*	vm;
 			s = seg->extent;
 		else	s += sizeof(Head_t);
 
-		if((*_Vmtruncate)(vm,seg,s,1) < 0)
+		if((*_Vmtruncate)(vm,seg,s,1) == s)
 			seg->free = fp;
 	}
 
@@ -375,10 +380,10 @@ size_t		align;
 #endif
 {
 	reg Vmuchar_t*	data;
-	reg size_t	s, orgsize, orgalign;
 	reg Seg_t*	seg;
 	reg Block_t*	next;
 	reg int		local;
+	reg size_t	s, orgsize = 0, orgalign = 0;
 	reg Vmdata_t*	vd = vm->data;
 
 	if(size <= 0 || align <= 0)
@@ -425,6 +430,7 @@ size_t		align;
 
 done:
 	CLRLOCK(vd,local);
+	ANNOUNCE(local, vm, VM_ALLOC, (Void_t*)data, vm->disc);
 
 	return (Void_t*)data;
 }

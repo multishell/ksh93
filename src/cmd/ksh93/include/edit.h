@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -35,11 +35,11 @@
 
 #include	"FEATURE/options"
 #include        "FEATURE/locale"
-#if !defined(SHOPT_VSH) && !defined (SHOPT_ESH)
+#if !SHOPT_VSH && !SHOPT_ESH
 #   define ed_winsize()	(SEARCHSIZE)
 #else
 
-#ifndef KSHELL
+#if !KSHELL
 #   include	<setjmp.h>
 #   include	<sig.h>
 #   include	<ctype.h>
@@ -51,7 +51,7 @@
 #define STRIP		0377
 #define LOOKAHEAD	80
 
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 #   ifndef ESS_MAXCHAR
 #	include	"national.h"
 #   endif /* ESS_MAXCHAR */
@@ -63,7 +63,7 @@
 #endif /* SHOPT_MULTIBYTE */
 
 #define TABSIZE	8
-#define PRSIZE	80
+#define PRSIZE	160
 #define MAXLINE	502		/* longest edit line permitted */
 
 typedef struct edit
@@ -112,19 +112,19 @@ typedef struct edit
 	dev_t	e_tty_dev;
 	char	*e_tty;
 #endif
-#ifdef SHOPT_OLDTERMIO
+#if SHOPT_OLDTERMIO
 	char	e_echoctl;
 	char	e_tcgeta;
 	struct termio e_ott;
 #endif
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	int	e_curchar;
 	int	e_cursize;
 #endif
 	int	*e_globals;	/* global variables */
 	genchar	*e_window;	/* display window  image */
 	char	e_inmacro;	/* processing macro expansion */
-#ifdef KSHELL
+#if KSHELL
 	char	e_vi_insert[2];	/* for sh_keytrap */
 	long	e_col;		/* for sh_keytrap */
 #else
@@ -165,7 +165,7 @@ typedef struct edit
 		(c<'J'?c+1-'A':(c+10-'J'))))))))))))))))
 #endif
 
-#ifndef KSHELL
+#if !KSHELL
 #   define STRIP	0377
 #   define GMACS	1
 #   define EMACS	2
@@ -185,22 +185,22 @@ typedef struct edit
 extern void	ed_crlf(Edit_t*);
 extern void	ed_putchar(Edit_t*, int);
 extern void	ed_ringbell(void);
-extern void	ed_setup(Edit_t*,int);
+extern void	ed_setup(Edit_t*,int, int);
 extern void	ed_flush(Edit_t*);
 extern int	ed_getchar(Edit_t*,int);
 extern int	ed_virt_to_phys(Edit_t*,genchar*,genchar*,int,int,int);
 extern int	ed_window(void);
 extern void	ed_ungetchar(Edit_t*,int);
-extern int	ed_viread(int, char*, int);
-extern int	ed_read(int, char*, int);
-extern int	ed_emacsread(int, char*, int);
-#ifdef KSHELL
+extern int	ed_viread(void*, int, char*, int, int);
+extern int	ed_read(void*, int, char*, int, int);
+extern int	ed_emacsread(void*, int, char*, int, int);
+#if KSHELL
 	extern int	ed_macro(Edit_t*,int);
 	extern int	ed_expand(Edit_t*, char[],int*,int*,int,int);
 	extern int	ed_fulledit(Edit_t*);
 	extern void	*ed_open(Shell_t*);
 #endif /* KSHELL */
-#   ifdef SHOPT_MULTIBYTE
+#   if SHOPT_MULTIBYTE
 	extern int ed_internal(const char*, genchar*);
 	extern int ed_external(const genchar*, char*);
 	extern void ed_gencpy(genchar*,const genchar*);
@@ -210,9 +210,37 @@ extern int	ed_emacsread(int, char*, int);
 #  endif /* SHOPT_MULTIBYTE */
 
 extern const char	e_runvi[];
-#ifndef KSHELL
+#if !KSHELL
    extern const char	e_version[];
 #endif /* KSHELL */
+
+#if SHOPT_HISTEXPAND
+
+/* flags */
+
+#define	HIST_EVENT	0x1	/* event designator seen */
+#define HIST_QUESTION	0x2	/* question mark event designator */
+#define	HIST_HASH	0x4	/* hash event designator */
+#define HIST_WORDDSGN	0x8	/* word designator seen */
+#define HIST_QUICKSUBST	0x10	/* quick substition designator seen */
+#define HIST_SUBSTITUTE	0x20	/* for substition loop */
+#define	HIST_NEWLINE	0x40	/* newline in squashed white space */
+
+/* modifier flags */
+
+#define	HIST_PRINT		0x100	/* print new command */
+#define	HIST_QUOTE		0x200	/* quote resulting history line */
+#define	HIST_QUOTE_BR		0x400	/* quote every word on space break */
+#define	HIST_GLOBALSUBST	0x800	/* apply substition globally */
+
+#define	HIST_ERROR		0x1000	/* an error ocurred */
+
+/* flags to be returned */
+
+#define	HIST_FLAG_RETURN_MASK	(HIST_EVENT|HIST_PRINT|HIST_ERROR)
+
+extern int hist_expand(const char *, char **);
+#endif
 
 #endif
 #endif

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -30,7 +30,7 @@
  */
 
 static const char usage[] =
-"[-?@(#)$Id: stty (AT&T Labs Research) 2002-01-24 $\n]"
+"[-?@(#)$Id: stty (AT&T Labs Research) 2003-06-04 $\n]"
 USAGE_LICENSE
 "[+NAME?stty - set or get terminal modes]"
 "[+DESCRIPTION?\bstty\b sets certain terminal I/O modes for the device "
@@ -58,7 +58,7 @@ USAGE_LICENSE
       "[+0?All modes reported or set successfully.]"
         "[+>0?Standard input not a terminaol or one or more modes failed.]"
 "}"
-"[+SEE ALSO?tegetattr(2), tcsetattr(2), ioctl(2)]"
+"[+SEE ALSO?\btegetattr\b(2), \btcsetattr\b(2), \bioctl\b(2)]"
 ;
 
 
@@ -619,7 +619,7 @@ static int gettchar(register const char *cp)
 			return(cntl(cp[1]));
 		}
 	}
-	if(strcmp("undef",cp)==0)
+	if(streq(cp,"undef") || streq(cp,"<undef>"))
 		return(-1);
 	return(*((unsigned char*)cp));
 }
@@ -863,7 +863,8 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 #endif
 	sfprintf(sp,"}[+Local Modes.]{");
 	listfields(sp,L_FLAG);
-	sfprintf(sp,"}[+Control Assignments.]{");
+	sfprintf(sp,"}[+Control Assignments.?If \ac\a is \bundef\b or an empty "
+		"string then the control assignment is disabled.]{");
 	listchars(sp,WIND);
 	listchars(sp,CHAR);
 	sfprintf(sp,"}[+Combination Modes.]{");
@@ -889,7 +890,7 @@ b_stty(int argc, char** argv, void* context)
 	Optdisc_t		disc;
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG);
+	cmdinit(argv, context, ERROR_CATALOG, 0);
 	if (tcgetattr(0, &tty) < 0)
 		error(ERROR_system(1),"not a tty");
 	memset(&disc, 0, sizeof(disc));

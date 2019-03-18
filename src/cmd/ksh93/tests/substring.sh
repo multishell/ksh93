@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -192,7 +192,7 @@ function myexport
 		return
 	fi
 	typeset val
-	val=$(export | grep "$1=")
+	val=$(export | grep "^$1=")
 	print ${val#"$1="}
 	
 }
@@ -200,21 +200,21 @@ export dgk=base
 if	[[ $(myexport dgk fun) != fun ]]
 then	err_exit 'export inside function not working'
 fi
-val=$(export | grep "dgk=")
+val=$(export | grep "^dgk=")
 if	[[ ${val#dgk=} != base ]]
 then	err_exit 'export not restored after function call'
 fi
 if	[[ $(myexport dgk fun fun2) != fun2 ]]
 then	err_exit 'export inside function not working with recursive function'
 fi
-val=$(export | grep "dgk=")
+val=$(export | grep "^dgk=")
 if	[[ ${val#dgk=} != base ]]
 then	err_exit 'export not restored after recursive function call'
 fi
 if	[[ $(dgk=try3 myexport dgk) != try3 ]]
 then	err_exit 'name=value not added to export list with function call'
 fi
-val=$(export | grep "dgk=")
+val=$(export | grep "^dgk=")
 if	[[ ${val#dgk=} != base ]]
 then	err_exit 'export not restored name=value function call'
 fi
@@ -261,4 +261,29 @@ foo='foo+bar+'
 [[ $(print -r -- ${foo//+/"|"}) != 'foo|bar|' ]] && err_exit '${foobar//+/"|"}'
 [[ $(print -r -- "${foo//+/'|'}") != 'foo|bar|' ]] && err_exit '"${foobar//+/'"'|'"'}"'
 [[ $(print -r -- "${foo//+/"|"}") != 'foo|bar|' ]] && err_exit '"${foobar//+/"|"}"'
+unset x
+x=abcedfg
+: ${x%@(d)f@(g)}
+[[ ${.sh.match[0]} == dfg ]] || err_exit '.sh.match[0] not dfg'
+[[ ${.sh.match[1]} == d ]] || err_exit '.sh.match[1] not d'
+[[ ${.sh.match[2]} == g ]] || err_exit '.sh.match[2] not g'
+x=abcedddfg
+: ${x%%+(d)f@(g)}
+[[ ${.sh.match[1]} == ddd ]] || err_exit '.sh.match[1] not ddd'
+unset a b
+a='\[abc @(*) def\]'
+b='[abc 123 def]'
+[[ ${b//$a/\1} == 123 ]] || err_exit "\${var/pattern} not working with \[ in pattern"
+unset X
+$SHELL -c '[[ ! ${X[@]:0:300} ]]' 2> /dev/null || err_exit '${X[@]:0:300} with X undefined fails'
+$SHELL -c '[[ ${@:0:300} == "$0" ]]' 2> /dev/null || err_exit '${@:0:300} with no arguments fails'
+i=20030704
+[[ ${i#{6}(?)} == 04 ]] ||  err_exit '${i#{6}(?)} not working'
+[[ ${i#{6,6}(?)} == 04 ]] ||  err_exit '${i#{6,6}(?)} not working'
+LC_ALL=posix
+i="   ."
+[[ $(printf "<%s>\n" ${i#' '}) == '<.>' ]] || err_exit 'printf "<%s>\n" ${i#' '} failed'
+unset x
+x=foo
+[[ "${x%o}(1)" == "fo(1)" ]] ||  err_exit 'print ${}() treated as pattern'
 exit $((Errors))

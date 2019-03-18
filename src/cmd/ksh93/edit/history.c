@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -70,7 +70,7 @@
 #include	<error.h>
 #include	<ctype.h>
 #include	<ls.h>
-#ifdef KSHELL
+#if KSHELL
 #   include	"defs.h"
 #   include	"variables.h"
 #   include	"path.h"
@@ -78,9 +78,8 @@
 #   include	"io.h"
 #endif	/* KSHELL */
 #include	"history.h"
-#include	"national.h"
 
-#ifndef KSHELL
+#if !KSHELL
 #   define new_of(type,x)	((type*)malloc((unsigned)sizeof(type)+(x)))
 #   define NIL(type)		((type)0)
 #   define path_relative(x)	(x)
@@ -119,7 +118,7 @@ static mode_t	histmode;
 static History_t *wasopen;
 static History_t *hist_ptr;
 
-#ifdef SHOPT_ACCTFILE
+#if SHOPT_ACCTFILE
     static int	acctfd;
     static char *logname;
 #   include <pwd.h>
@@ -246,7 +245,7 @@ retry:
 	}
 	if(fd < 0)
 	{
-#ifdef KSHELL
+#if KSHELL
 		/* don't allow root a history_file in /tmp */
 		if(sh.userid)
 #endif	/* KSHELL */
@@ -326,11 +325,11 @@ retry:
 		hist_trim(hp,(int)hp->histind-maxlines);
 	}
 	sfdisc(hp->histfp,&hp->histdisc);
-#ifdef KSHELL
+#if KSHELL
 	(HISTCUR)->nvalue.lp = (&hp->histind);
 #endif /* KSHELL */
 	sh_timeradd(1000L*(HIST_RECENT-30), 1, hist_touch, (void*)hp->histname);
-#ifdef SHOPT_ACCTFILE
+#if SHOPT_ACCTFILE
 	if(sh_isstate(SH_INTERACTIVE))
 		acctinit();
 #endif /* SHOPT_ACCTFILE */
@@ -347,7 +346,7 @@ void hist_close(register History_t *hp)
 	free((char*)hp);
 	hist_ptr = 0;
 	sh.hist_ptr = 0;
-#ifdef SHOPT_ACCTFILE
+#if SHOPT_ACCTFILE
 	if(acctfd)
 	{
 		close(acctfd);
@@ -696,6 +695,8 @@ static int hist_write(Sfio_t *iop,const void *buff,register int insize,Sfdisc_t*
 	register char *bufptr = ((char*)buff)+insize;
 	register int c,size = insize;
 	register off_t cur;
+	int saved=0;
+	char saveptr[HIST_MARKSZ];
 	if(!hp->histflush)
 		return(write(sffileno(iop),(char*)buff,size));
 	if((cur = lseek(sffileno(iop),(off_t)0,SEEK_END)) <0)
@@ -721,7 +722,7 @@ static int hist_write(Sfio_t *iop,const void *buff,register int insize,Sfdisc_t*
 	*bufptr++ = '\n';
 	*bufptr++ = 0;
 	size = bufptr - (char*)buff;
-#ifdef	SHOPT_ACCTFILE
+#if	SHOPT_ACCTFILE
 	if(acctfd)
 	{
 		int timechars, offset;
@@ -745,13 +746,18 @@ static int hist_write(Sfio_t *iop,const void *buff,register int insize,Sfdisc_t*
 	hp->histcmds[c] = hp->histcnt;
 	if(hp->histflush>HIST_MARKSZ && hp->histcnt > hp->histmarker+HIST_BSIZE/2)
 	{
+		memcpy((void*)saveptr,(void*)bufptr,HIST_MARKSZ);
+		saved=1;
 		hp->histcnt += HIST_MARKSZ;
 		hist_marker(bufptr,hp->histind);
 		hp->histmarker = hp->histcmds[hist_ind(hp,c)] = hp->histcnt;
 		size += HIST_MARKSZ;
 	}
 	errno = 0;
-	if(write(sffileno(iop),(char*)buff,size)>=0)
+	size = write(sffileno(iop),(char*)buff,size);
+	if(saved)
+		memcpy((void*)bufptr,(void*)saveptr,HIST_MARKSZ);
+	if(size>=0)
 	{
 		hp->histwfail = 0;
 		return(insize);
@@ -871,7 +877,7 @@ Histloc_t hist_find(register History_t*hp,char *string,register int index1,int f
 			location.hist_command = index1;
 			return(location);
 		}
-#ifdef KSHELL
+#if KSHELL
 		/* allow a search to be aborted */
 		if(sh.trapnote&SH_SIGSET)
 			break;
@@ -890,7 +896,7 @@ int hist_match(register History_t *hp,off_t offset,char *string,int *coffset)
 {
 	register unsigned char *first, *cp;
 	register int m,n,c=1,line=0;
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	mbinit();
 #endif /* SHOPT_MULTIBYTE */
 	sfseek(hp->histfp,offset,SEEK_SET);
@@ -910,7 +916,7 @@ int hist_match(register History_t *hp,off_t offset,char *string,int *coffset)
 			break;
 		if(*cp=='\n')
 			line++;
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 		if((c=mbsize(cp)) < 0)
 			c = 1;
 #endif /* SHOPT_MULTIBYTE */
@@ -981,7 +987,7 @@ char *hist_word(char *string,int size,int word)
 	register int flag = 0;
 	History_t *hp = hist_ptr;
 	if(!hp)
-#ifdef KSHELL
+#if KSHELL
 	{
 		strncpy(string,sh.lastarg,size);
 		return(string);
@@ -1014,7 +1020,7 @@ char *hist_word(char *string,int size,int word)
 
 #endif	/* SHOPT_ESH */
 
-#ifdef SHOPT_ESH
+#if SHOPT_ESH
 /*
  * given the current command and line number,
  * and number of lines back or foward,

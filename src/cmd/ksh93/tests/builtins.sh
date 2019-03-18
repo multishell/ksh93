@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -124,6 +124,17 @@ fi
 (break bad 2>/dev/null && err_exit 'break bad should return an error')
 (continue 0 2>/dev/null && err_exit 'continue 0 should return an error')
 (break 0 2>/dev/null && err_exit 'break 0 should return an error')
+breakfun() { break;}
+continuefun() { continue;}
+for fun in break continue
+do	if	[[ $(	for i in foo
+			do	${fun}fun
+				print $i
+			done
+		) != foo ]]
+	then	err_exit "$fun call in ${fun}fun breaks out of for loop"
+	fi
+done
 if	[[ $(print -f "%b" "\a\n\v\b\r\f\E\03\\oo") != $'\a\n\v\b\r\f\E\03\\oo' ]]
 then	err_exit 'print -f "%b" not working'
 fi
@@ -151,6 +162,16 @@ fi
 if	[[ $(trap -p HUP) != 'print HUP' ]]
 then	err_exit '$(trap -p HUP) not working'
 fi
+[[ $($SHELL -c 'trap "print ok" SIGTERM; kill -s SIGTERM $$' 2> /dev/null) == ok
+ ]] || err_exit 'SIGTERM not recognized'
+[[ $($SHELL -c 'trap "print ok" sigterm; kill -s sigterm $$' 2> /dev/null) == ok
+ ]] || err_exit 'SIGTERM not recognized'
+${SHELL} -c 'kill -1 -$$' 2> /dev/null
+[[ $(kill -l $?) == HUP ]] || err_exit 'kill -1 -pid not working' 
+${SHELL} -c 'kill -1 -$$' 2> /dev/null
+[[ $(kill -l $?) == HUP ]] || err_exit 'kill -n1 -pid not working' 
+${SHELL} -c 'kill -s HUP -$$' 2> /dev/null
+[[ $(kill -l $?) == HUP ]] || err_exit 'kill -HUP -pid not working' 
 n=123
 typeset -A base
 base[o]=8#
@@ -283,7 +304,78 @@ then	err_exit '"name=value exec -c ..." not working'
 fi
 $SHELL -c 'OPTIND=-1000000; getopts a opt -a' 2> /dev/null
 [[ $? == 1 ]] || err_exit 'getopts with negative OPTIND not working'
+getopts 'n#num' opt  -n 3
+[[ $OPTARG == 3 ]] || err_exit 'getopts with numerical arguments failed'
 if	[[ $($SHELL -c $'printf \'%2$s %1$s\n\' world hello') != 'hello world' ]]
 then	err_exit 'printf %2$s %1$s not working'
 fi
+unset a
+{ read -N3 a; read -N1 b;}  <<!
+abcdefg
+!
+[[ $a == abc ]] || err_exit 'read -N3 here-document not working'
+[[ $b == d ]] || err_exit 'read -N1 here-document not working'
+read -n3 a <<!
+abcdefg
+!
+[[ $a == abc ]] || err_exit 'read -n3 here-document not working'
+(print -n a;sleep 1; print -n bcde) | { read -N3 a; read -N1 b;}
+[[ $a == abc ]] || err_exit 'read -N3 from pipe not working'
+[[ $b == d ]] || err_exit 'read -N1 from pipe not working'
+(print -n a;sleep 1; print -n bcde) |read -n3 a
+[[ $a == a ]] || err_exit 'read -n3 from pipe not working'
+rm -f /tmp/fifo$$
+if	mkfifo /tmp/fifo$$ 2> /dev/null
+then	(print -n a; sleep 1;print -n bcde)  > /tmp/fifo$$ &
+	{
+	read -u5 -n3  -t2 a  || err_exit 'read -n3 from fifo timedout'
+	read -u5 -n1 -t2 b || err_exit 'read -n1 from fifo timedout'
+	} 5< /tmp/fifo$$
+	[[ $a == a ]] || err_exit 'read -n3 from fifo not working'
+	rm -f /tmp/fifo$$
+	mkfifo /tmp/fifo$$ 2> /dev/null
+	(print -n a; sleep 1;print -n bcde)  > /tmp/fifo$$ &
+	{
+	read -u5 -N3 -t2 a || err_exit 'read -N3 from fifo timed out'
+	read -u5 -N1 -t2 b || err_exit 'read -N1 from fifo timedout'
+	} 5< /tmp/fifo$$
+	[[ $a == abc ]] || err_exit 'read -N3 from fifo not working'
+	[[ $b == d ]] || err_exit 'read -N1 from fifo not working'
+fi
+rm -f /tmp/fifo$$
+function longline
+{
+	integer i
+	for((i=0; i < $1; i++))
+	do	print argument$i
+	done
+}
+# test command -x option
+integer sum=0 n=10000
+if	! ${SHELL:-ksh} -c 'print $#' count $(longline $n) > /dev/null  2>&1
+then	for i in $(command command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) 2> /dev/null)
+	do	((sum += $i))
+	done
+	(( sum == n )) || err_exit "command -x processed only $sum arguments"
+	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) > /dev/null  2>&1
+	[[ $? != 1 ]] && err_exit 'incorrect exit status for command -x'
+fi
+# test command -x option with extra arguments
+integer sum=0 n=10000
+if      ! ${SHELL:-ksh} -c 'print $#' count $(longline $n) > /dev/null  2>&1
+then    for i in $(command command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) one two three) #2> /dev/null)
+	do      ((sum += $i))
+	done
+	(( sum  > n )) || err_exit "command -x processed only $sum arguments"
+	(( (sum-n)%3==0 )) || err_exit "command -x processed only $sum arguments"
+	(( sum == n+3)) && err_exit "command -x processed only $sum arguments"
+	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) > /dev/null  2>&1
+	[[ $? != 1 ]] && err_exit 'incorrect exit status for command -x'
+fi
+# test for debug trap
+[[ $(typeset -i i=0
+	trap 'print $i' DEBUG
+	while (( i <2))
+	do	(( i++))
+	done) == $'0\n0\n1\n1\n2' ]]  || print -r "DEBUG trap not working"
 exit $((Errors))

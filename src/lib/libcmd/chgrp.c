@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -32,7 +32,7 @@
  */
 
 static const char usage_1[] =
-"[-?@(#)$Id: chgrp (AT&T Labs Research) 2000-03-17 $\n]"
+"[-?@(#)$Id: chgrp (AT&T Labs Research) 2002-11-14 $\n]"
 USAGE_LICENSE
 ;
 
@@ -57,18 +57,21 @@ static const char usage_2[] =
 "[f:quiet|silent?Do not report files whose permissioins fail to change.]"
 "[l|h:symlink?Change the ownership of the symbolic links on systems that"
 "	support this.]"
-"[m:map?The first argument is interpreted as a file that contains a map"
-"	\aowner\a pairs. Ownership of files matching the first part of any"
-"	pair is changed to the corresponding second part of the pair. The"
-"	process stops at the first match for each file. Unmatched files are"
-"	silently ignored.]"
+"[m:map?The first operand is interpreted as a file that contains a map"
+"	of \afrom_uid:from_gid to_uid:to_gid\a pairs. Ownership of files"
+"	matching the \afrom\a part of any pair is changed to the corresponding"
+"	\ato\a part of the pair. The process stops at the first match for"
+"	each file. Unmatched files are silently ignored.]"
 "[n:show?Show actions but don't execute.]"
+"[r:reference?The explicit ownership operand is omitted and the ownership of"
+"	\afile\a is used instead.]:[file]"
 "[v:verbose?Describe changed permissions of all files.]"
 "[H:metaphysical?Follow symbolic links for command arguments; otherwise don't"
 "	follow symbolic links when traversing directories.]"
 "[L:logical|follow?Follow symbolic links when traversing directories.]"
 "[P:physical|nofollow?Don't follow symbolic links when traversing directories.]"
 "[R:recursive?Recursively change ownership of directories and their contents.]"
+"[X:test?Canonicalize output for testing.]"
 
 "\n"
 "\n"
@@ -81,7 +84,7 @@ static const char usage_3[] =
 	"[+0?All files changed successfully.]"
 	"[+>0?Unable to change ownership of one or more files.]"
 "}"
-"[+SEE ALSO?chmod(1), tw(1), getconf(1), ls(1)]"
+"[+SEE ALSO?\bchmod\b(1), \btw\b(1), \bgetconf\b(1), \bls\b(1)]"
 ;
 
 #if defined(__STDPP__directive) && defined(__STDPP__hide)
@@ -91,7 +94,7 @@ __STDPP__directive pragma pp:hide lchown
 #endif
 
 #include <cmdlib.h>
-#include <hash.h>
+#include <cdt.h>
 #include <ls.h>
 #include <ctype.h>
 #include <fts.h>
@@ -107,9 +110,10 @@ __STDPP__directive pragma pp:nohide lchown
 
 typedef struct				/* uid/gid map			*/
 {
-	HASH_HEADER;			/* hash bucket header		*/
-	int	uid;			/* id maps to this uid		*/
-	int	gid;			/* id maps to this gid		*/
+	Dtlink_t	link;		/* dictionary link		*/
+	int		id;		/* id				*/
+	int		uid;		/* id maps to this uid		*/
+	int		gid;		/* id maps to this gid		*/
 } Map_t;
 
 #define NOID		(-1)
@@ -119,10 +123,16 @@ typedef struct				/* uid/gid map			*/
 #define OPT_GID		(1<<2)		/* have gid			*/
 #define OPT_LCHOWN	(1<<3)		/* lchown			*/
 #define OPT_SHOW	(1<<4)		/* show but don't do		*/
-#define OPT_UID		(1<<5)		/* have uid			*/
-#define OPT_VERBOSE	(1<<6)		/* have uid			*/
+#define OPT_TEST	(1<<5)		/* canonicalize output		*/
+#define OPT_UID		(1<<6)		/* have uid			*/
+#define OPT_VERBOSE	(1<<7)		/* have uid			*/
 
 extern int	lchown(const char*, uid_t, gid_t);
+
+static struct State_s
+{
+	int		interrupt;
+} state;
 
 #if !_lib_lchown
 
@@ -205,17 +215,24 @@ b_chgrp(int argc, char** argv, void* context)
 	register Map_t*	m;
 	register FTS*	fts;
 	register FTSENT*ent;
-	Hash_table_t*	map = 0;
+	Dt_t*		map = 0;
 	int		flags;
 	int		uid;
 	int		gid;
 	char*		op;
 	char*		usage;
 	Sfio_t*		sp;
+	Dtdisc_t	mapdisc;
+	struct stat	st;
 	int		(*chownf)(const char*, uid_t, gid_t);
-	int		(*statf)(const char*, struct stat*);
 
-	cmdinit(argv, context, ERROR_CATALOG);
+	if (argc < 0)
+	{
+		state.interrupt = 1;
+		return -1;
+	}
+	state.interrupt = 0;
+	cmdinit(argv, context, ERROR_CATALOG, ERROR_NOTIFY);
 	flags = fts_flags() | FTS_TOP | FTS_NOPOSTORDER | FTS_NOSEEDOTDIR;
 	if (!(sp = sfstropen()))
 		error(ERROR_SYSTEM|3, "out of space");
@@ -229,9 +246,9 @@ b_chgrp(int argc, char** argv, void* context)
 	}
 	sfputr(sp, usage_2, -1);
 	if (options & OPT_CHOWN)
-		sfputr(sp, "owner[:group]", -1);
+		sfputr(sp, ERROR_translate(0, 0, 0, "[owner[:group]]"), -1);
 	else
-		sfputr(sp, "[owner:]group", -1);
+		sfputr(sp, ERROR_translate(0, 0, 0, "[[owner:]group]"), -1);
 	sfputr(sp, usage_3, -1);
 	usage = sfstruse(sp);
 	for (;;)
@@ -249,11 +266,21 @@ b_chgrp(int argc, char** argv, void* context)
 			options |= OPT_LCHOWN;
 			continue;
 		case 'm':
-			if (!(map = hashalloc(NiL, HASH_set, HASH_ALLOCATE, HASH_namesize, sizeof(int), HASH_name, "ids", 0)))
+			memset(&mapdisc, 0, sizeof(mapdisc));
+			mapdisc.key = offsetof(Map_t, id);
+			mapdisc.size = sizeof(int);
+			if (!(map = dtopen(&mapdisc, Dthash)))
 				error(ERROR_exit(1), "out of space [id map]");
 			continue;
 		case 'n':
 			options |= OPT_SHOW;
+			continue;
+		case 'r':
+			if (stat(opt_info.arg, &st))
+				error(ERROR_exit(1), "%s: cannot stat", opt_info.arg);
+			uid = st.st_uid;
+			gid = st.st_gid;
+			options |= OPT_UID|OPT_GID;
 			continue;
 		case 'H':
 			flags |= FTS_META|FTS_PHYSICAL;
@@ -267,6 +294,9 @@ b_chgrp(int argc, char** argv, void* context)
 			continue;
 		case 'R':
 			flags &= ~FTS_TOP;
+			continue;
+		case 'X':
+			options |= OPT_TEST;
 			continue;
 		case ':':
 			error(2, "%s", opt_info.arg);
@@ -298,37 +328,41 @@ b_chgrp(int argc, char** argv, void* context)
 			getids(t, NiL, &nuid, &ngid, options);
 			if (uid != NOID)
 			{
-				if (m = (Map_t*)hashlook(map, (char*)&uid, HASH_LOOKUP, NiL))
+				if (m = (Map_t*)dtmatch(map, &uid))
 				{
 					m->uid = nuid;
 					if (m->gid == NOID)
 						m->gid = ngid;
 				}
-				else if (m = (Map_t*)hashlook(map, NiL, HASH_CREATE|HASH_SIZE(sizeof(Map_t)), NiL))
+				else if (m = (Map_t*)stakalloc(sizeof(Map_t)))
 				{
+					m->id = uid;
 					m->uid = nuid;
 					m->gid = ngid;
+					dtinsert(map, m);
 				}
 				else
-					error(ERROR_exit(1), "out of space [id hash]");
+					error(ERROR_exit(1), "out of space [id dictionary]");
 			}
 			if (gid != NOID)
 			{
-				if (gid == uid || (m = (Map_t*)hashlook(map, (char*)&gid, HASH_LOOKUP, NiL)))
+				if (gid == uid || (m = (Map_t*)dtmatch(map, &gid)))
 					m->gid = ngid;
-				else if (m = (Map_t*)hashlook(map, NiL, HASH_CREATE|HASH_SIZE(sizeof(Map_t)), NiL))
+				else if (m = (Map_t*)stakalloc(sizeof(Map_t)))
 				{
+					m->id = gid;
 					m->uid = NOID;
 					m->gid = ngid;
+					dtinsert(map, m);
 				}
 				else
-					error(ERROR_exit(1), "out of space [id hash]");
+					error(ERROR_exit(1), "out of space [id dictionary]");
 			}
 		}
 		if (sp != sfstdin)
 			sfclose(sp);
 	}
-	else
+	else if (!(options & (OPT_UID|OPT_GID)))
 	{
 		getids(s, NiL, &uid, &gid, options);
 		if (uid != NOID)
@@ -336,7 +370,6 @@ b_chgrp(int argc, char** argv, void* context)
 		if (gid != NOID)
 			options |= OPT_GID;
 	}
-	statf = (flags & FTS_PHYSICAL) ? lstat : stat;
 	switch (options & (OPT_UID|OPT_GID))
 	{
 	case OPT_UID:
@@ -354,7 +387,7 @@ b_chgrp(int argc, char** argv, void* context)
 	}
 	if (!(fts = fts_open(argv + 1, flags, NiL)))
 		error(ERROR_system(1), "%s: not found", argv[1]);
-	while (ent = fts_read(fts))
+	while (!state.interrupt && (ent = fts_read(fts)))
 		switch (ent->fts_info)
 		{
 		case FTS_F:
@@ -367,13 +400,13 @@ b_chgrp(int argc, char** argv, void* context)
 				options &= ~(OPT_UID|OPT_GID);
 				uid = ent->fts_statp->st_uid;
 				gid = ent->fts_statp->st_gid;
-				if ((m = (Map_t*)hashlook(map, (char*)&uid, HASH_LOOKUP, NiL)) && m->uid != NOID)
+				if ((m = (Map_t*)dtmatch(map, &uid)) && m->uid != NOID)
 				{
 					uid = m->uid;
 					options |= OPT_UID;
 				}
 				if (gid != uid)
-					m = (Map_t*)hashlook(map, (char*)&gid, HASH_LOOKUP, NiL);
+					m = (Map_t*)dtmatch(map, &gid);
 				if (m && m->gid != NOID)
 				{
 					gid = m->gid;
@@ -389,7 +422,7 @@ b_chgrp(int argc, char** argv, void* context)
 			}
 			if (uid != ent->fts_statp->st_uid || gid != ent->fts_statp->st_gid)
 			{
-				if ((ent->fts_info & FTS_SL) && statf == lstat && (options & OPT_LCHOWN))
+				if ((ent->fts_info & FTS_SL) && (flags & FTS_PHYSICAL) && (options & OPT_LCHOWN))
 				{
 					op = "lchown";
 					chownf = lchown;
@@ -400,7 +433,14 @@ b_chgrp(int argc, char** argv, void* context)
 					chownf = chown;
 				}
 				if (options & (OPT_SHOW|OPT_VERBOSE))
+				{
+					if (options & OPT_TEST)
+					{
+						ent->fts_statp->st_uid = 0;
+						ent->fts_statp->st_gid = 0;
+					}
 					sfprintf(sfstdout, "%s uid:%05d->%05d gid:%05d->%05d %s\n", op, ent->fts_statp->st_uid, uid, ent->fts_statp->st_gid, gid, ent->fts_accpath);
+				}
 				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, uid, gid))
 					error(ERROR_system(0), "%s: cannot change%s", ent->fts_accpath, s);
 			}
@@ -423,5 +463,7 @@ b_chgrp(int argc, char** argv, void* context)
 			break;
 		}
 	fts_close(fts);
+	if (map)
+		dtclose(map);
 	return error_info.errors != 0;
 }

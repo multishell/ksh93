@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -39,7 +39,11 @@
  */
 
 #define S2F_function	_sfdscan
+#if _PACKAGE_ast
+#define S2F_static	0
+#else
 #define S2F_static	1
+#endif
 #define S2F_type	2
 #define S2F_scan	1
 
@@ -92,17 +96,25 @@ typedef struct _scan_s
 			 peek = (sc)->peek, n_input = (sc)->n_input)
 
 #if __STD_C
-static int _scgetc(void* arg)
+static int _scgetc(void* arg, int flag)
 #else
-static int _scgetc(arg)
+static int _scgetc(arg, flag)
 void*	arg;
+int	flag;
 #endif
 {
 	Scan_t	*sc = (Scan_t*)arg;
 
+	if (flag)
+	{	sc->error = flag;
+		return 0;
+	}
+
 	/* if width >= 0, do not allow to exceed width number of bytes */
 	if(sc->width == 0)
-		return (sc->inp = -2);
+	{	sc->inp = -1;
+		return 0;
+	}
 
 	if(sc->d >= sc->endd) /* refresh local buffer */
 	{	sc->n_input += sc->d - sc->data;
@@ -115,7 +127,9 @@ void*	arg;
 		sc->endd = sc->f->endb;
 
 		if(sc->d >= sc->endd)
-			return (sc->inp = -2);
+		{	sc->inp = -1;
+			return 0;
+		}
 	}
 
 	if((sc->width -= 1) >= 0) /* from _sfdscan */
@@ -246,9 +260,8 @@ Accept_t*	ac;	/* accept handle for %[		*/
 Void_t*		mbs;	/* multibyte parsing state	*/
 #endif
 {
-	int	n;
+	int	n, v;
 	char	b[16]; /* assuming that SFMBMAX <= 16! */
-	size_t	rv;
 
 	/* shift left data so that there will be more room to back up on error.
 	   this won't help streams with small buffers - c'est la vie! */
@@ -265,14 +278,15 @@ Void_t*		mbs;	/* multibyte parsing state	*/
 	}
 
 	for(n = 0; n < SFMBMAX; )
-	{	b[n++] = _scgetc((Void_t*)sc);
+	{	if((v = _scgetc((Void_t*)sc, 0)) <= 0)
+			goto no_match;
+		else	b[n++] = v;
 
-		if((rv = mbrtowc(wc, b, n, (mbstate_t*)mbs)) == (size_t)(-2))
-			continue;	/* incomplete multi-byte char */
-		else if(rv == (size_t)(-1))
-			goto no_match;	/* malformed multi-byte char */
-		else /* multi-byte char converted successfully */
-		{	if(fmt == 'c')
+		if(mbrtowc(wc, b, n, (mbstate_t*)mbs) == (size_t)(-1))
+			goto no_match;  /* malformed multi-byte char */
+		else
+		{	/* multi-byte char converted successfully */
+			if(fmt == 'c')
 				return 1;
 			else if(fmt == 's')
 			{	if(n > 1 || (n == 1 && !isspace(b[0]) ) )
@@ -706,10 +720,6 @@ loop_fmt:
 		if(_Sftype[fmt] == 0) /* unknown pattern */
 			goto pop_fmt;
 
-		/* get the address to assign value */
-		if(!value && !(flags&SFFMT_SKIP) )
-			value = va_arg(args,Void_t*);
-
 		if(fmt == '!')
 		{	if(!fp)
 				fp = (*_Sffmtposf)(f,oform,oargs,ft,1);
@@ -728,6 +738,7 @@ loop_fmt:
 					goto done;
 
 				ft = fm->ft = argv.ft;
+				SFMBSET(ft->mbs, &fmbs);
 				if(ft->form)
 				{	fm->form = (char*)form; SFMBCPY(&fm->mbs,&fmbs);
 					va_copy(fm->args,args);
@@ -752,6 +763,10 @@ loop_fmt:
 			}
 			continue;
 		}
+
+		/* get the address to assign value */
+		if(!value && !(flags&SFFMT_SKIP) )
+			value = va_arg(args,Void_t*);
 
 		if(fmt == 'n') /* return length of consumed input */
 		{

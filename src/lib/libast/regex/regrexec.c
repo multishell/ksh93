@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -73,7 +73,6 @@ regrexec(const regex_t* p, const char* s, size_t len, size_t nmatch, regmatch_t*
 	exactlen = e->re.bm.size;
 	leftlen = e->re.bm.left + exactlen;
 	rightlen = exactlen + e->re.bm.right;
-	env->rex = e->next;
 	index = leftlen++;
 	for (;;)
 	{
@@ -111,7 +110,7 @@ regrexec(const regex_t* p, const char* s, size_t len, size_t nmatch, regmatch_t*
 			r++;
 		if ((r - (buf + index)) < rightlen)
 			goto spanned;
-		if (complete || !(n = regnexec(p, (char*)l, r - l, nmatch, match, flags)))
+		if (complete || (env->rex = ((r - l) > 128) ? e : e->next) && !(n = regnexec(p, (char*)l, r - l, nmatch, match, flags)))
 		{
 			if (inv)
 			{

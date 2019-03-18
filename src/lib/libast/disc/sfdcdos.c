@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -28,7 +28,7 @@
 /*	Discipline to turn \r\n into \n.
 **	This is useful to deal with DOS text files.
 **
-**	Written by David Korn (1998-03-18).
+**	Written by David Korn (03/18/1998).
 */
 
 #define MINMAP	8
@@ -242,6 +242,7 @@ register int whence;
 {
 	register off_t n,m=0;
 	register char *cp;
+
 	if(whence==SEEK_CUR)
 	{
 		whence= -1;
@@ -318,7 +319,7 @@ retry:
 		break;
 	}
 	if(sfsetbuf(iop,(char*)iop,0))
-		size = sfslen();
+		size = sfvalue(iop);
 	else
 		size = iop->endb-iop->data;
 	if(mp)
@@ -403,9 +404,10 @@ Sfio_t *f;
 
 	if(!(dos = (Dosdisc_t*)malloc(sizeof(Dosdisc_t))) )
 		return -1;
-	memset(dos, 0, sizeof(*dos));
+	memset(dos,'\0',sizeof(Dosdisc_t));
 
 	dos->disc.readf = dos_read;
+	dos->disc.writef = NIL(Sfwrite_f);
 	dos->disc.seekf = dos_seek;
 	dos->disc.exceptf = dos_except;
 

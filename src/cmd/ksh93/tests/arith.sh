@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -239,8 +239,11 @@ float z=7.5
 if	{ (( z%2 != 1));} 2> /dev/null
 then	err_exit '% not working on floating point'
 fi
-chr= (a ' ' '=' '\r' '\n' '\\' '\"' '$' "\\'" '[' ']' '(' ')' '<' '\xab' '\040' '`' '{' '}' '*' '\E')
-val=(97 32  61 13 10 92 34 36 39 91 93 40 41 60 171 32 96 123 125 42 27)
+chr=(a ' ' '=' '\r' '\n' '\\' '\"' '$' "\\'" '[' ']' '(' ')' '<' '\xab' '\040' '`' '{' '}' '*' '\E')
+if	(('a' == 97))
+then	val=(97 32  61 13 10 92 34 36 39 91 93 40 41 60 171 32 96 123 125 42 27)
+else	val=(129 64 126 13 21 224 127 91 125 173 189 77 93 76 171 32 121 192 208 92 39 21)
+fi
 q=0
 for ((i=0; i < ${#chr[@]}; i++))
 do	if	(( '${chr[i]}' != ${val[i]} ))
@@ -310,6 +313,51 @@ fi
 $SHELL -c 'i=0;(( ofiles[i] != -1 && (ofiles[i] < mins || mins == -1) ));exit 0' 2> /dev/null || err_exit 'lexical error with arithemtic expression'
 rm -f core
 $SHELL -c '(( +1 == 1))' 2> /dev/null || err_exit 'unary + not working'
-typeset -E17 val=123.01234567890
+typeset -E20 val=123.01234567890
 [[ $val == 123.0123456789 ]] || err_exit "rounding error val=$val"
+if	[[ $(print x$((10))=foo) != x10=foo ]]
+then	err_exit 'parsing error with x$((10))=foo'
+fi
+$SHELL -c 'typeset x$((10))=foo' 2> /dev/null || err_exit 'typeset x$((10)) parse error'
+x=$(( exp(log(2.0)) ))
+(( x > 1.999 && x < 2.001 )) || err_exit 'composit functions not working'
+unset x y n
+typeset -Z8 x=0 y=0
+integer n
+for	(( n=0; n < 20; n++ ))
+do	let "x = $x+1"
+	(( y = $y+1 ))
+done
+(( x == n ))  || err_exit 'let with zero filled fields not working'
+(( y == n ))  || err_exit '((...)) with zero filled fields not working'
+typeset -LZ3 x=10
+[[ $(($x)) == 10 && $((1$x)) == 1010 ]] || err_exit 'zero filled fields not preserving leading zeros'
+unset y
+[[ $(let y=$x;print $y) == 10 && $(let y=1$x;print $y) == 1010 ]] || err_exit 'zero filled fields not preserving leading zeros with let'
+unset i ip ipx
+typeset -i hex=( 172 30 18 1)
+typeset -iu ip=0 ipx=0
+integer i
+for	((i=0; i < 4; i++))
+do	(( ip =  (ip<<8) | hex[i]))
+done
+for ((i=0; i < 4; i++))
+do	(( ipx = ip % 256 ))
+	(( ip /= 256 ))
+	(( ipx != hex[3-i] )) && err_exit "hex digit $((3-i)) not correct"
+done	
+unset x
+x=010
+(( x == 10 )) || err_exit 'leading zeros not ignored for arithmetic'
+(( $x == 10 )) || err_exit 'leading zeros not ignored for arithmetic with $x'
+typeset -i i=x
+(( i == 10 )) || err_exit 'leading zeros not ignored for arithmetic assignment'
+(( ${x:0:1} == 0 )) || err_exit 'leading zero should not be stripped for x:a:b'
+c010=3
+(( c$x  == 3 )) || err_exit 'leading zero with variable should not be stripped'
+[[ $( ($SHELL -c '((++1))' 2>&1)2>/dev/null ) == *lvalue* ]] || err_exit "((--1)) not generating error message"
+i=2
+(( "22" == 22 )) || print err_exit "double quoted constants fail"
+(( "2$i" == 22 )) || print err_exit "double quoted variables fail"
+(( "18+$i+2" == 22 )) || print err_exit "double quoted expressions fail"
 exit $((Errors))

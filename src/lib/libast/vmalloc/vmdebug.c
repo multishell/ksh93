@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_vmdebug(){}
 
@@ -66,6 +66,19 @@ static void dbinit()
 		vmtrace(fd);
 }
 
+static int	Dbfd = 2;	/* default warning file descriptor */
+#if __STD_C
+int vmdebug(int fd)
+#else
+int vmdebug(fd)
+int	fd;
+#endif
+{
+	int	old = Dbfd;
+	Dbfd = fd;
+	return old;
+}
+
 /* just an entry point to make it easy to set break point */
 #if __STD_C
 static void vmdbwarn(Vmalloc_t* vm, char* mesg, int n)
@@ -78,7 +91,7 @@ int		n;
 {
 	reg Vmdata_t*	vd = vm->data;
 
-	write(2,mesg,n);
+	write(Dbfd,mesg,n);
 	if(vd->mode&VM_DBABORT)
 		abort();
 }
@@ -86,15 +99,15 @@ int		n;
 /* issue a warning of some type */
 #if __STD_C
 static void dbwarn(Vmalloc_t* vm, Void_t* data, int where,
-		   char* file, int line, Void_t* func, int type)
+		   const char* file, int line, const Void_t* func, int type)
 #else
 static void dbwarn(vm, data, where, file, line, func, type)
 Vmalloc_t*	vm;	/* region holding the block	*/
 Void_t*		data;	/* data block			*/
 int		where;	/* byte that was corrupted	*/
-char*		file;	/* file where call originates	*/
+const char*	file;	/* file where call originates	*/
 int		line;	/* line number of call		*/
-Void_t*		func;	/* function called from		*/
+const Void_t*	func;	/* function called from		*/
 int		type;	/* operation being done		*/
 #endif
 {
@@ -175,14 +188,14 @@ int		type;	/* operation being done		*/
 /* check for watched address and issue warnings */
 #if __STD_C
 static void dbwatch(Vmalloc_t* vm, Void_t* data,
-		    char* file, int line, Void_t* func, int type)
+		    const char* file, int line, const Void_t* func, int type)
 #else
 static void dbwatch(vm, data, file, line, func, type)
 Vmalloc_t*	vm;
 Void_t*		data;
-char*		file;
+const char*	file;
 int		line;
-Void_t*		func;
+const Void_t*	func;
 int		type;
 #endif
 {
@@ -198,12 +211,12 @@ int		type;
 
 /* record information about the block */
 #if __STD_C
-static void dbsetinfo(Vmuchar_t* data, size_t size, char* file, int line)
+static void dbsetinfo(Vmuchar_t* data, size_t size, const char* file, int line)
 #else
 static void dbsetinfo(data, size, file, line)
 Vmuchar_t*	data;	/* real address not the one from Vmbest	*/
 size_t		size;	/* the actual requested size		*/
-char*		file;	/* file where the request came from	*/
+const char*	file;	/* file where the request came from	*/
 int		line;	/* and line number			*/
 #endif
 {
@@ -270,6 +283,7 @@ Void_t*		addr;
 		return -1L;
 	SETLOCK(vd,local);
 
+	b = endb = NIL(Block_t*);
 	for(seg = vd->seg; seg; seg = seg->next)
 	{	b = SEGBLOCK(seg);
 		endb = (Block_t*)(seg->baddr - sizeof(Head_t));
@@ -358,12 +372,12 @@ Vmalloc_t*	vm;
 size_t		size;
 #endif
 {
-	reg size_t	s;
-	reg Vmuchar_t*	data;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg Vmdata_t*	vd = vm->data;
+	reg size_t		s;
+	reg Vmuchar_t*		data;
+	reg const char*		file;
+	reg int			line;
+	reg const Void_t*	func;
+	reg Vmdata_t*		vd = vm->data;
 
 	VMFLF(vm,file,line,func);
 
@@ -398,6 +412,7 @@ size_t		size;
 
 done:
 	CLRLOCK(vd,0);
+	ANNOUNCE(0, vm, VM_ALLOC, (Void_t*)data, vm->disc);
 	return (Void_t*)data;
 }
 
@@ -410,11 +425,11 @@ Vmalloc_t*	vm;
 Void_t*		data;
 #endif
 {
-	char*		file;
+	const char*	file;
 	int		line;
-	Void_t*		func;
+	const Void_t*	func;
 	reg long	offset;
-	reg int		*ip, *endip;
+	reg int		rv, *ip, *endip;
 	reg Vmdata_t*	vd = vm->data;
 
 	VMFLF(vm,file,line,func);
@@ -453,8 +468,10 @@ Void_t*		data;
 	while(ip < endip)
 		*ip++ = 0;
 
+	rv = KPVFREE((vm), (Void_t*)DB2BEST(data), (*Vmbest->freef));
 	CLRLOCK(vd,0);
-	return (*(Vmbest->freef))(vm,(Void_t*)DB2BEST(data));
+	ANNOUNCE(0, vm, VM_FREE, data, vm->disc);
+	return rv;
 }
 
 /*	Resizing an existing block */
@@ -471,9 +488,9 @@ int		type;		/* !=0 for movable, >0 for copy	*/
 	reg Vmuchar_t*	data;
 	reg size_t	s, oldsize;
 	reg long	offset;
-	char		*file, *oldfile;
+	const char	*file, *oldfile;
 	int		line, oldline;
-	Void_t*		func;
+	const Void_t*	func;
 	reg Vmdata_t*	vd = vm->data;
 
 	if(!addr)
@@ -537,6 +554,7 @@ int		type;		/* !=0 for movable, >0 for copy	*/
 	}
 
 	CLRLOCK(vd,0);
+	ANNOUNCE(0, vm, VM_RESIZE, (Void_t*)data, vm->disc);
 
 done:	if(data && (type&VM_RSZERO) && size > oldsize)
 	{	reg Vmuchar_t *d = data+oldsize, *ed = data+size;
@@ -569,8 +587,14 @@ Vmalloc_t*	vm;
 	int		rv;
 	reg Vmdata_t*	vd = vm->data;
 
-	if(!(vd->mode&VM_MTDEBUG) )
-		return -1;
+	/* check the meta-data of this region */
+	if(vd->mode & (VM_MTDEBUG|VM_MTBEST|VM_MTPROFILE))
+	{	if(_vmbestcheck(vd, NIL(Block_t*)) < 0)
+			return -1;
+		if(!(vd->mode&VM_MTDEBUG))
+			return 0;
+	}
+	else	return -1;
 
 	rv = 0;
 	for(seg = vd->seg; seg; seg = seg->next)
@@ -653,23 +677,21 @@ size_t		size;
 size_t		align;
 #endif
 {
-	reg Vmuchar_t	*data;
-	reg size_t	s;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg Vmdata_t*	vd = vm->data;
+	reg Vmuchar_t*		data;
+	reg size_t		s;
+	reg const char*		file;
+	reg int			line;
+	reg const Void_t*	func;
+	reg Vmdata_t*		vd = vm->data;
 
 	VMFLF(vm,file,line,func);
 
 	if(size <= 0 || align <= 0)
 		return NIL(Void_t*);
 
-	if(!(vd->mode&VM_TRUST) )
-	{	if(ISLOCK(vd,0) )
-			return NIL(Void_t*);
-		SETLOCK(vd,0);
-	}
+	if(ISLOCK(vd,0) )
+		return NIL(Void_t*);
+	SETLOCK(vd,0);
 
 	if((s = ROUND(size,ALIGN) + DB_EXTRA) < sizeof(Body_t))
 		s = sizeof(Body_t);
@@ -687,6 +709,7 @@ size_t		align;
 
 done:
 	CLRLOCK(vd,0);
+	ANNOUNCE(0, vm, VM_ALLOC, (Void_t*)data, vm->disc);
 	return (Void_t*)data;
 }
 

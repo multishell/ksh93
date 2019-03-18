@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -73,9 +73,18 @@ reg int	n;	/* see above */
 			/* try shifting left to make room for new data */
 			if(!(f->bits&SF_MMAP) && f->next > f->data &&
 			   n > (f->size - (f->endb-f->data)) )
-			{	memcpy(f->data, f->next, r);
-				f->next = f->data;
-				f->endb = f->data + r;
+			{	ssize_t	s = r;
+
+				/* try to maintain block alignment */
+				if(f->blksz > 0 && (f->here%f->blksz) == 0 )
+				{	s = ((r + f->blksz-1)/f->blksz)*f->blksz;
+					if(s+n > f->size)
+						s = r;
+				}
+
+				memcpy(f->data, f->endb-s, s);
+				f->next = f->data + (s-r);
+				f->endb = f->data + s;
 			}
 		}
 		else if(!(f->flags&SF_STRING) && !(f->bits&SF_MMAP) )

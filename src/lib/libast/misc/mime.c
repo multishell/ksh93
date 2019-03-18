@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -32,7 +32,7 @@
  * mime/mailcap support library
  */
 
-static const char id[] = "\n@(#)$Id: mime library (AT&T Research) 1997-07-17 $\0\n";
+static const char id[] = "\n@(#)$Id: mime library (AT&T Research) 2002-10-29 $\0\n";
 
 static const char lib[] = "libast:mime";
 
@@ -429,7 +429,7 @@ find(Mime_t* mp, const char* type)
 		} while (*rp);
 		while (*lp && *lp++ != '-');
 	} while (*lp);
-	return 0;
+	return (Ent_t*)dtmatch(mp->cap, buf);
 }
 
 /*
@@ -472,6 +472,7 @@ arg(register Parse_t* pp, int first)
 	register char*	s;
 	register int	c;
 	register int	q;
+	int		x;
 
 	for (s = pp->next; isspace(*s) && *s != '\n'; s++);
 	if (!*s || *s == '\n')
@@ -482,15 +483,25 @@ arg(register Parse_t* pp, int first)
 	pp->name.data = s;
 	pp->value.data = 0;
 	q = 0;
+	x = 0;
 	while ((c = *s++) && c != ';' && c != '\n')
 	{
 		if (c == '"')
 		{
 			q = 1;
 			if (pp->value.data)
+			{
 				pp->value.data = s;
-			else if (first < 0 && pp->name.data == (s - 1))
+				if (x)
+					x = -1;
+				else
+					x = 1;
+			}
+			else if (!x && pp->name.data == (s - 1))
+			{
+				x = 1;
 				pp->name.data = s;
+			}
 			do
 			{
 				if (!(c = *s++) || c == '\n')
@@ -499,7 +510,7 @@ arg(register Parse_t* pp, int first)
 					break;
 				}
 			} while (c != '"');
-			if (first < 0)
+			if (first < 0 || x > 0)
 			{
 				c = ';';
 				break;
@@ -511,16 +522,21 @@ arg(register Parse_t* pp, int first)
 			pp->name.size = s - pp->name.data - 1;
 			pp->value.data = s;
 		}
-		else if (first < 0 && isspace(c))
+		else if (first >= 0 && isspace(c))
 			break;
 	}
 	pp->next = s - (c != ';');
 	if (first >= 0 || !q)
 		for (s--; s > pp->name.data && isspace(*(s - 1)); s--);
 	if (pp->value.data)
-		pp->value.size = s - pp->value.data - q;
+		pp->value.size = s - pp->value.data - (q && first < 0);
 	else
+	{
+		pp->value.size = 0;
 		pp->name.size = s - pp->name.data - (q && first < 0);
+	}
+	if (first >= 0 && pp->name.size > 0 && pp->name.data[pp->name.size - 1] == ':')
+		return 0;
 	return pp->name.size > 0;
 }
 
@@ -731,7 +747,8 @@ mimehead(Mime_t* mp, void* tab, size_t num, size_t siz, register char* s)
 				if ((*set)(mp, p, pp.name.data, pp.name.size, mp->disc))
 					return 0;
 				while (arg(&pp, 0))
-					if ((p = strsearch(tab, num, siz, (Strcmp_f)mimecmp, pp.name.data, &e)) &&
+					if (pp.value.size &&
+					    (p = strsearch(tab, num, siz, (Strcmp_f)mimecmp, pp.name.data, &e)) &&
 					    (*set)(mp, p, pp.value.data, pp.value.size, mp->disc))
 						return 0;
 				return 1;

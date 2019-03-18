@@ -1,3 +1,30 @@
+04-02-29 cp.c: decouple -f and -i for standard CONFORMANCE
+	 cp.c: mv attempts rename() before remove()+rename()
+	 date.c: -f format or +format disables system clock set
+04-02-14 cp.c: add -F --fsync to call fsync(2) for each copied file
+04-01-05 head.c: -s now uses opt_info.number for >2Gb skip
+03-09-18 tail.c: add --log
+03-09-11 rm.c: add --unconditional
+03-08-11 fold.c: add --delimiter=c to break at c
+03-07-28 features/time: change settimeofday() test to 2nd arg of (void*)0
+	 expr.c: add {match,substr,index,length,quote}
+03-07-15 fmt.c: fix trailing space bug
+03-06-20 uname.c: fix -p constant string overwrite
+03-06-04 stty.c: add undef to control assignment docs
+03-05-31 uname.c: add -f and sysinfo()/confstr() compatibility via astconf()
+03-05-27 rm.c: fix inappropriate "/.." append path overflow
+	 cut.c: snarf from dgk
+03-05-18 rm.c: check st_nlink to verify progress w.r.t. ftwalk/fts
+03-05-15 join.c: fix stealth -v2 bug (thanks ahs)
+03-05-04 wc.c: drop trailing space for `wc -l < file'
+03-03-21 date.c: add %Q/recent/distant/ docs
+03-02-19 date.c: fix %+|!flag docs
+02-11-14 update for cmdinit() 4th arg and ERROR_NOTIFY for interrupt cleanup
+02-10-02 date.c: tmform() => tmfmt()
+02-09-30 date.c,uname.c: change execv() calls to procrun(): exec|exit => bad
+02-09-06 wclib.c: fix 1 char-at-a-time miscount bug
+02-08-19 chgrp.c: convert to use <cdt.h>
+02-07-23 join.c: fix comm snarf typo
 02-04-05 date.c: add %u
 02-01-24 stty.c: ifdef a few more macros for uts (yes, its still running)
 01-12-14 date.c: clarify %z doc

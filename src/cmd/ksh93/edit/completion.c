@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -87,6 +87,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 	int strip;
 	int var=0;
 	int nomarkdirs = !sh_isoption(SH_MARKDIRS);
+	sh_onstate(SH_FCOMPLETE);
 	if(ep->e_nlist)
 	{
 		if(mode=='=' && count>0)
@@ -105,7 +106,7 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 	}
 	comptr = (struct comnod*)stakalloc(sizeof(struct comnod));
 	ap = (struct argnod*)stakseek(ARGVAL);
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	{
 		register int c = *cur;
 		register genchar *cp;
@@ -146,9 +147,9 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 				else if(!isaname(c))
 					var = 0;
 			}
-			while(out>outbuff && !ismeta(c) && c!='`');
+			while(out>outbuff && !ismeta(c) && c!='`' && c!='=');
 			/* copy word into arg */
-			if(ismeta(c) || c=='`')
+			if(ismeta(c) || c=='`' || c=='=')
 				out++;
 			/* special handling for leading quotes */
 			if(*out=='\'' || *out=='"')
@@ -190,9 +191,6 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			out++;
 
 		} while (c && !ismeta(c) && c!='`');
-		if(!dir || *dir==0)
-			dir = ".";
-
 		out--;
 		if(!var && mode=='\\')
 			addstar = '*';
@@ -208,10 +206,10 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		char	*cp=begin;
 		char	*left=0;
 		int	 narg,cmd_completion=0;
-		register int size;
+		register int size='x';
 		while(cp>outbuff && ((size=cp[-1])==' ' || size=='\t'))
 			cp--;
-		if(!var && ((cp==outbuff || (strchr(";&|(",size)) && (cp==outbuff+1||size=='('||cp[-2]!='>') && *begin!='~' && !strchr(ap->argval,'/'))))
+		if(!var && *ap->argval!='~' && !strchr(ap->argval,'/') && ((cp==outbuff || (strchr(";&|(",size)) && (cp==outbuff+1||size=='('||cp[-2]!='>') && *begin!='~' )))
 		{
 			cmd_completion=1;
 			sh_onstate(SH_COMPLETE);
@@ -295,10 +293,18 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 			out = strcopy(begin,*com++);
 		if(mode=='\\')
 		{
-			char *saveout;
-			int nocase;
-			if(saveout=astconf("PATH_ATTRIBUTES",dir,(char*)0))
+			char *saveout = ".";
+			int c, nocase;
+			if(dir)
+			{
+				c = *dir;
+				*dir = 0;
+				saveout = begin;
+			}
+			if(saveout=astconf("PATH_ATTRIBUTES",saveout,(char*)0))
 				nocase = (strchr(saveout,'c')!=0);
+			if(dir)
+				*dir = c;
 			if(!var && addstar==0)
 				*out++ = '/';
 			saveout= ++out;
@@ -371,19 +377,21 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 		*eol = (out-outbuff);
 	}
  done:
+	sh_offstate(SH_FCOMPLETE);
 	if(!ep->e_nlist)
 		stakset(ep->e_stkptr,ep->e_stkoff);
 	if(nomarkdirs)
 		sh_offoption(SH_MARKDIRS);
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 	{
-		register int c;
+		register int c,n=0;
 		/* first re-adjust cur */
-		out = outbuff + *cur;
-		c = *out;
-		*out = 0;
-		*cur = ed_internal(outbuff,(genchar*)stakptr(0));
-		*out = c;
+		c = outbuff[*cur];
+		outbuff[*cur] = 0;
+		for(out=outbuff; *out;n++)
+			mbchar(out);
+		outbuff[*cur] = c;
+		*cur = n;
 		outbuff[*eol+1] = 0;
 		*eol = ed_internal(outbuff,(genchar*)outbuff);
 	}
@@ -409,7 +417,7 @@ ed_macro(Edit_t *ep, register int i)
 		ep->e_macro[2] = 0;
 	if (isalnum(i)&&(np=nv_search(ep->e_macro,sh.alias_tree,HASH_SCOPE))&&(out=nv_getval(np)))
 	{
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 		/* copy to buff in internal representation */
 		int c = 0;
 		if( strlen(out) > LOOKAHEAD )
@@ -445,7 +453,7 @@ ed_fulledit(Edit_t *ep)
 	{
 		if(ep->e_eol<0)
 			return(-1);
-#ifdef SHOPT_MULTIBYTE
+#if SHOPT_MULTIBYTE
 		ep->e_inbuf[ep->e_eol+1] = 0;
 		ed_external(ep->e_inbuf, (char *)ep->e_inbuf);
 #endif /* SHOPT_MULTIBYTE */

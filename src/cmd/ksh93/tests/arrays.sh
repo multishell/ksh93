@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -255,4 +255,93 @@ if	[[ ${foo[@]: -3:1} != four ]]
 then	err_exit 'array offset of -3:1 not working'
 fi
 $SHELL -c 'x=(if then else fi)' 2> /dev/null  || err_exit 'reserved words in x=() assignment not working'
+unset foo
+foo=one
+foo=( $foo two)
+if	[[ ${#foo[@]} != 2 ]]
+then	err_exit 'array getting unset before right hand side evaluation'
+fi
+foo=(143 3643 38732)
+export foo
+typeset -i foo
+if	[[ $($SHELL -c 'print $foo') != 143 ]]
+then	err_exit 'exporting indexed array not exporting 0-th element'
+fi
+( $SHELL   -c '
+	unset foo
+	typeset -A foo=([0]=143 [1]=3643 [2]=38732)
+	export foo
+	typeset -i foo
+	[[ $($SHELL -c "print $foo") == 143 ]]'
+) 2> /dev/null || 
+		err_exit 'exporting associative array not exporting 0-th element'
+unset foo
+typeset -A foo
+foo[$((10))]=ok 2> /dev/null || err_exit 'arithmetic expression as subscript not working'
+unset foo
+typeset -A foo
+integer foo=0
+[[ $foo == 0 ]] || err_exit 'zero element of associative array not being set'
+unset foo
+typeset -A foo=( [two]=1)
+for i in one three four five
+do	: ${foo[$i]}
+done
+if	[[ ${!foo[@]} != two ]]
+then	err_exit 'Error in subscript names'
+fi
+unset x
+x=( 1 2 3)
+(x[1]=8)
+[[ ${x[1]} == 2 ]] || err_exit 'index array produce side effects in subshells'
+x=( 1 2 3)
+(
+	x+=(8)
+	[[ ${#x[@]} == 4 ]] || err_exit 'index array append in subshell error'
+)
+[[ ${#x[@]} == 3 ]] || err_exit 'index array append in subshell effects parent'
+x=( [one]=1 [two]=2 [three]=3)
+(x[two]=8)
+[[ ${x[two]} == 2 ]] || err_exit 'associative array produce side effects in subshells'
+unset x
+x=( [one]=1 [two]=2 [three]=3)
+(
+	x+=( [four]=4 )
+	[[ ${#x[@]} == 4 ]] || err_exit 'associative array append in subshell error'
+)
+[[ ${#x[@]} == 3 ]] || err_exit 'associative array append in subshell effects parent'
+unset x
+integer i
+for ((i=0; i < 40; i++))
+do	x[i]=$i
+done
+[[  ${#x[@]} == 40 ]] || err_exit 'index arrays loosing values'
+[[ $( ($SHELL -c 'typeset -A var; (IFS=: ; set -A var a:b:c ;print ${var[@]});:' )2>/dev/null) == 'a b c' ]] || err_exit 'change associative to index failed'
+unset foo
+[[ $(foo=good
+for ((i=0; i < 2; i++))
+do	[[ ${foo[i]} ]] && print ok
+done) == ok ]] || err_exit 'invalid optimization for subscripted variables'
+(
+x=([foo]=bar)
+set +A x bam
+) 2> /dev/null && err_exit 'set +A with associative array should be an error'
+unset bam foo
+foo=0
+typeset -A bam
+unset bam[foo]
+bam[foo]=value
+[[ $bam == value ]] && err_exit 'unset associative array element error'
+: only first element of an array can be exported
+unset bam
+trap 'rm -f /tmp/sharr$$' EXIT
+print 'print ${var[0]} ${var[1]}' > /tmp/sharr$$
+chmod +x /tmp/sharr$$
+[[ $($SHELL -c "var=(foo bar);export var;/tmp/sharr$$") == foo ]] || err_exit 'export array not exporting just first element'
+unset foo
+set -o allexport
+foo=one
+foo[1]=two
+foo[0]=three
+[[ $foo == three ]] || err_exit 'export all not working with arrays'
 exit $((Errors))

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -36,12 +36,11 @@
  */
 
 #if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide getpagesize getdtablesize printf spawnve
+__STDPP__directive pragma pp:hide getpagesize getdtablesize printf
 #else
 #define getpagesize	______getpagesize
 #define getdtablesize	______getdtablesize
 #define printf		______printf
-#define spawnve		______spawnve
 #endif
 
 /*
@@ -56,6 +55,9 @@ __STDPP__directive pragma pp:hide getpagesize getdtablesize printf spawnve
 
 #ifndef _POSIX_SOURCE
 #define _POSIX_SOURCE	1
+#endif
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE	1
 #endif
 #ifndef __EXTENSIONS__
 #define __EXTENSIONS__	1
@@ -80,11 +82,10 @@ __STDPP__directive pragma pp:hide getpagesize getdtablesize printf spawnve
 #include "FEATURE/param"
 
 #if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide getpagesize getdtablesize printf spawnve
+__STDPP__directive pragma pp:nohide getpagesize getdtablesize printf
 #else
 #undef	getpagesize
 #undef	getdtablesize   
-#undef	spawnve
 #endif
 
 #if defined(__STDPP__hide) || defined(printf)
@@ -427,10 +428,18 @@ main()
 	printf("#define __sys_limits_h\n");
 #endif
 #ifdef	_BITS_POSIX1_LIM_H
+	printf("#ifndef _BITS_POSIX1_LIM_H\n");
 	printf("#define _BITS_POSIX1_LIM_H\n");
+	printf("#endif\n");
 #endif
 #ifdef	_LIMITS_H_
 	printf("#define _LIMITS_H_\n");
+#endif
+#ifdef	_LIMITS_H__
+	printf("#define _LIMITS_H__\n");
+#endif
+#ifdef	_LIMITS_H___
+	printf("#define _LIMITS_H___\n");
 #endif
 #ifdef	__LIMITS_H
 	printf("#define __LIMITS_H\n");
@@ -440,6 +449,9 @@ main()
 #endif
 #ifdef	_MACH_MACHLIMITS_H_
 	printf("#define _MACH_MACHLIMITS_H_\n");
+#endif
+#ifdef	_MACHINE_LIMITS_H_
+	printf("#define _MACHINE_LIMITS_H_\n");
 #endif
 #ifdef	_SYS_LIMITS_H_
 	printf("#define _SYS_LIMITS_H_\n");

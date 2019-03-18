@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -32,7 +32,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: join (AT&T Labs Research) 2000-04-30 $\n]"
+"[-?\n@(#)$Id: join (AT&T Labs Research) 2003-05-15 $\n]"
 USAGE_LICENSE
 "[+NAME?join - relational database operator]"
 "[+DESCRIPTION?\bjoin\b performs an \aequality join\a on the files \afile1\a "
@@ -52,7 +52,7 @@ USAGE_LICENSE
 "[+?The files \afile1\a and \afile2\a must be ordered in the collating "
 	"sequence of \bsort -b\b on the fields on which they are to be "
 	"joined otherwise the results are unspecified.]"
-"[+?If either \afile1\a or \afiles2\a is \b-\b, \bcomm\b "
+"[+?If either \afile1\a or \afile2\a is \b-\b, \bjoin\b "
         "uses standard input starting at the current location.]"
 
 "[e:empty]:[string?Replace empty output fields in the list selected with"
@@ -110,7 +110,7 @@ USAGE_LICENSE
 #define S_NL		3
 
 #if DEBUG_TRACE
-#define cmdinit(a,b,c)
+#define cmdinit(a,b,c,d)
 #endif
 
 typedef struct
@@ -139,8 +139,15 @@ typedef struct
 	int		delim;
 	int		buffered;
 	int		ignorecase;
+	char*		same;
+	int		samesize;
 	File_t		file[2];
 } Join_t;
+
+static struct State_s
+{
+	int		interrupt;
+} state;
 
 static void
 done(register Join_t* jp)
@@ -155,6 +162,8 @@ done(register Join_t* jp)
 		free(jp->file[0].fieldlist);
 	if (jp->file[1].fieldlist)
 		free(jp->file[1].fieldlist);
+	if (jp->same)
+		free(jp->same);
 	free(jp);
 }
 
@@ -265,13 +274,15 @@ getolist(Join_t* jp, const char* first, char** arglist)
 static unsigned char*
 getrec(Join_t* jp, int index)
 {
-	register unsigned char*	state = jp->state;
+	register unsigned char*	sp = jp->state;
 	register File_t*	fp = &jp->file[index];
 	register char**		ptr = fp->fieldlist;
 	register char**		ptrmax = ptr + fp->maxfields;
 	register char*		cp;
 	register int		n = 0;
 
+	if (state.interrupt)
+		return 0;
 	fp->spaces = 0;
 	fp->hit = 0;
 	if (!(cp = sfgetr(fp->iop, '\n', 0)))
@@ -297,13 +308,13 @@ getrec(Join_t* jp, int index)
 			ptrmax = fp->fieldlist+n;
 		}
 		*ptr++ = cp;
-		if (jp->delim<=0 && state[*(unsigned char*)cp]==S_SPACE)
+		if (jp->delim<=0 && sp[*(unsigned char*)cp]==S_SPACE)
 		{
 			fp->spaces = 1;
-			while (state[*(unsigned char*)cp++]==S_SPACE);
+			while (sp[*(unsigned char*)cp++]==S_SPACE);
 			cp--;
 		}
-		while ((n=state[*(unsigned char*)cp++])==0);
+		while ((n=sp[*(unsigned char*)cp++])==0);
 	}
 	*ptr = cp;
 	fp->nfields = ptr - fp->fieldlist;
@@ -313,7 +324,7 @@ getrec(Join_t* jp, int index)
 		/* eliminate leading spaces */
 		if (fp->spaces)
 		{
-			while (state[*(unsigned char*)cp++]==S_SPACE);
+			while (sp[*(unsigned char*)cp++]==S_SPACE);
 			cp--;
 		}
 		fp->fieldlen = (fp->fieldlist[n+1]-cp)-1;
@@ -475,8 +486,8 @@ join(Join_t* jp)
 	register int		n2;
 	register int		n;
 	register int		cmp;
-	register int		same = 0;
-	int			samecmp;
+	register int		same;
+	int			o2;
 	Sfoff_t			lo = -1;
 	Sfoff_t			hi = -1;
 
@@ -484,16 +495,17 @@ join(Join_t* jp)
 	{
 		n1 = jp->file[0].fieldlen;
 		n2 = jp->file[1].fieldlen;
+		same = 0;
 		for (;;)
 		{
 			n = n1 < n2 ? n1 : n2;
 #if DEBUG_TRACE
-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)))
+			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = (int)*cp1 - (int)*cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)))
 				cmp = n1 - n2;
-sfprintf(sfstdout, "[C#%d:%d,%lld,%lld%s]", __LINE__, cmp, lo, hi, (jp->outmode & C_COMMON) ? ",COMMON" : "");
+sfprintf(sfstdout, "[C#%d:%d(%c-%c),%d,%lld,%lld%s]", __LINE__, cmp, *cp1, *cp2, same, lo, hi, (jp->outmode & C_COMMON) ? ",COMMON" : "");
 			if (!cmp)
 #else
-			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = *cp1 - *cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)) && !(cmp = n1 - n2))
+			if (!n && !(cmp = n1 < n2 ? -1 : (n1 > n2)) || n && !(cmp = (int)*cp1 - (int)*cp2) && !(cmp = jp->ignorecase ? strncasecmp((char*)cp1, (char*)cp2, n) : memcmp(cp1, cp2, n)) && !(cmp = n1 - n2))
 #endif
 			{
 				if (!(jp->outmode & C_COMMON))
@@ -502,7 +514,6 @@ sfprintf(sfstdout, "[C#%d:%d,%lld,%lld%s]", __LINE__, cmp, lo, hi, (jp->outmode 
 					{
 						n1 = jp->file[0].fieldlen;
 						same = 1;
-						samecmp = 0;
 						continue;
 					}
 					if ((jp->ooutmode & (C_FILE1|C_FILE2)) != C_FILE2)
@@ -538,15 +549,22 @@ sfprintf(sfstdout, "[2#%d:0,%lld,%lld]", __LINE__, lo, hi);
 				if (same)
 				{
 					same = 0;
-					if (cmp != samecmp)
+				next:
+					if (n2 > jp->samesize)
 					{
-						if (samecmp && (jp->outmode & C_FILE2) && outrec(jp, 1) < 0)
+						jp->samesize = roundof(n2, 16);
+						if (!(jp->same = newof(jp->same, char, jp->samesize, 0)))
+						{
+							error(ERROR_SYSTEM|2, "out of space");
 							return -1;
-						samecmp = cmp;
+						}
 					}
+					memcpy(jp->same, cp2, o2 = n2);
 					if (!(cp2 = getrec(jp, 1)))
 						break;
 					n2 = jp->file[1].fieldlen;
+					if (n2 == o2 && *cp2 == *jp->same && !memcmp(cp2, jp->same, n2))
+						goto next;
 					continue;
 				}
 				if (hi >= 0)
@@ -570,8 +588,14 @@ sfprintf(sfstdout, "[2#%d:0,%lld,%lld]", __LINE__, lo, hi);
 sfprintf(sfstdout, "[2#%d:0,%lld,%lld]", __LINE__, lo, hi);
 #endif
 			}
-			else
+			else if (same)
+			{
 				same = 0;
+				if (!(cp1 = getrec(jp, 0)))
+					break;
+				n1 = jp->file[0].fieldlen;
+				continue;
+			}
 			if (lo >= 0)
 			{
 				hi = sfseek(jp->file[1].iop, (Sfoff_t)0, SEEK_CUR) - jp->file[1].reclen;
@@ -644,7 +668,13 @@ b_join(int argc, char** argv, void* context)
 	register Join_t*	jp = init();
 	char*			e;
 
-	cmdinit(argv, context, ERROR_CATALOG);
+	if (argc < 0)
+	{
+		state.interrupt = 1;
+		return 1;
+	}
+	state.interrupt = 0;
+	cmdinit(argv, context, ERROR_CATALOG, ERROR_NOTIFY);
 	if (!(jp = init()))
 		error(ERROR_system(1),"out of space");
 	for (;;)
@@ -696,13 +726,13 @@ b_join(int argc, char** argv, void* context)
 				error(2,"field number must positive");
 			jp->file[n-'1'].field = (int)(opt_info.num-1);
 			continue;
-		case 'a':
 		case 'v':
+			jp->outmode &= ~C_COMMON;
+			/*FALLTHROUGH*/
+		case 'a':
 			if (opt_info.num!=1 && opt_info.num!=2)
-				error(2,"-a fileno: number must be 1 or 2");
+				error(2,"%s: file number must be 1 or 2", opt_info.name);
 			jp->outmode |= 1<<(opt_info.num-1);
-			if (n=='v')
-				jp->outmode &= ~C_COMMON;
 			continue;
 		case 'e':
 			jp->nullfield = opt_info.arg;

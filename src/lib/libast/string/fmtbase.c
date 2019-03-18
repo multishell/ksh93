@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -35,16 +35,26 @@
 
 #include <ast.h>
 
+#undef	fmtbasell
+
 char*
-fmtbase(register long n, register int b, int p)
+fmtbasell(register _ast_intmax_t n, register int b, int p)
 {
 	char*	buf;
 	int	z;
 
-	buf = fmtbuf(z = 36);
+	buf = fmtbuf(z = 72);
 	if (!p && (n == 0 || b == 0))
-		sfsprintf(buf, z, "%ld", n);
+		sfsprintf(buf, z, "%I*d", sizeof(n), n);
 	else
-		sfsprintf(buf, z, p ? "%#..*u" : "%..*u", b, n);
+		sfsprintf(buf, z, p ? "%#..*I*u" : "%..*I*u", b, sizeof(n), n);
 	return buf;
+}
+
+#undef	fmtbase
+
+char*
+fmtbase(long n, int b, int p)
+{
+	return fmtbasell((_ast_intmax_t)n, b, p);
 }

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,39 +23,12 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#pragma prototyped
+/*
+ * strntoll() implementation
+ */
 
-#include <ast_lib.h>
+#define S2I_function	strntoll
+#define S2I_number	_ast_intmax_t
+#define S2I_size	1
 
-#if _lib_spawnlp
-
-#include <ast.h>
-
-NoN(spawnlp)
-
-#else
-
-#if defined(__EXPORT__)
-#include <sys/types.h>
-__EXPORT__ pid_t spawnlp(const char*, const char*, ...);
-#endif
-
-#include <ast.h>
-
-#if defined(__EXPORT__)
-#define extern	__EXPORT__
-#endif
-
-extern pid_t
-spawnlp(const char* name, const char* arg, ...)
-{
-	va_list	ap;
-	pid_t	pid;
-
-	va_start(ap, arg);
-	pid = spawnvp(name, (char* const*)&arg);
-	va_end(ap);
-	return pid;
-}
-
-#endif
+#include "strtoi.h"

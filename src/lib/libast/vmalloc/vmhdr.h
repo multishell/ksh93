@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -48,23 +48,57 @@
 
 #if _PACKAGE_ast
 
+#if !_UWIN
+#define getpagesize		______getpagesize
+#define _npt_getpagesize	1
+#define brk			______brk
+#define sbrk			______sbrk
+#define _npt_sbrk		1
+#endif
+
 #include	<ast.h>
+
+#if _npt_getpagesize
+#undef				getpagesize
+#endif
+#if _npt_sbrk
+#undef				brk
+#undef				sbrk
+#endif
 
 #else
 
 #include	<ast_common.h>
-#include	"FEATURE/vmalloc"
 
 #if !_UWIN
 #define _npt_getpagesize	1
 #define _npt_sbrk		1
 #endif
 
-#endif /*_PACKAGE_ast*/
-
 #undef free
 #undef malloc
 #undef realloc
+
+#endif /*_PACKAGE_ast*/
+
+#include	"FEATURE/vmalloc"
+
+/* the below macros decide which combinations of sbrk() or mmap() to used */
+#if defined(_WIN32)
+#define _mem_win32	1
+#undef _mem_sbrk
+#undef _mem_mmap_anon
+#undef _mem_mmap_zero
+#endif
+
+#if _mem_mmap_anon
+#undef _mem_mmap_zero
+#endif
+
+#if !_mem_win32 && !_mem_sbrk && !_mem_mmap_anon && !_mem_mmap_zero
+#undef _std_malloc
+#define _std_malloc	1	/* do not define malloc/free/realloc */
+#endif
 
 typedef unsigned char	Vmuchar_t;
 typedef unsigned long	Vmulong_t;
@@ -74,6 +108,10 @@ typedef union _body_u	Body_t;
 typedef struct _block_s	Block_t;
 typedef struct _seg_s	Seg_t;
 typedef struct _pfobj_s	Pfobj_t;
+
+#if !_typ_ssize_t
+typedef int		ssize_t;
+#endif
 
 #define NIL(t)		((t)0)
 #define reg		register
@@ -94,27 +132,28 @@ typedef struct _pfobj_s	Pfobj_t;
 /* compute a value that is a common multiple of x and y */
 #define MULTIPLE(x,y)	((x)%(y) == 0 ? (x) : (y)%(x) == 0 ? (y) : (y)*(x))
 
+/* _Vmcheck flags */
+#define _VM_init	0x1
+#define _VM_check	0x2
+#define _VM_assert	0x4
+#define _VM_warn	0x8
+
+extern int		_Vmcheck;
+
 #ifndef DEBUG
 #ifdef _BLD_DEBUG
 #define DEBUG		1
-#endif
-#endif
-#ifndef DEBUG
+#endif /*_BLD_DEBUG*/
+#endif /*DEBUG*/
+#if DEBUG
+extern void		_Vmessage _ARG_((const char*, long, const char*, long));
+#define MESSAGE(s)	_Vmessage(__FILE__,__LINE__,s,0)
+#define ASSERT(p)	((!(_Vmcheck & (_VM_assert|_VM_check)) || (p)) ? 0 : (MESSAGE("assertion failed"), (_Vmcheck & _VM_warn) ? 0 : (abort(),1)))
+#define COUNT(n)	((n) += 1)
+#else
 #define ASSERT(p)
 #define COUNT(n)
-#else
-#if defined(__LINE__) && defined(__FILE__)
-#if _PACKAGE_ast
-#define PRFILELINE	sfprintf(sfstdout,"Assertion failed at %s:%d\n",__FILE__,__LINE__)
-#else
-extern int printf _ARG_((const char*, ...));
-#define PRFILELINE	printf("Assertion failed at %s:%d\n",__FILE__,__LINE__)
-#endif
-#else
-#define PRFILELINE	0
-#endif
-#define ASSERT(p)	((p) ? 0 : (PRFILELINE, abort(), 0) )
-#define COUNT(n)	((n) += 1)
+#define MESSAGE(s)	0
 #endif /*DEBUG*/
 
 #define VMPAGESIZE	8192
@@ -166,12 +205,19 @@ extern int printf _ARG_((const char*, ...));
 #define SETLOCK(vd,l)	((l) ? 0 : ((vd)->mode |= VM_LOCK) )
 #define CLRLOCK(vd,l)	((l) ? 0 : ((vd)->mode &= ~VM_LOCK) )
 
+/* announcing entry/exit of allocation calls */
+#define ANNOUNCE(lc, vm,ev,dt,dc) \
+		(( ((lc)&VM_LOCAL) || !(dc) || !(dc)->exceptf ) ? 0 : \
+			(*(dc)->exceptf)((vm), (ev), (Void_t*)(dt), (dc)) )
+			
+
 /* local calls */
 #define KPVALLOC(vm,sz,func)		(SETLOCAL((vm)->data), func((vm),(sz)) )
 #define KPVALIGN(vm,sz,al,func)		(SETLOCAL((vm)->data), func((vm),(sz),(al)) )
 #define KPVFREE(vm,d,func)		(SETLOCAL((vm)->data), func((vm),(d)) )
 #define KPVRESIZE(vm,d,sz,mv,func)	(SETLOCAL((vm)->data), func((vm),(d),(sz),(mv)) )
 #define KPVADDR(vm,addr,func)		(SETLOCAL((vm)->data), func((vm),(addr)) )
+#define KPVCOMPACT(vm,func)		(SETLOCAL((vm)->data), func((vm)) )
 
 /* ALIGN is chosen so that a block can store all primitive types.
 ** It should also be a multiple of ALIGNB==(BITS+1) so the size field
@@ -193,9 +239,7 @@ union _align_u
 	Body_t*		body;
 	Block_t*	block;
 	Vmuchar_t	a[ALIGNB];
-#if _long_double
-	long double	ld, *ldp;
-#endif
+	_ast_fltmax_t	ld, *ldp;
 };
 struct _a_s
 {	char		c;
@@ -205,6 +249,7 @@ struct _a_s
 struct _align_s
 {	char	data[MULTIPLE(ALIGNA,ALIGNB)];
 };
+#undef	ALIGN	/* bsd sys/param.h defines this */
 #define ALIGN	sizeof(struct _align_s)
 
 /* make sure that the head of a block is a multiple of ALIGN */
@@ -256,7 +301,7 @@ struct _tiny_s
 	Block_t*	self;
 };
 #define TINYSIZE	ROUND(sizeof(struct _tiny_s),ALIGN)
-#define S_TINY		7				/* # of tiny blocks	*/
+#define S_TINY		1				/* # of tiny blocks	*/
 #define MAXTINY		(S_TINY*ALIGN + TINYSIZE)
 #define TLEFT(b)	((b)->head.head.seg.link)	/* instead of LEFT	*/
 #define TINIEST(b)	(SIZE(b) == TINYSIZE)		/* this type uses TLEFT	*/
@@ -293,10 +338,12 @@ typedef struct _vmdata_s
 
 #include	"vmalloc.h"
 
+#if !_PACKAGE_ast
 /* we don't use these here and they interfere with some local names */
 #undef malloc
 #undef free
 #undef realloc
+#endif
 
 /* segment structure */
 struct _seg_s
@@ -421,9 +468,9 @@ struct _seg_s
 typedef Block_t*	(*Vmsearch_f)_ARG_((Vmdata_t*, size_t, Block_t*));
 typedef struct _vmextern_
 {	Block_t*	(*vm_extend)_ARG_((Vmalloc_t*, size_t, Vmsearch_f ));
-	int		(*vm_truncate)_ARG_((Vmalloc_t*, Seg_t*, size_t, int));
+	ssize_t		(*vm_truncate)_ARG_((Vmalloc_t*, Seg_t*, size_t, int));
 	size_t		vm_pagesize;
-	char*		(*vm_strcpy)_ARG_((char*, char*, int));
+	char*		(*vm_strcpy)_ARG_((char*, const char*, int));
 	char*		(*vm_itoa)_ARG_((Vmulong_t, int));
 	void		(*vm_trace)_ARG_((Vmalloc_t*,
 					  Vmuchar_t*, Vmuchar_t*, size_t, size_t));
@@ -438,6 +485,8 @@ typedef struct _vmextern_
 #define _Vmtrace	(_Vmextern.vm_trace)
 #define _Vmpfclose	(_Vmextern.vm_pfclose)
 
+extern int		_vmbestcheck _ARG_((Vmdata_t*, Block_t*));
+
 _BEGIN_EXTERNS_
 
 extern Vmextern_t	_Vmextern;
@@ -445,9 +494,10 @@ extern Vmextern_t	_Vmextern;
 #if _PACKAGE_ast
 
 #if _npt_getpagesize
-extern size_t		getpagesize _ARG_((void));
+extern int		getpagesize _ARG_((void));
 #endif
 #if _npt_sbrk
+extern int		brk _ARG_(( void* ));
 extern Void_t*		sbrk _ARG_(( ssize_t ));
 #endif
 
@@ -481,11 +531,6 @@ extern void		_exit _ARG_(( int ));
 extern void		_cleanup _ARG_(( void ));
 
 #endif /*_PACKAGE_ast*/
-
-/* for vmdcsbrk.c */
-#if !_typ_ssize_t
-typedef int		ssize_t;
-#endif
 
 _END_EXTERNS_
 

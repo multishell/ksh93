@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -57,13 +57,11 @@
 struct Magic_s;
 struct Magicdisc_s;
 
-typedef int (*Magicerror_f)(struct Magic_s*, struct Magicdisc_s*, int, const char*, ...);
-
 typedef struct Magicdisc_s
 {
 	unsigned long	version;	/* interface version		*/
 	unsigned long	flags;		/* MAGIC_* flags		*/
-	Magicerror_f	errorf;		/* error function		*/
+	Error_f		errorf;		/* error function		*/
 } Magicdisc_t;
 
 typedef struct Magic_s

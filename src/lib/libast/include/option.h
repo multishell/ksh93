@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -58,7 +58,8 @@ typedef struct Optdisc_s
 /* NOTE: Opt_t member order fixed by a previous binary release */
 
 #ifndef _OPT_PRIVATE_
-#define _OPT_PRIVATE_	void*	_opt_private;
+#define _OPT_PRIVATE_	\
+	char		pad[3*sizeof(void*)];
 #endif
 
 typedef struct Opt_s
@@ -68,27 +69,29 @@ typedef struct Opt_s
 	char**		argv;		/* most recent argv		*/
 	int		index;		/* argv index			*/
 	char*		msg;		/* error/usage message buffer	*/
-	long		num;		/* # numeric argument		*/
+	long		num;		/* OBSOLETE -- use number	*/
 	int		offset;		/* char offset in argv[index]	*/
 	char		option[8];	/* current flag {-,+} + option  */
 	char		name[64];	/* current long name or flag	*/
 	Optdisc_t*	disc;		/* user discipline		*/
+	_ast_intmax_t	number;		/* # numeric argument		*/
+	unsigned char	assignment;	/* option arg assigment op	*/
+	unsigned char	pads[sizeof(void*)-1];
 	_OPT_PRIVATE_
 } Opt_t;
 
 #if _BLD_ast && defined(__EXPORT__)
-#define __PUBLIC_DATA__		__EXPORT__
-#else
+#define extern		extern __EXPORT__
+#endif
 #if !_BLD_ast && defined(__IMPORT__)
-#define __PUBLIC_DATA__		__IMPORT__
-#else
-#define __PUBLIC_DATA__
-#endif
+#define extern		extern __IMPORT__
 #endif
 
-extern __PUBLIC_DATA__ Opt_t		opt_info;
+extern Opt_t		opt_info;
 
-#undef	__PUBLIC_DATA__
+#undef	extern
+
+#define optinit(d,f)	(memset(d,0,sizeof(*(d))),(d)->version=OPT_VERSION,(d)->infof=(f),opt_info.disc=(d))
 
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		__EXPORT__
@@ -99,6 +102,7 @@ extern int		optjoin(char**, ...);
 extern char*		opthelp(const char*, const char*);
 extern char*		optusage(const char*);
 extern int		optstr(const char*, const char*);
+extern int		optesc(Sfio_t*, const char*);
 
 #undef	extern
 

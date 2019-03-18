@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -37,9 +37,11 @@
 
 /*
  * quote string as of length n with qb...qe
- * (flags&1) forces quote, otherwise quote output only if necessary
+ * (flags&FMT_ALWAYS) always quotes, otherwise quote output only if necessary
  * qe and the usual suspects are \... escaped
- * (flags&2) doesn't quote 8 bit chars
+ * (flags&FMT_WIDE) doesn't escape 8 bit chars
+ * (flags&FMT_ESCAPED) doesn't \... escape the usual suspects
+ * (flags&FMT_SHELL) escape $`"#;~&|()<>[]*?
  */
 
 char*
@@ -49,32 +51,28 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 	register unsigned char*	e = s + n;
 	register char*		b;
 	register int		c;
-	int			k;
-	int			q;
+	register int		escaped;
+	register int		spaced;
+	int			shell;
+	char*			f;
 	char*			buf;
 
 	c = 4 * (n + 1);
 	if (qb)
-	{
-		k = strlen((char*)qb);
-		c += k;
-	}
-	else
-	{
-		k = 0;
-		if (qe)
-			c += strlen((char*)qe);
-	}
+		c += strlen((char*)qb);
+	if (qe)
+		c += strlen((char*)qe);
 	b = buf = fmtbuf(c);
+	shell = 0;
 	if (qb)
 	{
-		if ((flags & 1) && qb[0] == '"' && qb[1] == 0)
-			flags |= 4;
-		q = qb[0] == '$' && qb[1] == '\'' && qb[2] == 0 ? 1 : 0;
+		if (qb[0] == '$' && qb[1] == '\'' && qb[2] == 0)
+			shell = 1;
 		while (*b = *qb++)
 			b++;
-		k = (flags & 1) ? 0 : (b - buf);
 	}
+	f = b;
+	escaped = spaced = !!(flags & FMT_ALWAYS);
 	while (s < e)
 	{
 		if ((c = mbsize(s)) > 1)
@@ -85,9 +83,9 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 		else
 		{
 			c = *s++;
-			if (iscntrl(c) || !isprint(c) || c == '\\')
+			if (!(flags & FMT_ESCAPED) && (iscntrl(c) || !isprint(c) || c == '\\'))
 			{
-				k = 0;
+				escaped = 1;
 				*b++ = '\\';
 				switch (c)
 				{
@@ -118,7 +116,7 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 				case '\\':
 					break;
 				default:
-					if (!(flags & 2) || !(c & 0200))
+					if (!(flags & FMT_WIDE) || !(c & 0200))
 					{
 						*b++ = '0' + ((c >> 6) & 07);
 						*b++ = '0' + ((c >> 3) & 07);
@@ -129,21 +127,33 @@ fmtquote(const char* as, const char* qb, const char* qe, size_t n, int flags)
 					break;
 				}
 			}
-			else if (qe && strchr(qe, c) || (flags & 4) && (c == '$' || c == '`'))
+			else if (c == '\\')
 			{
-				k = 0;
+				escaped = 1;
+				*b++ = c;
+				if (*s)
+					c = *s++;
+			}
+			else if (qe && strchr(qe, c) || (flags & FMT_SHELL) && !shell && (c == '$' || c == '`'))
+			{
+				escaped = 1;
 				*b++ = '\\';
 			}
-			else if (qb && isspace(c))
-				k = q;
+			else if (!spaced && !escaped && (isspace(c) || ((flags & FMT_SHELL) || shell) && (strchr("\";~&|()<>[]*?", c) || c == '#' && (b == f || isspace(*(b - 1))))))
+				spaced = 1;
 			*b++ = c;
 		}
 	}
-	if (qb && k <= q && qe)
-		while (*b = *qe++)
-			b++;
+	if (qb)
+	{
+		if (!escaped)
+			buf += shell + !spaced;
+		if (qe && (escaped || spaced))
+			while (*b = *qe++)
+				b++;
+	}
 	*b = 0;
-	return buf + k;
+	return buf;
 }
 
 /*

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -27,7 +27,11 @@
  * strtol() implementation
  */
 
+#if ! __CYGWIN__ /* 1.3.* static link conflict -- no iffe for this yet */
+
 #define S2I_function	strtol
 #define S2I_number	long
 
 #include "strtoi.h"
+
+#endif

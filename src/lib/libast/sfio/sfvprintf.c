@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -42,6 +42,53 @@
 
 #define FPRECIS		6	/* default precision for floats 	*/
 
+#if _PACKAGE_ast
+#include <ccode.h>
+#else
+/* characters when using ebcdic or ascii */
+#if _chr_ebcdic
+#define CC_vt			013	/* vertical tab	*/
+#define CC_esc			047	/* escape	*/
+#define CC_bel			057	/* bell		*/
+#else
+#define CC_vt			013	/* vertical tab	*/
+#define CC_esc			033	/* escape	*/
+#define CC_bel			007	/* bell		*/
+#endif /* _chr_ebcdic */
+#endif /* _PACKAGE_ast */
+
+#if __STD_C
+static int chr2str(char* buf, int v)
+#else
+static int chr2str(buf, v)
+char*	buf;
+int	v;
+#endif
+{
+	if(isprint(v) && v != '\\')
+	{	*buf++ = v;
+		return 1;
+	}
+	else
+	{	*buf++ = '\\';
+		switch(v)
+		{ case CC_bel:	*buf++ = 'a'; return 2;
+		  case CC_vt:	*buf++ = 'v'; return 2;
+		  case CC_esc:	*buf++ = 'E'; return 2;
+		  case '\b':	*buf++ = 'b'; return 2;
+		  case '\f':	*buf++ = 'f'; return 2;
+		  case '\n':	*buf++ = 'n'; return 2;
+		  case '\r':	*buf++ = 'r'; return 2;
+		  case '\t':	*buf++ = 't'; return 2;
+		  case '\\':	*buf++ = '\\'; return 2;
+		  default:	*buf++ = '0' + ((v >> 6) & 03);
+				*buf++ = '0' + ((v >> 3) & 07);
+				*buf++ = '0' + ((v >> 0) & 07);
+				return 4;
+		}
+	}
+}
+
 /* On some platform(s), large functions are not compilable.
 ** In such a case, the below macro should be defined non-zero so that
 ** some in-lined macros will be made smaller, trading time for space.
@@ -59,7 +106,7 @@ char*	form;		/* format to use	*/
 va_list	args;		/* arg list if !argf	*/
 #endif
 {
-	int		n, v, n_s, base, fmt, flags;
+	int		n, v, k, n_s, base, fmt, flags;
 	Sflong_t	lv;
 	char		*sp, *ssp, *endsp, *ep, *endep;
 	int		dot, width, precis, sign, decpt;
@@ -91,13 +138,13 @@ va_list	args;		/* arg list if !argf	*/
 	/* local io system */
 	int		w, n_output;
 #define SMputc(f,c)	{ if((w = SFFLSBUF(f,c)) >= 0 ) n_output += 1; \
-			  else	goto done; \
+			  else		{ SFBUF(f); goto done; } \
 			}
 #define SMnputc(f,c,n)	{ if((w = SFNPUTC(f,c,n)) > 0 ) n_output += 1; \
-			  if(w != n) goto done; \
+			  if(w != n)	{ SFBUF(f); goto done; } \
 			}
 #define SMwrite(f,s,n)	{ if((w = SFWRITE(f,(Void_t*)s,n)) > 0 ) n_output += w; \
-			  if(w != n) goto done; \
+			  if(w != n)	{ SFBUF(f); goto done; } \
 			}
 #if _sffmt_small /* these macros are made smaller at some performance cost */
 #define SFBUF(f)
@@ -504,6 +551,10 @@ loop_fmt :
 				{	if(size == sizeof(float) )
 						argv.d = argv.f;
 				}
+				else if(_Sftype[fmt]&SFFMT_CHAR)
+				{	if(base < 0)
+						argv.i = (int)argv.c;
+				}
 			}
 		}
 		else
@@ -541,7 +592,7 @@ loop_fmt :
 					else	argv.wc = va_arg(args,wchar_t);
 				}
 #endif
-				else	argv.c = (char)va_arg(args,int);
+				else	argv.i = va_arg(args,int);
 				break;
 			 default: /* unknown pattern */
 				break;
@@ -632,7 +683,9 @@ loop_fmt :
 				else
 #endif
 				{	if((v = size) < 0)
-						v = strlen(sp);
+						for(v = 0; sp[v]; ++v)
+							if(v == precis)
+								break;
 				}
 
 				if(precis >= 0 && v > precis)
@@ -687,7 +740,8 @@ loop_fmt :
 					size = strlen(sp);
 				}
 				else
-				{	sp = &argv.c;
+				{	argv.c = (char)(argv.i);
+					sp = &argv.c;
 					size = 1;
 				}
 			}
@@ -695,15 +749,19 @@ loop_fmt :
 			while(size > 0)
 			{
 #if _has_multibyte
-				if(flags & SFFMT_LONG)
+				if(flags&SFFMT_LONG)
 				{	SFMBCLR(&mbs);
-					sp = buf;
-					if((n_s = wcrtomb(sp, *wsp++, &mbs)) <= 0)
+					if((n_s = wcrtomb(buf, *wsp++, &mbs)) <= 0)
 						break;
 					n = width - precis*n_s; /* padding amount */
 				}
 				else
 #endif
+				if(flags&SFFMT_ALTER)
+				{	n_s = chr2str(buf, *sp++);
+					n = width - precis*n_s;
+				}
+				else
 				{	fmt = *sp++;
 					n = width - precis;
 				}
@@ -713,12 +771,17 @@ loop_fmt :
 
 				v = precis; /* need this because SFnputc may clear it */
 #if _has_multibyte
-				if(flags & SFFMT_LONG)
+				if(flags&SFFMT_LONG)
 				{	for(; v > 0; --v)
-						{ SFwrite(f, sp, n_s); }
+						{ ssp = buf; k = n_s; SFwrite(f,ssp,k); }
 				}
 				else
 #endif
+				if(flags&SFFMT_ALTER)
+				{	for(; v > 0; --v)
+						{ ssp = buf; k = n_s; SFwrite(f,ssp,k); }
+				}
+				else
 				{	SFnputc(f, fmt, v);
 				}
 
@@ -831,9 +894,18 @@ loop_fmt :
 				goto int_cvt;
 			}
 			else if(size == sizeof(char))
-			{	if(fmt == 'd')
-					v = (int)((char)argv.i);
-				else	v = (int)((uchar)argv.i);
+			{	if(fmt != 'd')
+					v = (int)((uchar)argv.i);
+				else
+				{
+#if _key_signed
+					v = (int)((signed char)argv.i);
+#else
+					if(argv.i < 0)
+						v = -((int)((char)(-argv.i)));
+					else	v =  ((int)((char)( argv.i)));
+#endif
+				}
 				goto int_cvt;
 			}
 			else

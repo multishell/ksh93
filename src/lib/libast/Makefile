@@ -10,11 +10,11 @@ ID = ast
 
 HOSTTYPE == "$(CC.HOSTTYPE)"
 
-CCFLAGS = $(CC.OPTIMIZE) -D_BLD_ast $(CC.DLL)
+CCFLAGS = $(CC.OPTIMIZE) $(CC.DLL)
 
 IFFEFLAGS = -v -X std
 
-.SOURCE : cdt comp dir disc hash man misc path port preroot \
+.SOURCE : cdt comp dir disc hash man misc obsolete path port preroot \
 		regex sfio stdio string tm uwin vec vmalloc
 
 .SOURCE.h : include comp std
@@ -25,24 +25,25 @@ PARANOID ==
 CONF_LIBPREFIX == "$(CC.PREFIX.DYNAMIC|CC.PREFIX.SHARED)"
 CONF_LIBSUFFIX == "$(CC.SUFFIX.DYNAMIC|CC.SUFFIX.SHARED)"
 DEBUG ==
-__OBSOLETE__ == 20020101
+__OBSOLETE__ == 20030101
 
-HEADERSRC = ast.h ast_dir.h ast_std.h ast_version.h \
-	ccode.h cdt.h debug.h error.h find.h ftw.h ftwalk.h fts.h \
+HEADERSRC = ast.h ast_dir.h ast_getopt.h ast_std.h \
+	ast_version.h ast_windows.h \
+	ccode.h cdt.h debug.h dt.h error.h find.h ftw.h ftwalk.h fts.h \
 	fs3d.h getopt.h glob.h hash.h hashkey.h hashpart.h int.h lc.h ls.h \
 	magic.h mc.h mime.h mnt.h modecanon.h modex.h namval.h option.h \
-	proc.h re.h re_comp.h regex.h regexp.h \
+	proc.h re_comp.h regex.h regexp.h \
 	sfio.h sfio_s.h sfio_t.h sfdisc.h sfstr.h \
 	stack.h stak.h stk.h swap.h tar.h times.h tm.h \
 	tok.h usage.h vdb.h vecargs.h vmalloc.h wait.h wordexp.h \
-	bytesex.h endian.h fnmatch.h magicid.h \
+	bytesex.h endian.h fnmatch.h magicid.h fnv.h \
 	$(HEADERSTD)
 
 HEADERGEN = align.h preroot.h sig.h \
 	$(ID)_botch.h $(ID)_ccode.h $(ID)_common.h $(ID)_fcntl.h \
-	$(ID)_fs.h $(ID)_hdr.h $(ID)_lib.h $(ID)_map.h $(ID)_mode.h \
-	$(ID)_param.h $(ID)_time.h $(ID)_tty.h $(ID)_types.h \
-	$(ID)_unistd.h $(ID)_wait.h \
+	$(ID)_float.h $(ID)_fs.h $(ID)_hdr.h $(ID)_lib.h $(ID)_map.h \
+	$(ID)_mmap.h $(ID)_mode.h $(ID)_param.h $(ID)_time.h $(ID)_tty.h \
+	$(ID)_types.h $(ID)_unistd.h $(ID)_vfork.h $(ID)_wait.h \
 	$(HEADERSTD:/^/$(ID)_/)
 
 HEADEROPT = fmtmsg.h libgen.h syslog.h
@@ -66,26 +67,27 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	hashlook.c hashscan.c hashsize.c hashview.c hashwalk.c \
 	memhash.c memsum.c strhash.c strkey.c strsum.c \
 	stracmp.c strnacmp.c \
-	_ccmaps.c ccmapc.c ccmapcpy.c ccmapid.c ccmaps.c ccnative.c \
+	ccmap.c ccmapid.c ccnative.c \
 	chresc.c chrtoi.c streval.c strexpr.c strmatch.c strcopy.c \
 	modelib.h modei.c modex.c strmode.c \
-	strlcat.c strlcpy.c strlook.c strsearch.c strpsearch.c \
+	strlcat.c strlcpy.c strlook.c strncopy.c strsearch.c strpsearch.c \
 	stresc.c stropt.c strtape.c tok.c tokline.c tokscan.c \
 	pathaccess.c pathcat.c pathcanon.c pathcheck.c pathpath.c \
 	pathexists.c pathfind.c pathkey.c pathprobe.c pathrepl.c \
-	pathnative.c pathtemp.c pathtmp.c pathstat.c \
+	pathnative.c pathposix.c pathtemp.c pathtmp.c pathstat.c \
 	pathgetlink.c pathsetlink.c pathbin.c pathshell.c pathcd.c \
 	fs3d.c ftwalk.c ftwflags.c fts.c setenviron.c \
-	optget.c optjoin.c strsort.c \
+	optget.c optjoin.c optesc.c strsort.c struniq.c \
 	magic.c mime.c mimetype.c signal.c systrace.c \
 	error.c errorf.c errormsg.c errorx.c \
 	localeconv.c setlocale.c translate.c \
 	catopen.c iconv.c lc.c mc.c \
 	liberror.c libevent.c \
+	base64.c \
 	fmtbase.c fmtbuf.c fmtclock.c fmtdev.c fmtelapsed.c fmterror.c \
 	fmtesc.c fmtfmt.c fmtfs.c fmtident.c fmtip4.c fmtls.c fmtmatch.c \
 	fmtmode.c fmtnum.c fmtperm.c fmtre.c fmttime.c fmtuid.c fmtgid.c \
-	fmtsignal.c fmtscale.c \
+	fmtsignal.c fmtscale.c fmtversion.c \
 	strelapsed.c strperm.c struid.c strgid.c strtoip4.c stack.c stk.c \
 	swapget.c swapmem.c swapop.c swapput.c \
 	sigdata.c sigcrit.c sigunblock.c \
@@ -100,10 +102,11 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	strdup.c strchr.c strrchr.c strstr.c \
 	strtod.c strtold.c \
 	strtol.c strtoll.c strtoul.c strtoull.c strton.c strtonll.c \
+	strntod.c strntold.c \
+	strntol.c strntoll.c strntoul.c strntoull.c \
 	strcasecmp.c strncasecmp.c strerror.c \
-	mktemp.c tmpnam.c \
-	execlp.c execve.c execvp.c execvpe.c \
-	spawnlp.c spawnve.c spawnveg.c spawnvp.c spawnvpe.c \
+	mktemp.c tmpnam.c fsync.c \
+	execlp.c execve.c execvp.c execvpe.c spawnveg.c \
 	vfork.c killpg.c \
 	hsearch.c tsearch.c \
 	getlogin.c putenv.c \
@@ -121,20 +124,20 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	sfdcold.c sfdcdio.c sfdcdos.c sfdcfilter.c sfdcseekable.c \
 	sfdcslow.c sfdcsubstr.c sfdctee.c sfdcunion.c \
 	sfdcmore.c sfdcprefix.c \
-	wc.c libc.c \
+	wc.c \
 	/* standards */ \
 	basename.c closelog.c dirname.c fmtmsglib.c fnmatch.c ftw.c \
 	getdate.c getsubopt.c glob.c nftw.c openlog.c re_comp.c \
-	realpath.c regcmp.c regexp.c setlogmask.c strftime.c \
+	resolvepath.c realpath.c regcmp.c regexp.c setlogmask.c strftime.c \
 	strptime.c swab.c syslog.c sysloglib.h tempnam.c \
 	wordexp.c mktime.c \
 	/* regex */ \
 	reglib.h regalloc.c regclass.c regcoll.c regcomp.c \
 	regerror.c regexec.c regfatal.c reginit.c regnexec.c \
-	regsubcomp.c regsubexec.c regsub.c regrecord.c regrexec.c \
+	regsubcomp.c regsubexec.c regsub.c regrecord.c regrexec.c regstat.c \
 	/* cdt */ \
 	dthdr.h dtclose.c dtdisc.c dtextract.c dtflatten.c dthash.c \
-	dtlist.c dtmethod.c dtopen.c dtrenew.c dtrestore.c dtsize.c \
+	dtlist.c dtmethod.c dtnew.c dtopen.c dtrenew.c dtrestore.c dtsize.c \
 	dtstat.c dtstrhash.c dttree.c dttreeset.c dtview.c dtwalk.c \
 	/* sfio */ \
 	sfhdr.h sfdchdr.h \
@@ -150,7 +153,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	sfvscanf.c sfwr.c sfwrite.c sfpurge.c sfraise.c \
 	sfgetm.c sfmutex.c sfputm.c sfresize.c \
 	_sfclrerr.c _sfeof.c _sferror.c _sffileno.c \
-	_sfstacked.c _sfvalue.c \
+	_sfopen.c _sfstacked.c _sfvalue.c \
 	_sfgetc.c _sfgetl.c _sfgetl2.c _sfgetu.c _sfgetu2.c \
 	_sfdlen.c _sfllen.c _sfslen.c _sfulen.c \
 	_sfputc.c _sfputd.c _sfputl.c _sfputm.c _sfputu.c \
@@ -163,6 +166,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	putc.c putchar.c puts.c putw.c rewind.c scanf.c \
 	setbuf.c setbuffer.c setlinebuf.c setvbuf.c \
 	snprintf.c sprintf.c sscanf.c \
+	asprintf.c vasprintf.c \
 	stdio/tmpfile.c ungetc.c vfprintf.c vfscanf.c vprintf.c \
 	vscanf.c vsnprintf.c vsprintf.c vsscanf.c \
 	_doprnt.c _doscan.c _filbuf.c _flsbuf.c _stdfun.c \
@@ -180,20 +184,20 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	frexp.c frexpl.c \
 	/* ast */ \
 	astcopy.c astconf.c astdynamic.c astlicense.c astquery.c astwinsize.c \
-	$(CC.LD.STATIC) aststatic.c getopt.c $(CC.LD.DYNAMIC) \
+	$(CC.LD.STATIC) aststatic.c getopt.c getoptl.c $(CC.LD.DYNAMIC) \
 	/* vmalloc */ \
 	vmalloc.h vmhdr.h vmbest.c vmclear.c vmclose.c vmdcheap.c vmdebug.c \
 	vmdisc.c vmexit.c vmlast.c vmopen.c vmpool.c vmprivate.c vmprofile.c \
 	vmregion.c vmsegment.c vmset.c vmstat.c vmstrdup.c vmtrace.c vmwalk.c \
-	vmmopen.c malloc.c \
+	vmmopen.c malloc.c vmgetmem.c \
 	/* uwin */ \
 	mathimpl.h rlib.h ufc-crypt.h \
 	a64l.c acosh.c asinh.c atanh.c cbrt.c crypt.c crypt_util.c erf.c \
 	err.c exp.c exp__E.c expm1.c gamma.c getpass.c lgamma.c log.c log1p.c \
 	log__L.c rand48.c random.c rcmd.c rint.c support.c \
 	/* obsolete */ \
-	obsolete/mematoe.c obsolete/memetoa.c \
-	-liconv /* please OSF, this *has* to be wrong */
+	spawn.c \
+	-liconv /* this *has* to be wrong */
 
 /*
  * man is stdio.h problematic
@@ -203,17 +207,17 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
  * also, -D_BLD_ast must be explicit for the uwin bootstrap
  */
 
+.MAKEINIT : .AST.INIT
+.AST.INIT : .MAKE
+	CCFLAGS += -D_BLD_ast
+
 parameter	(_BLD_ast) ast_version.h
 ignore		iffeio.h
 scan.ignore	iffeio.h
 virtual		ast/stdio.h
 
-if CC.HOSTTYPE == "sol*.*" || "$(-mam)" == "static*"
-sfrd.o sfvprintf.o : .CC.NOOPTIMIZE
-end
-if CC.HOSTTYPE == "win32.*" || "$(-mam)" == "static*"
-fastfind.o mc.o : .CC.NOOPTIMIZE
-end
+"sol*.*"	:NOOPTIMIZE: sfrd.c sfvprintf.c
+"win32*"	:NOOPTIMIZE: fastfind.c mc.c
 
 :INSTALLDIR: conf
 
@@ -222,7 +226,7 @@ conf :: conf.sh
 conflib.h conflim.h confmap.h conftab.h confuni.h \
 confmap.c conftab.c confstr.c pathconf.c sysconf.c :JOINT: \
 		conf conf.tab
-	$(*:O=1) $(IFFEFLAGS:V:N=-v) $(*:O>1) $(CC) $(CCFLAGS:N!=-[DIU]*)
+	$(*:O=1:P=A) $(IFFEFLAGS:V:N=-v) $(*:O>1) $(CC) $(CCFLAGS:N!=-[DIU]*)
 
 /* NOTE: sun4 runtime link botches ro data so advertized sig_info is rw */
 
@@ -243,7 +247,7 @@ lcgen : lcgen.c
 	$(CC.NATIVE|CC) -o $(<) $(*)
 
 lc.h lctab.h :JOINT: lcgen lc.tab
-	$(*:O=1) $(tmp).1 $(tmp).2 < $(*:O=2)
+	$(*:O=1:C,^[^/],./&,) $(tmp).1 $(tmp).2 < $(*:O=2) # :P=E: in 2006
 	$(PROTO) -p $(PROTOFLAGS) $(tmp).1 > $(tmp).3
 	rm -f $(tmp).1
 	if	cmp -s $(tmp).3 $(<:O=1)
@@ -322,8 +326,10 @@ atmain.o : atmain.C
  */
 
 .check.lib : .AFTER astmath.exe
-	test -x $(~) ||
-	echo ' -lm' >> $(<<)
+	if	test -x $(~)
+	then	touch $(<<)
+	else	echo ' -lm' >> $(<<)
+	fi
 
 astmath.exe : .DONTCARE astmath.c
 	$(CC) $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) 2>/dev/null ||

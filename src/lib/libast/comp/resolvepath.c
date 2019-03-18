@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -24,33 +24,44 @@
 *                                                                  *
 *******************************************************************/
 #pragma prototyped
-
-#include <ast_lib.h>
-
-#if _lib_spawnve
-
-#include <ast.h>
-
-NoN(spawnve)
-
-#else
-
-#if defined(__EXPORT__)
-#include <sys/types.h>
-__EXPORT__ pid_t spawnve(const char*, char* const[], char* const[]);
-#endif
+/*
+ * resolvepath implementation
+ */
 
 #include <ast.h>
-#include <errno.h>
+#include <error.h>
 
 #if defined(__EXPORT__)
 #define extern	__EXPORT__
 #endif
 
-extern pid_t
-spawnve(const char* cmd, char* const argv[], char* const envv[])
+extern char*
+resolvepath(const char* file, char* path, size_t size)
 {
-	return spawnveg(cmd, argv, envv, 0);
-}
+	register char*	s;
+	register int	n;
+	register int	r;
 
+	r = *file != '/';
+	n = strlen(file) + r + 1;
+	if (n >= size)
+	{
+#ifdef ENAMETOOLONG
+		errno = ENAMETOOLONG;
+#else
+		errno = ENOMEM;
 #endif
+		return 0;
+	}
+	if (!r)
+		s = path;
+	else if (!getcwd(path, size - n))
+		return 0;
+	else
+	{
+		s = path + strlen(path);
+		*s++ = '/';
+	}
+	strcpy(s, file);
+	return pathcanon(path, PATH_PHYSICAL|PATH_DOTDOT|PATH_EXISTS) ? path : (char*)0;
+}

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -111,7 +111,7 @@
 #define extern		__EXPORT__
 #endif
 #if !_BLD_ast && defined(__IMPORT__)
-#define extern		__IMPORT__
+#define extern		extern __IMPORT__
 #endif
 
 extern const Namval_t	log_facility[];

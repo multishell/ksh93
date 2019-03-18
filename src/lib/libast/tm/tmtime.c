@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -62,6 +62,8 @@ tmtime(register Tm_t* tm, int west)
 	tm = &ts;
 	tmset(tm_info.zone);
 	tmfix(tm);
+	if (tm->tm_year < 69 || tm->tm_year > (2038 - 1900))
+		return -1;
 	clock = (tm->tm_year * (4 * 365 + 1) - 69) / 4 - 70 * 365;
 	if ((n = tm->tm_mon) > 11)
 		n = 11;
@@ -135,5 +137,7 @@ tmtime(register Tm_t* tm, int west)
 				clock -= n;
 		}
 	}
+	if (clock < 0)
+		return -1;
 	return clock;
 }

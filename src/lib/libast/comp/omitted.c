@@ -27,13 +27,26 @@
 
 #include <ast.h>
 #include <error.h>
+#include <tm.h>
 
 #include "FEATURE/omitted"
 
+#undef	OMITTED
+
 #if _win32_botch
+
+#define	OMITTED	1
 
 #include <ls.h>
 #include <utime.h>
+
+#if __CYGWIN__
+#include <ast_windows.h>
+#endif
+
+#ifndef MAX_PATH
+#define MAX_PATH	PATH_MAX
+#endif
 
 /*
  * these workarounds assume each system call foo() has a _foo() entry
@@ -42,30 +55,34 @@
  * the workarounds handle:
  *
  *	(1) .exe suffix inconsistencies
- *	(2) /bin/sh reference in execve()
+ *	(2) /bin/sh reference in execve() and spawnve()
  *	(3) bogus getpagesize() return values
+ *	(4) a fork() bug that screws up shell fork()+script
  *
  * NOTE: Not all workarounds can be handled by unix syscall intercepts.
  *	 In particular, { ksh nmake } have workarounds for case-ignorant
  *	 filesystems and { libast } has workarounds for win32 locale info.
  */
 
-extern int	_access(const char*, int);
-extern int	_chmod(const char*, mode_t);
-extern int	_close(int);
-extern int	_execve(const char*, char*const[], char*const[]);
-extern int	_link(const char*, const char*);
-extern int	_open(const char*, int, ...);
-extern long	_pathconf(const char*, int);
-extern ssize_t	_read(int, void*, size_t);
-extern int	_rename(const char*, const char*);
-extern int	_stat(const char*, struct stat*);
-extern int	_unlink(const char*);
-extern int	_utime(const char*, struct utimbuf*);
-extern ssize_t	_write(int, const void*, size_t);
-
+#undef _pathconf
 #undef pathconf
 #undef stat
+
+extern int		_access(const char*, int);
+extern unsigned int	_alarm(unsigned int);
+extern int		_chmod(const char*, mode_t);
+extern int		_close(int);
+extern pid_t		_execve(const char*, char* const*, char* const*);
+extern int		_link(const char*, const char*);
+extern int		_open(const char*, int, ...);
+extern long		_pathconf(const char*, int);
+extern ssize_t		_read(int, void*, size_t);
+extern int		_rename(const char*, const char*);
+extern pid_t		_spawnve(int, const char*, char* const*, char* const*);
+extern int		_stat(const char*, struct stat*);
+extern int		_unlink(const char*);
+extern int		_utime(const char*, struct utimbuf*);
+extern ssize_t		_write(int, const void*, size_t);
 
 #if defined(__EXPORT__)
 #define extern	__EXPORT__
@@ -83,6 +100,24 @@ suffix(register const char* path)
 		else if (c == '/' || c == '\\')
 			break;
 	return 0;
+}
+
+static int
+execrate(const char* path, char* buf, int size, int physical)
+{
+	char*	s;
+	int	n;
+	int	oerrno;
+
+	if (suffix(path))
+		return 0;
+	oerrno = errno;
+	if (physical || strlen(path) >= size || !(s = pathcanon(strcpy(buf, path), PATH_PHYSICAL|PATH_DOTDOT|PATH_EXISTS)))
+		snprintf(buf, size, "%s.exe", path);
+	else if (!suffix(buf) && ((buf + size) - s) >= 4)
+		strcpy(s, ".exe");
+	errno = oerrno;
+	return 1;
 }
 
 #define MAGIC_mode		0
@@ -132,12 +167,33 @@ access(const char* path, int op)
 	char	buf[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _access(path, op)) && errno == ENOENT && !suffix(path))
+	if ((r = _access(path, op)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
 		r = _access(buf, op);
 	}
+	return r;
+}
+
+#endif
+
+#if _win32_botch_alarm
+
+extern unsigned int
+alarm(unsigned int s)
+{
+	unsigned int		n;
+	unsigned int		r;
+
+	static unsigned int	a;
+
+	n = (unsigned int)time(NiL);
+	if (a <= n)
+		r = 0;
+	else
+		r = a - n;
+	a = n + s - 1;
+	(void)_alarm(s);
 	return r;
 }
 
@@ -152,9 +208,8 @@ chmod(const char* path, mode_t mode)
 	int	oerrno;
 	char	buf[PATH_MAX];
 
-	if ((r = _chmod(path, mode)) && errno == ENOENT && !suffix(path))
+	if ((r = _chmod(path, mode)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
 		return _chmod(buf, mode);
 	}
@@ -176,28 +231,79 @@ chmod(const char* path, mode_t mode)
 
 #endif
 
-#if _win32_botch_execve
+#if _win32_botch_execve || _lib_spawn_mode
+
+#if _lib_spawn_mode
+
+/*
+ * can anyone get const prototype args straight?
+ */
+
+#define execve		______execve
+#define spawnve		______spawnve
+
+#include <process.h>
+
+#undef	execve
+#undef	spawnve
+
+#endif
+
+#ifndef _P_OVERLAY
+#define _P_OVERLAY	(-1)
+#endif
 
 #define DEBUG		1
-extern int
-execve(const char* path, char* const argv[], char* const envv[])
+
+static pid_t
+runve(int mode, const char* path, char* const* argv, char* const* envv)
 {
+	register char*	s;
+	register char**	p;
+	register char**	v;
+
+	void*		m1;
+	void*		m2;
+	pid_t		pid;
 	int		oerrno;
+#if defined(_P_DETACH) && defined(_P_NOWAIT)
+	int		pgrp;
+#endif
 	struct stat	st;
 	char		buf[PATH_MAX];
+	char		tmp[PATH_MAX];
 
 #if DEBUG
-	static int	trace = -1;
+	int		n;
+
+	static int	trace;
 #endif
 
+#if defined(_P_DETACH) && defined(_P_NOWAIT)
+	if (mode == _P_DETACH)
+	{
+		/*
+		 * 2004-02-29 cygwin _P_DETACH is useless:
+		 *	spawn*() returns 0 instead of the spawned pid
+		 *	spawned { pgid sid } are the same as the parent
+		 */
+
+		mode = _P_NOWAIT;
+		pgrp = 1;
+	}
+	else
+		pgrp = 0;
+#endif
+	if (!envv)
+		envv = (char* const*)environ;
+	m1 = m2 = 0;
 	oerrno = errno;
 #if DEBUG
-	if (trace < 0)
-		trace = getenv("_AST_execve_trace") != 0;
+	if (!trace)
+		trace = (s = getenv("_AST_exec_trace")) ? *s : 'n';
 #endif
-	if (!suffix(path))
+	if (execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		if (!_stat(buf, &st))
 			path = (const char*)buf;
 		else
@@ -212,25 +318,142 @@ execve(const char* path, char* const argv[], char* const envv[])
 	}
 	if (magic(path, MAGIC_exec))
 	{
+#if _CYGWIN_fork_works
 		errno = ENOEXEC;
 		return -1;
+#else
+		p = (char**)argv;
+		while (*p++);
+		if (!(v = (char**)malloc((p - (char**)argv + 2) * sizeof(char*))))
+		{
+			errno = EAGAIN;
+			return -1;
+		}
+		m1 = v;
+		p = v;
+		*p++ = (char*)path;
+		*p++ = (char*)path;
+		path = (const char*)pathshell();
+		if (*argv)
+			argv++;
+		while (*p++ = (char*)*argv++);
+		argv = (char* const*)v;
+#endif
 	}
-#if DEBUG
-	if (trace > 0)
-	{
-		int	n;
 
-		sfprintf(sfstderr, "_execve %s [", path);
+	/*
+	 * the win32 dll search order is
+	 *	(1) the directory of path
+	 *	(2) .
+	 *	(3) /c/(WINNT|WINDOWS)/system32 /c/(WINNT|WINDOWS)
+	 *	(4) the directories on $PATH
+	 * there are no cygwin dlls in (3), so if (1) and (2) fail
+	 * to produce the required dlls its up to (4)
+	 *
+	 * the standard allows PATH to be anything once the path
+	 * to an executable is determined; this code ensures that PATH
+	 * contains /bin so that at least the cygwin dll, required
+	 * by all cygwin executables, will be found
+	 */
+
+	if (p = (char**)envv)
+	{
+		n = 1;
+		while (s = *p++)
+			if (strneq(s, "PATH=", 5))
+			{
+				s += 5;
+				do
+				{
+					s = pathcat(tmp, s, ':', NiL, "");
+					if (streq(tmp, "/usr/bin/") || streq(tmp, "/bin/"))
+					{
+						n = 0;
+						break;
+					}
+				} while (s);
+				if (n)
+				{
+					n = 0;
+					snprintf(tmp, sizeof(tmp), "%s:/bin", *(p - 1));
+					*(p - 1) = tmp;
+				}
+				break;
+			}
+		if (n)
+		{
+			n = p - (char**)envv + 1;
+			p = (char**)envv;
+			if (v = (char**)malloc(n * sizeof(char*)))
+			{
+				m2 = v;
+				envv = (char* const*)v;
+				*v++ = strcpy(tmp, "PATH=/bin");
+				while (*v++ = *p++);
+			}
+		}
+	}
+
+#if DEBUG
+	if (trace == 'a' || trace == 'e')
+	{
+		sfprintf(sfstderr, "%s %s [", mode == _P_OVERLAY ? "_execve" : "_spawnve", path);
 		for (n = 0; argv[n]; n++)
 			sfprintf(sfstderr, " '%s'", argv[n]);
-		sfprintf(sfstderr, " ] [");
-		for (n = 0; envv[n]; n++)
-			sfprintf(sfstderr, " '%s'", envv[n]);
+		if (trace == 'e')
+		{
+			sfprintf(sfstderr, " ] [");
+			for (n = 0; envv[n]; n++)
+				sfprintf(sfstderr, " '%s'", envv[n]);
+		}
 		sfprintf(sfstderr, " ]\n");
+		sfsync(sfstderr);
 	}
 #endif
-	return _execve(path, argv, envv);
+#if _lib_spawn_mode
+	if (mode != _P_OVERLAY)
+	{
+		pid = _spawnve(mode, path, argv, envv);
+#if defined(_P_DETACH) && defined(_P_NOWAIT)
+		if (pid > 0 && pgrp)
+			setpgid(pid, 0);
+#endif
+	}
+	else
+#endif
+	{
+#if defined(_P_DETACH) && defined(_P_NOWAIT)
+		if (pgrp)
+			setpgid(0, 0);
+#endif
+		pid = _execve(path, argv, envv);
+	}
+	if (m1)
+		free(m1);
+	if (m2)
+		free(m2);
+	return pid;
 }
+
+#if _win32_botch_execve
+
+extern pid_t
+execve(const char* path, char* const* argv, char* const* envv)
+{
+	return runve(_P_OVERLAY, path, argv, envv);
+}
+
+#endif
+
+#if _lib_spawn_mode
+
+extern pid_t
+spawnve(int mode, const char* path, char* const* argv, char* const* envv)
+{
+	return runve(mode, path, argv, envv);
+}
+
+#endif
 
 #endif
 
@@ -255,14 +478,10 @@ link(const char* fp, const char* tp)
 	char	tb[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _link(fp, tp)) && errno == ENOENT && !suffix(fp))
+	if ((r = _link(fp, tp)) && errno == ENOENT && execrate(fp, fb, sizeof(fb), 1))
 	{
-		snprintf(fb, sizeof(fb), "%s.exe", fp);
-		if (!suffix(tp))
-		{
-			snprintf(tb, sizeof(tb), "%s.exe", tp);
+		if (execrate(tp, tb, sizeof(tb), 1))
 			tp = tb;
-		}
 		errno = oerrno;
 		r = _link(fb, tp);
 	}
@@ -283,12 +502,11 @@ link(const char* fp, const char* tp)
 typedef struct Exe_test_s
 {
 	int		test;
-	int		magic;
 	ino_t		ino;
-	char		path[PATH_MAX+1];
+	char		path[PATH_MAX];
 } Exe_test_t;
 
-static Exe_test_t	exe[16];
+static Exe_test_t*	exe[16];
 
 extern int
 close(int fd)
@@ -298,23 +516,23 @@ close(int fd)
 	struct stat	st;
 	char		buf[PATH_MAX];
 
-	if (fd >= 0 && fd < elementsof(exe))
+	if (fd >= 0 && fd < elementsof(exe) && exe[fd])
 	{
-		if (exe[fd].magic && !fstat(fd, &st) && st.st_ino == exe[fd].ino)
+		r = exe[fd]->test;
+		exe[fd]->test = 0;
+		if (r > 0 && !fstat(fd, &st) && st.st_ino == exe[fd]->ino)
 		{
-			exe[fd].test = exe[fd].magic = 0;
 			if (r = _close(fd))
 				return r;
 			oerrno = errno;
-			if (!stat(exe[fd].path, &st) && st.st_ino == exe[fd].ino)
+			if (!stat(exe[fd]->path, &st) && st.st_ino == exe[fd]->ino)
 			{
-				snprintf(buf, sizeof(buf), "%s.exe", exe[fd].path);
-				_rename(exe[fd].path, buf);
+				snprintf(buf, sizeof(buf), "%s.exe", exe[fd]->path);
+				_rename(exe[fd]->path, buf);
 			}
 			errno = oerrno;
 			return 0;
 		}
-		exe[fd].test = exe[fd].magic = 0;
 	}
 	return _close(fd);
 }
@@ -322,11 +540,8 @@ close(int fd)
 extern ssize_t
 write(int fd, const void* buf, size_t n)
 {
-	if (fd >= 0 && fd < elementsof(exe) && exe[fd].test)
-	{
-		exe[fd].test = 0;
-		exe[fd].magic = n >= 2 && ((unsigned char*)buf)[1] == 0x5a && (((unsigned char*)buf)[0] == 0x4c || ((unsigned char*)buf)[0] == 0x4d) && !lseek(fd, (off_t)0, SEEK_CUR);
-	}
+	if (fd >= 0 && fd < elementsof(exe) && exe[fd] && exe[fd]->test < 0)
+		exe[fd]->test = n >= 2 && ((unsigned char*)buf)[1] == 0x5a && (((unsigned char*)buf)[0] == 0x4c || ((unsigned char*)buf)[0] == 0x4d) && !lseek(fd, (off_t)0, SEEK_CUR);
 	return _write(fd, buf, n);
 }
 
@@ -349,25 +564,22 @@ open(const char* path, int flags, ...)
 	oerrno = errno;
 	fd = _open(path, flags, mode);
 #if _win32_botch_open
-	if (fd < 0 && errno == ENOENT && !suffix(path))
+	if (fd < 0 && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
 		fd = _open(buf, flags, mode);
 	}
 #endif
 #if _win32_botch_copy
-	if (fd >= 0 && fd < elementsof(exe))
+	if (fd >= 0 && fd < elementsof(exe) && strlen(path) < PATH_MAX &&
+	    (flags & (O_CREAT|O_TRUNC)) == (O_CREAT|O_TRUNC) && (mode & 0111))
 	{
-		if ((flags & (O_CREAT|O_TRUNC)) == (O_CREAT|O_TRUNC) && (mode & 0111) && !suffix(path) && strlen(path) <= PATH_MAX && !fstat(fd, &st))
+		if (!suffix(path) && !fstat(fd, &st) && (exe[fd] || (exe[fd] = (Exe_test_t*)malloc(sizeof(Exe_test_t)))))
 		{
-			exe[fd].test = 1;
-			exe[fd].magic = 0;
-			exe[fd].ino = st.st_ino;
-			strcpy(exe[fd].path, path);
+			exe[fd]->test = -1;
+			exe[fd]->ino = st.st_ino;
+			strcpy(exe[fd]->path, path);
 		}
-		else
-			exe[fd].test = exe[fd].magic = 0;
 		errno = oerrno;
 	}
 #endif
@@ -400,14 +612,10 @@ rename(const char* fp, const char* tp)
 	char	tb[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _rename(fp, tp)) && errno == ENOENT && !suffix(fp))
+	if ((r = _rename(fp, tp)) && errno == ENOENT && execrate(fp, fb, sizeof(fb), 1))
 	{
-		snprintf(fb, sizeof(fb), "%s.exe", fp);
-		if (!suffix(tp))
-		{
-			snprintf(tb, sizeof(tb), "%s.exe", tp);
+		if (execrate(tp, tb, sizeof(tb), 1))
 			tp = tb;
-		}
 		errno = oerrno;
 		r = _rename(fb, tp);
 	}
@@ -426,9 +634,8 @@ stat(const char* path, struct stat* st)
 	char	buf[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _stat(path, st)) && errno == ENOENT && !suffix(path))
+	if ((r = _stat(path, st)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
 		r = _stat(buf, st);
 	}
@@ -447,9 +654,8 @@ truncate(const char* path, off_t offset)
 	char	buf[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _truncate(path, offset)) && errno == ENOENT && !suffix(path))
+	if ((r = _truncate(path, offset)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
 		r = _truncate(buf, offset);
 	}
@@ -463,18 +669,144 @@ truncate(const char* path, off_t offset)
 extern int
 unlink(const char* path)
 {
-	int	r;
-	int	oerrno;
-	char	buf[PATH_MAX];
+	int		r;
+	int		drive;
+	int		mask;
+	int		suffix;
+	int		stop;
+	int		oerrno;
+	unsigned long	base;
+	char		buf[PATH_MAX];
+	char		tmp[MAX_PATH];
+
+#define DELETED_DIR_1	7
+#define DELETED_DIR_2	16
+
+	static char	deleted[] = "%c:\\temp\\.deleted\\%08x.%03x";
+
+	static int	count = 0;
+
+#if __CYGWIN__
+
+	DWORD		fattr = FILE_ATTRIBUTE_NORMAL|FILE_FLAG_DELETE_ON_CLOSE;
+	DWORD		share = FILE_SHARE_DELETE;
+	HANDLE		hp;
+	struct stat	st;
+	char		nat[MAX_PATH];
 
 	oerrno = errno;
-	if ((r = _unlink(path)) && errno == ENOENT && !suffix(path))
+	if (lstat(path, &st) || !S_ISREG(st.st_mode))
+		goto try_unlink;
+	cygwin_conv_to_full_win32_path(path, nat);
+	if (!strncasecmp(nat + 1, ":\\temp\\", 7))
+		goto try_unlink;
+	drive = nat[0];
+	path = (const char*)nat;
+	for (;;)
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
-		errno = oerrno;
-		r = _unlink(buf);
+		hp = CreateFile(path, GENERIC_READ, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_DELETE_ON_CLOSE, NULL);
+		if (hp != INVALID_HANDLE_VALUE)
+		{
+			CloseHandle(hp);
+			errno = oerrno;
+			return 0;
+		}
+		if (GetLastError() != ERROR_FILE_NOT_FOUND)
+			break;
+		if (path == (const char*)buf || !execrate(path, buf, sizeof(buf), 1))
+		{
+			errno = ENOENT;
+			return -1;
+		}
+		path = (const char*)buf;
 	}
-	return r;
+#else
+	if (_access(path, 0))
+#if _win32_botch_access
+	{
+		if (errno != ENOENT || !execrate(path, buf, sizeof(buf), 1) || _access(buf, 0))
+			return -1;
+		path = (const char*)buf;
+	}
+#else
+		return -1;
+#endif
+	drive = 'C':
+#endif
+
+	/*
+	 * rename to a `deleted' path just in case the file is open
+	 * otherwise directory readers may choke on phantom entries
+	 */
+
+	base = ((getuid() & 0xffff) << 16) | (time(NiL) & 0xffff);
+	suffix = (getpid() & 0xfff) + count++;
+	snprintf(tmp, sizeof(tmp), deleted, drive, base, suffix);
+	if (!_rename(path, tmp))
+	{
+		path = (const char*)tmp;
+		goto try_delete;
+	}
+	if (errno != ENOTDIR && errno != ENOENT)
+		goto try_unlink;
+	tmp[DELETED_DIR_2] = 0;
+	if (_access(tmp, 0))
+	{
+		mask = umask(0);
+		tmp[DELETED_DIR_1] = 0;
+		if (_access(tmp, 0) && _mkdir(tmp, S_IRWXU|S_IRWXG|S_IRWXO))
+		{
+			umask(mask);
+			goto try_unlink;
+		}
+		tmp[DELETED_DIR_1] = '\\';
+		r = _mkdir(tmp, S_IRWXU|S_IRWXG|S_IRWXO);
+		umask(mask);
+		if (r)
+			goto try_unlink;
+		errno = 0;
+	}
+	tmp[DELETED_DIR_2] = '\\';
+	if (!errno && !_rename(path, tmp))
+	{
+		path = (const char*)tmp;
+		goto try_delete;
+	}
+#if !__CYGWIN__
+	if (errno == ENOENT)
+	{
+#if !_win32_botch_access
+		if (execrate(path, buf, sizeof(buf), 1) && !_rename(buf, tmp))
+			path = (const char*)tmp;
+#endif
+		goto try_unlink;
+	}
+#endif
+	stop = suffix;
+	do
+	{
+		snprintf(tmp, sizeof(tmp), deleted, drive, base, suffix);
+		if (!_rename(path, tmp))
+		{
+			path = (const char*)tmp;
+			goto try_delete;
+		}
+		if (++suffix > 0xfff)
+			suffix = 0;
+	} while (suffix != stop);
+ try_delete:
+#if __CYGWIN__
+	hp = CreateFile(path, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL|FILE_FLAG_DELETE_ON_CLOSE, NULL);
+	if (hp != INVALID_HANDLE_VALUE)
+	{
+		CloseHandle(hp);
+		errno = oerrno;
+		return 0;
+	}
+#endif
+ try_unlink:
+	errno = oerrno;
+	return _unlink(path);
 }
 
 #endif
@@ -489,24 +821,74 @@ utime(const char* path, struct utimbuf* ut)
 	char	buf[PATH_MAX];
 
 	oerrno = errno;
-	if ((r = _utime(path, ut)) && errno == ENOENT && !suffix(path))
+	if ((r = _utime(path, ut)) && errno == ENOENT && execrate(path, buf, sizeof(buf), 0))
 	{
-		snprintf(buf, sizeof(buf), "%s.exe", path);
 		errno = oerrno;
-		r = _utime(buf, ut);
+		r = _utime(path = buf, ut);
 	}
+#if __CYGWIN__
+
+	/*
+	 * cygwin refuses to set st_ctime
+	 * utime() (at least) rejects that refusal
+	 */
+
+	if (!r)
+	{
+		HANDLE		hp;
+		SYSTEMTIME	st;
+		FILETIME	ct;
+		WIN32_FIND_DATA	ff;
+		struct stat	fs;
+		char		tmp[MAX_PATH];
+
+		if (_stat(path, &fs) || (fs.st_mode & S_IWUSR) || _chmod(path, (fs.st_mode | S_IWUSR) & S_IPERM))
+			fs.st_mode = 0;
+		cygwin_conv_to_win32_path(path, tmp);
+		hp = CreateFile(tmp, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (hp && hp != INVALID_HANDLE_VALUE)
+		{
+			GetSystemTime(&st);
+			SystemTimeToFileTime(&st, &ct);
+			SetFileTime(hp, &ct, 0, 0);
+			CloseHandle(hp);
+		}
+		if (fs.st_mode)
+			_chmod(path, fs.st_mode & S_IPERM);
+		errno = oerrno;
+	}
+#endif
 	return r;
 }
 
 #endif
 
-#else
-
-#if sun || _sun || __sun
+#endif
 
 /*
- * sun misses a few functions required by its own bsd-like macros
+ * some systems (sun) miss a few functions required by their
+ * own bsd-like macros
  */
+
+#if !_lib_bzero || defined(bzero)
+
+#undef	bzero
+
+void
+bzero(void* b, size_t n)
+{
+	memset(b, 0, n);
+}
+
+#endif
+
+#if !_lib_getpagesize || defined(getpagesize)
+
+#ifndef OMITTED
+#define OMITTED	1
+#endif
+
+#undef	getpagesize
 
 #ifdef	_SC_PAGESIZE
 #undef	PAGESIZE
@@ -517,28 +899,33 @@ utime(const char* path, struct utimbuf* ut)
 #endif
 #endif
 
-void
-bzero(void* b, size_t n)
-{
-	memset(b, 0, n);
-}
-
 int
 getpagesize()
 {
 	return PAGESIZE;
 }
 
-int
-killpg(pid_t pgrp, int sig)
-{
-	return kill(-pgrp, sig);
-}
+#endif
 
-#else
+#if __CYGWIN__ && defined(__IMPORT__) && defined(__EXPORT__)
 
-NoN(omitted)
+#ifndef OMITTED
+#define OMITTED	1
+#endif
+
+/*
+ * a few _imp__FUNCTION symbols are needed to avoid
+ * static link multiple definitions
+ */
+
+#ifndef strtod
+__EXPORT__ double (*_imp__strtod)(const char*, char**) = strtod;
+#endif
 
 #endif
+
+#ifndef OMITTED
+
+NoN(omitted)
 
 #endif

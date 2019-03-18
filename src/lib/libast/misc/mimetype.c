@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -60,7 +60,7 @@ mimetype(Mime_t* mp, Sfio_t* fp, const char* file, struct stat* st)
 	{
 		mp->magicd.version = MAGIC_VERSION;
 		mp->magicd.flags = MAGIC_MIME;
-		mp->magicd.errorf = (Magicerror_f)mp->disc->errorf;
+		mp->magicd.errorf = mp->disc->errorf;
 		if (!(mp->magic = magicopen(&mp->magicd)))
 		{
 			mp->disc->flags |= MIME_NOMAGIC;

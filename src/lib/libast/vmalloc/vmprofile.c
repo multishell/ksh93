@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_vmprofile(){}
 
@@ -77,18 +77,18 @@ static Pfobj_t**	Pftable;	/* hash table		*/
 static Vmalloc_t*	Vmpf;		/* heap for our own use	*/
 
 #if __STD_C
-static Pfobj_t* pfsearch(Vmalloc_t* vm, char* file, int line)
+static Pfobj_t* pfsearch(Vmalloc_t* vm, const char* file, int line)
 #else
 static Pfobj_t* pfsearch(vm, file, line)
 Vmalloc_t*	vm;	/* region allocating from			*/
-char*		file;	/* the file issuing the allocation request	*/
+const char*	file;	/* the file issuing the allocation request	*/
 int		line;	/* line number					*/
 #endif
 {
 	reg Pfobj_t		*pf, *last;
 	reg Vmulong_t		h;
 	reg int			n;
-	reg char*		cp;
+	reg const char*		cp;
 
 	if(!Vmpf && !(Vmpf = vmopen(Vmdcheap,Vmpool,0)) )
 		return NIL(Pfobj_t*);
@@ -211,13 +211,13 @@ Vmalloc_t*	vm;
 }
 
 #if __STD_C
-static void pfsetinfo(Vmalloc_t* vm, Vmuchar_t* data, size_t size, char* file, int line)
+static void pfsetinfo(Vmalloc_t* vm, Vmuchar_t* data, size_t size, const char* file, int line)
 #else
 static void pfsetinfo(vm, data, size, file, line)
 Vmalloc_t*	vm;
 Vmuchar_t*	data;
 size_t		size;
-char*		file;
+const char*	file;
 int		line;
 #endif
 {
@@ -472,17 +472,20 @@ Vmalloc_t*	vm;
 size_t		size;
 #endif
 {
-	reg size_t	s;
-	reg Void_t*	data;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg Vmdata_t*	vd = vm->data;
+	reg size_t		s;
+	reg Void_t*		data;
+	reg const char*		file;
+	reg int			line, local;
+	reg const Void_t*	func;
+	reg Vmdata_t*		vd = vm->data;
 
 	VMFLF(vm,file,line,func);
-	if(!(vd->mode&VM_TRUST) && ISLOCK(vd,0))
-		return NIL(Void_t*);
-	SETLOCK(vd,0);
+	if(!(local = vd->mode&VM_TRUST) )
+	{	GETLOCAL(vd, local);
+		if(ISLOCK(vd, local))
+			return NIL(Void_t*);
+		SETLOCK(vd, local);
+	}
 
 	s = ROUND(size,ALIGN) + PF_EXTRA;
 	if(!(data = KPVALLOC(vm,s,(*(Vmbest->allocf))) ) )
@@ -490,12 +493,13 @@ size_t		size;
 
 	pfsetinfo(vm,(Vmuchar_t*)data,size,file,line);
 
-	if(!(vd->mode&VM_TRUST) && (vd->mode&VM_TRACE) && _Vmtrace)
+	if(!local && (vd->mode&VM_TRACE) && _Vmtrace)
 	{	vm->file = file; vm->line = line; vm->func = func;
 		(*_Vmtrace)(vm,NIL(Vmuchar_t*),(Vmuchar_t*)data,size,0);
 	}
 done:
-	CLRLOCK(vd,0);
+	CLRLOCK(vd, local);
+	ANNOUNCE(local, vm, VM_ALLOC, (Void_t*)data, vm->disc);
 	return data;
 }
 
@@ -507,22 +511,23 @@ Vmalloc_t*	vm;
 Void_t*		data;
 #endif
 {
-	reg Pfobj_t*	pf;
-	reg size_t	s;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg Vmdata_t*	vd = vm->data;
+	reg Pfobj_t*		pf;
+	reg size_t		s;
+	reg const char*		file;
+	reg int			line, rv, local;
+	reg const Void_t*	func;
+	reg Vmdata_t*		vd = vm->data;
 
 	VMFLF(vm,file,line,func);
 
 	if(!data)
 		return 0;
 
-	if(!(vd->mode&VM_TRUST) )
-	{	if(ISLOCK(vd,0))
+	if(!(local = vd->mode&VM_TRUST) )
+	{	GETLOCAL(vd,local);
+		if(ISLOCK(vd,local))
 			return -1;
-		SETLOCK(vd,0);
+		SETLOCK(vd,local);
 	}
 
 	if(KPVADDR(vm,data,Vmbest->addrf) != 0 )
@@ -542,13 +547,15 @@ Void_t*		data;
 		PFFREE(pf) += s;
 	}
 
-	if(!(vd->mode&VM_TRUST) && (vd->mode&VM_TRACE) && _Vmtrace)
+	if(!local && (vd->mode&VM_TRACE) && _Vmtrace)
 	{	vm->file = file; vm->line = line; vm->func = func;
 		(*_Vmtrace)(vm,(Vmuchar_t*)data,NIL(Vmuchar_t*),s,0);
 	}
 
-	CLRLOCK(vd,0);
-	return (*(Vmbest->freef))(vm,data);
+	rv = KPVFREE((vm), (Void_t*)data, (*Vmbest->freef));
+        CLRLOCK(vd,local);
+        ANNOUNCE(local, vm, VM_FREE, data, vm->disc);
+	return rv;
 }
 
 #if __STD_C
@@ -561,14 +568,15 @@ size_t		size;
 int		type;
 #endif
 {
-	reg Pfobj_t*	pf;
-	reg size_t	s, news;
-	reg Void_t*	addr;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg size_t	oldsize;
-	reg Vmdata_t*	vd = vm->data;
+	reg Pfobj_t*		pf;
+	reg size_t		s;
+	reg size_t		news;
+	reg Void_t*		addr;
+	reg const char*		file;
+	reg int			line, local;
+	reg const Void_t*	func;
+	reg size_t		oldsize;
+	reg Vmdata_t*		vd = vm->data;
 
 	if(!data)
 	{	oldsize = 0;
@@ -581,16 +589,17 @@ int		type;
 	}
 
 	VMFLF(vm,file,line,func);
-	if(!(vd->mode&VM_TRUST))
-	{	if(ISLOCK(vd,0))
+	if(!(local = vd->mode&VM_TRUST))
+	{	GETLOCAL(vd, local);
+		if(ISLOCK(vd, local))
 			return NIL(Void_t*);
-		SETLOCK(vd,0);
+		SETLOCK(vd, local);
 	}
 
 	if(KPVADDR(vm,data,Vmbest->addrf) != 0 )
 	{	if(vm->disc->exceptf)
 			(void)(*vm->disc->exceptf)(vm,VM_BADADDR,data,vm->disc);
-		CLRLOCK(vd,0);
+		CLRLOCK(vd, local);
 		return NIL(Void_t*);
 	}
 
@@ -608,7 +617,7 @@ int		type;
 			pfsetinfo(vm,(Vmuchar_t*)addr,size,file,line);
 		}
 
-		if(!(vd->mode&VM_TRUST) && (vd->mode&VM_TRACE) && _Vmtrace)
+		if(!local && (vd->mode&VM_TRACE) && _Vmtrace)
 		{	vm->file = file; vm->line = line; vm->func = func;
 			(*_Vmtrace)(vm,(Vmuchar_t*)data,(Vmuchar_t*)addr,size,0);
 		}
@@ -624,7 +633,8 @@ int		type;
 		pfsetinfo(vm,(Vmuchar_t*)data,s,file,line);
 	}
 
-	CLRLOCK(vd,0);
+	CLRLOCK(vd, local);
+	ANNOUNCE(local, vm, VM_RESIZE, (Void_t*)addr, vm->disc);
 
 done:	if(addr && (type&VM_RSZERO) && oldsize < size)
 	{	reg Vmuchar_t *d = (Vmuchar_t*)addr+oldsize, *ed = (Vmuchar_t*)addr+size;
@@ -675,18 +685,21 @@ size_t		size;
 size_t		align;
 #endif
 {
-	reg size_t	s;
-	reg Void_t*	data;
-	reg char*	file;
-	reg int		line;
-	reg Void_t*	func;
-	reg Vmdata_t*	vd = vm->data;
+	reg size_t		s;
+	reg Void_t*		data;
+	reg const char*		file;
+	reg int			line, local;
+	reg const Void_t*	func;
+	reg Vmdata_t*		vd = vm->data;
 
 	VMFLF(vm,file,line,func);
 
-	if(!(vd->mode&VM_TRUST) && ISLOCK(vd,0))
-		return NIL(Void_t*);
-	SETLOCK(vd,0);
+	if(!(local = vd->mode&VM_TRUST) )
+	{	GETLOCAL(vd,local);
+		if(ISLOCK(vd, local))
+			return NIL(Void_t*);
+		SETLOCK(vd, local);
+	}
 
 	s = (size <= TINYSIZE ? TINYSIZE : ROUND(size,ALIGN)) + PF_EXTRA;
 	if(!(data = KPVALIGN(vm,s,align,Vmbest->alignf)) )
@@ -694,12 +707,13 @@ size_t		align;
 
 	pfsetinfo(vm,(Vmuchar_t*)data,size,file,line);
 
-	if(!(vd->mode&VM_TRUST) && (vd->mode&VM_TRACE) && _Vmtrace)
+	if(!local && (vd->mode&VM_TRACE) && _Vmtrace)
 	{	vm->file = file; vm->line = line; vm->func = func;
 		(*_Vmtrace)(vm,NIL(Vmuchar_t*),(Vmuchar_t*)data,size,align);
 	}
 done:
-	CLRLOCK(vd,0);
+	CLRLOCK(vd, local);
+	ANNOUNCE(local, vm, VM_ALLOC, data, vm->disc);
 	return data;
 }
 

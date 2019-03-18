@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -27,10 +27,6 @@
  *
  *   David Korn
  *   AT&T Labs
- *   Room 2B-102
- *   Murray Hill, N. J. 07974
- *   Tel. x7975
- *   research!dgk
  *
  */
 
@@ -83,6 +79,13 @@ static int	(*fdnotify)(int,int);
 #   if !defined(htonl) && !_lib_htonl
 #      define htonl(x)	(x)
 #   endif
+#   if _pipe_socketpair
+#      if _socketpair_shutdown_mode
+#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[0],1)<0||fchmod((v)[0],S_IRUSR)<0||shutdown((v)[1],0)<0||fchmod((v)[1],S_IWUSR)<0)?(-1):0)
+#      else
+#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[0],1)<0||shutdown((v)[1],0)<0)?(-1):0)
+#      endif
+#   endif
     static int str2inet(const char*, struct sockaddr_in*);
 #   define SOCKET	1
 #else
@@ -93,28 +96,18 @@ struct fdsave
 {
 	int	orig_fd;	/* original file descriptor */
 	int	save_fd;	/* saved file descriptor */
+	int	subshell;	/* saved for subshell */
 };
 
 
-#ifdef SF_BUFCONST
-    static int  	subexcept(Sfio_t*, int, void*, Sfdisc_t*);
-    static int  	eval_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
-    static int  	slowexcept(Sfio_t*, int, void*, Sfdisc_t*);
-    static int  	pipeexcept(Sfio_t*, int, void*, Sfdisc_t*);
-    static ssize_t	piperead(Sfio_t*, void*, size_t, Sfdisc_t*);
-    static ssize_t	slowread(Sfio_t*, void*, size_t, Sfdisc_t*);
-    static ssize_t	subread(Sfio_t*, void*, size_t, Sfdisc_t*);
-    static ssize_t	tee_write(Sfio_t*,const void*,size_t,Sfdisc_t*);
-#else
-    static int	subexcept(Sfio_t*, int, Sfdisc_t*);
-    static int 	eval_exceptf(Sfio_t*, int, Sfdisc_t*);
-    static int	slowexcept(Sfio_t*, int, Sfdisc_t*);
-    static int	pipeexcept(Sfio_t*, int, Sfdisc_t*);
-    static int	piperead(Sfio_t*, void*, int, Sfdisc_t*);
-    static int	slowread(Sfio_t*, void*, int, Sfdisc_t*);
-    static int	subread(Sfio_t*, void*, int, Sfdisc_t*);
-    static int	tee_write(Sfio_t*,const void*,int,Sfdisc_t*);
-#endif
+static int  	subexcept(Sfio_t*, int, void*, Sfdisc_t*);
+static int  	eval_exceptf(Sfio_t*, int, void*, Sfdisc_t*);
+static int  	slowexcept(Sfio_t*, int, void*, Sfdisc_t*);
+static int  	pipeexcept(Sfio_t*, int, void*, Sfdisc_t*);
+static ssize_t	piperead(Sfio_t*, void*, size_t, Sfdisc_t*);
+static ssize_t	slowread(Sfio_t*, void*, size_t, Sfdisc_t*);
+static ssize_t	subread(Sfio_t*, void*, size_t, Sfdisc_t*);
+static ssize_t	tee_write(Sfio_t*,const void*,size_t,Sfdisc_t*);
 static int	io_prompt(Sfio_t*,int);
 static int	io_heredoc(register struct ionod*);
 static void	sftrack(Sfio_t*,int,int);
@@ -142,7 +135,7 @@ void sh_ioinit(void)
 	register int n;
 	filemapsize = 8;
 	filemap = (struct fdsave*)malloc(8*sizeof(struct fdsave));
-#ifdef SHOPT_FASTPIPE
+#if SHOPT_FASTPIPE
 	n = sh.lim.open_max+2;
 #else
 	n = sh.lim.open_max;
@@ -182,7 +175,7 @@ Sfio_t *sh_iostream(register int fd)
 	register int status = sh_iocheckfd(fd);
 	register int flags = SF_WRITE;
 	char *bp;
-#ifdef SHOPT_FASTPIPE
+#if SHOPT_FASTPIPE
 	if(fd>=sh.lim.open_max)
 		return(sh.sftable[fd]);
 #endif /* SHOPT_FASTPIPE */
@@ -337,13 +330,29 @@ int sh_close(register int fd)
 	return(r);
 }
 
+int sh_devtofd(const char *cp)
+{
+	if(strmatch(cp,(char*)e_devfdstd))
+	{
+		if(cp[8]=='i')		/* /dev/stdin */
+			return(0);
+		else if(cp[8]=='o')	/* /dev/stdout */
+			return(1);
+		else if(cp[8]=='e')	/* /dev/stderr */
+			return(2);
+		else			/* /dev/fd/N */
+			return((int)strtol(cp+8,(char**)0,10));
+	}
+	return(-1);
+}
+
 /*
  * Open a file for reading
  * On failure, print message.
  */
 int sh_open(register const char *path, int flags, ...)
 {
-	register int		fd=0;
+	register int		fd= -1;
 	mode_t			mode;
 #ifdef SOCKET
 	struct sockaddr_in	addr;
@@ -358,6 +367,7 @@ int sh_open(register const char *path, int flags, ...)
 		errno = ENOENT;
 		return(-1);
 	}
+	if ((fd = sh_devtofd(path))>=0)
 	if (strmatch(path,e_devfdNN) || (fd=strmatch(path,"/dev/std@(in|out|err)")))
 	{
 		if(fd)
@@ -394,10 +404,22 @@ int sh_open(register const char *path, int flags, ...)
 					fd = -1;
 				}
 			}
-			else if(connect(fd, (struct sockaddr*)&addr, sizeof(addr)))
+			else while(connect(fd, (struct sockaddr*)&addr, sizeof(addr)))
 			{
+				if(errno==EINTR)
+				{
+					if(sh.trapnote&SH_SIGSET)
+					{
+						close(fd);
+						sh_exit(SH_EXITSIG);
+					}
+					if(sh.trapnote)
+						sh_chktrap();
+					continue;
+				}
 				close(fd);
 				fd = -1;
+				break;
 			}
 		}
 	}
@@ -449,7 +471,7 @@ int	sh_pipe(register int pv[])
 		errormsg(SH_DICT,ERROR_system(1),e_pipe);
 	pv[0] = sh_iomovefd(pv[0]);
 	pv[1] = sh_iomovefd(pv[1]);
-	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD|IODUP;
+	sh.fdstatus[pv[0]] = IONOSEEK|IOREAD;
 	sh.fdstatus[pv[1]] = IONOSEEK|IOWRITE;
 	sh_subsavefd(pv[0]);
 	sh_subsavefd(pv[1]);
@@ -484,6 +506,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 	static int	inuse_bits;	/* keep track of 3-9 in use */
 	int clexec=0, fn, traceon;
 	int indx = sh.topfd;
+	char *trace = sh.st.trap[SH_DEBUGTRAP];
 	if(flag==2)
 		clexec = 1;
 	if(iop)
@@ -549,7 +572,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 				else if(fd=='-' && fname[1]==0)
 				{
 					fd= -1;
-					goto trace;
+					goto traceit;
 				}
 				else if(fd=='p' && fname[1]==0)
 				{
@@ -605,7 +628,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 						struct stat sb;
 						if(stat(fname,&sb)>=0)
 						{
-#ifdef SHOPT_FS_3D
+#if SHOPT_FS_3D
 							if(S_ISREG(sb.st_mode)&&
 						                (!sh.lim.fs3d || iview(&sb)==0))
 #else
@@ -624,11 +647,21 @@ int	sh_redirect(struct ionod *iop, int flag)
 				if((fd=sh_open(fname,o_mode,RW_ALL)) <0)
 					errormsg(SH_DICT,ERROR_system(1),((o_mode&O_CREAT)?e_create:e_open),fname);
 			}
-		trace:
+		traceit:
 			if(traceon && fname)
 				sfprintf(sfstderr,"%s %s%c",io_op,fname,iop->ionxt?' ':'\n');
-			if(flag==0 || sh_subsavefd(fn))
-				sh_iosave(fn,indx); /* save file descriptor */
+			if(trace && fname)
+			{
+				char *av[3];
+				av[0] = io_op;
+				av[1] = fname;
+				av[2] = 0;;
+				sh_debug(trace,(char*)0,(char*)0,av,ARG_NOGLOB);
+			}
+			if(flag==0)
+				sh_iosave(fn,indx);
+			else if(sh_subsavefd(fn))
+				sh_iosave(fn,indx|IOSUBSHELL);
 			if(fd<0)
 			{
 				if(sh_inuse(fn) || fn==sh.infd)
@@ -712,11 +745,7 @@ static int io_heredoc(register struct ionod *iop)
  * This write discipline also writes the output on standard error
  * This is used when tracing here-documents
  */
-#ifdef SF_BUFCONST
 static ssize_t tee_write(Sfio_t *iop,const void *buff,size_t n,Sfdisc_t *unused)
-#else
-static int tee_write(Sfio_t *iop,const void *buff,int n,Sfdisc_t *unused)
-#endif
 {
 	NOT_USED(unused);
 	sfwrite(sfstderr,buff,n);
@@ -736,6 +765,8 @@ void sh_iosave(register int origfd, int oldtop)
 @*/
  
 	register int	savefd;
+	int flag = (oldtop&IOSUBSHELL);
+	oldtop &= ~IOSUBSHELL;
 	/* see if already saved, only save once */
 	for(savefd=sh.topfd; --savefd>=oldtop; )
 	{
@@ -750,7 +781,7 @@ void sh_iosave(register int origfd, int oldtop)
 			errormsg(SH_DICT,ERROR_exit(4),e_nospace);
 			
 	}
-#ifdef SHOPT_DEVFD
+#if SHOPT_DEVFD
 	if(origfd <0)
 	{
 		savefd = origfd;
@@ -762,6 +793,7 @@ void sh_iosave(register int origfd, int oldtop)
 		if((savefd = sh_fcntl(origfd, F_DUPFD, 3)) < 0 && errno!=EBADF)
 			errormsg(SH_DICT,ERROR_system(1),e_toomany);
 	}
+	filemap[sh.topfd].subshell = flag;
 	filemap[sh.topfd].orig_fd = origfd;
 	filemap[sh.topfd++].save_fd = savefd;
 	if(savefd >=0)
@@ -809,11 +841,24 @@ void	sh_iounsave(void)
 /*
  *  restore saved file descriptors from <last> on
  */
-void	sh_iorestore(int last)
+void	sh_iorestore(int last, int jmpval)
 {
 	register int 	origfd, savefd, fd;
+	int flag = (last&IOSUBSHELL);
+	last &= ~IOSUBSHELL;
 	for (fd = sh.topfd - 1; fd >= last; fd--)
 	{
+		if(!flag && filemap[fd].subshell)
+			continue;
+		if(jmpval==SH_JMPSCRIPT)
+		{
+			if ((savefd = filemap[fd].save_fd) >= 0)
+			{
+				sh.sftable[savefd] = 0;
+				sh_close(savefd);
+			}
+			continue;
+		}
 		origfd = filemap[fd].orig_fd;
 		sh_close(origfd);
 		if ((savefd = filemap[fd].save_fd) >= 0)
@@ -835,6 +880,15 @@ void	sh_iorestore(int last)
 				sh.sftable[origfd] = sh.sftable[savefd];
 			sh.sftable[savefd] = 0;
 			sh_close(savefd);
+		}
+	}
+	if(!flag)
+	{
+		/* keep file descriptors for subshell restore */
+		for (fd = last ; fd < sh.topfd; fd++)
+		{
+			if(filemap[fd].subshell)
+				filemap[last++] = filemap[fd];
 		}
 	}
 	if(last < sh.topfd)
@@ -940,11 +994,7 @@ static int str2inet(register const char *sp, struct sockaddr_in *addr)
 /*
  *  Handle interrupts for slow streams
  */
-#ifdef SF_BUFCONST
 static int slowexcept(register Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
-#else
-static int slowexcept(register Sfio_t *iop, int type, Sfdisc_t *handle)
-#endif
 {
 	register int	n,fno;
 	NOT_USED(handle);
@@ -954,9 +1004,9 @@ static int slowexcept(register Sfio_t *iop, int type, Sfdisc_t *handle)
 		return(0);
 	if((sh.trapnote&(SH_SIGSET|SH_SIGTRAP)) && errno!=EIO && errno!=ENXIO)
 		errno = EINTR;
+	fno = sffileno(iop);
 	if((n=sfvalue(iop))<=0)
 	{
-		fno = sffileno(iop);
 #ifndef FNDELAY
 #   ifdef O_NDELAY
 		if(errno==0 && (n=fcntl(fno,F_GETFL,0))&O_NDELAY)
@@ -983,7 +1033,8 @@ static int slowexcept(register Sfio_t *iop, int type, Sfdisc_t *handle)
 	errno = 0;
 	if(sh.trapnote&SH_SIGSET)
 	{
-		sfputc(sfstderr,'\n');
+		if(isatty(fno))
+			sfputc(sfstderr,'\n');
 		sh_exit(SH_EXITSIG);
 	}
 	if(sh.trapnote&SH_SIGTRAP)
@@ -1014,18 +1065,14 @@ static void time_grace(void *handle)
 	sh.trapnote |= SH_SIGTRAP;
 }
 
-#ifdef SF_BUFCONST
 static ssize_t piperead(Sfio_t *iop,void *buff,register size_t size,Sfdisc_t *handle)
-#else
-static int piperead(Sfio_t *iop,void *buff,register int size,Sfdisc_t *handle)
-#endif
 {
 	int fd = sffileno(iop);
 	NOT_USED(handle);
 	if(sh_isstate(SH_INTERACTIVE) && io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
 		return(0);
 	if(!(sh.fdstatus[sffileno(iop)]&IOCLEX) && sfset(iop,0,0)&SF_SHARE)
-		size = ed_read(fd, (char*)buff, size);
+		size = ed_read(sh.ed_context, fd, (char*)buff, size,0);
 	else
 		size = read(fd, (char*)buff, size);
 	return(size);
@@ -1034,25 +1081,21 @@ static int piperead(Sfio_t *iop,void *buff,register int size,Sfdisc_t *handle)
  * This is the read discipline that is applied to slow devices
  * This routine takes care of prompting for input
  */
-#ifdef SF_BUFCONST
 static ssize_t slowread(Sfio_t *iop,void *buff,register size_t size,Sfdisc_t *handle)
-#else
-static int slowread(Sfio_t *iop,void *buff,register int size,Sfdisc_t *handle)
-#endif
 {
-	int	(*readf)(int, char*, int);
+	int	(*readf)(void*, int, char*, int, int);
+	int	reedit=0, rsize;
+#if SHOPT_HISTEXPAND
+	char    *xp=0;
+#endif
 	NOT_USED(handle);
-	if(io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
-		return(0);
-	if(sh.timeout)
-		timeout = (void*)sh_timeradd(sh_isstate(SH_GRACE)?1000L*TGRACE:1000L*sh.timeout,0,time_grace,NIL(void*));
-#   ifdef SHOPT_ESH
-	if(sh_isoption(SH_EMACS|SH_GMACS))
+#   if SHOPT_ESH
+	if(sh_isoption(SH_EMACS) || sh_isoption(SH_GMACS))
 		readf = ed_emacsread;
 	else
 #   endif	/* SHOPT_ESH */
-#   ifdef SHOPT_VSH
-#	ifdef SHOPT_RAWONLY
+#   if SHOPT_VSH
+#	if SHOPT_RAWONLY
 	    if(sh_isoption(SH_VI) || ((SHOPT_RAWONLY-0) && mbwide()))
 #	else
 	    if(sh_isoption(SH_VI))
@@ -1061,11 +1104,54 @@ static int slowread(Sfio_t *iop,void *buff,register int size,Sfdisc_t *handle)
 	else
 #   endif	/* SHOPT_VSH */
 		readf = ed_read;
-	size = (*readf)(sffileno(iop), (char*)buff, size);
-	if(timeout)
-		timerdel(timeout);
-	timeout=0;
-	return(size);
+	while(1)
+	{
+		if(io_prompt(iop,sh.nextprompt)<0 && errno==EIO)
+			return(0);
+		if(sh.timeout)
+			timeout = (void*)sh_timeradd(sh_isstate(SH_GRACE)?1000L*TGRACE:1000L*sh.timeout,0,time_grace,NIL(void*));
+		rsize = (*readf)(sh.ed_context, sffileno(iop), (char*)buff, size, reedit);
+		if(timeout)
+			timerdel(timeout);
+		timeout=0;
+#if SHOPT_HISTEXPAND
+		if(rsize && *(char*)buff != '\n' && sh.nextprompt==1 && sh_isoption(SH_HISTEXPAND))
+		{
+			int r;
+			((char*)buff)[rsize] = '\0';
+			if(xp)
+			{
+				free(xp);
+				xp = 0;
+			}
+			r = hist_expand(buff, &xp);
+			if((r & (HIST_EVENT|HIST_PRINT)) && !(r & HIST_ERROR) && xp)
+			{
+				strlcpy(buff, xp, size);
+				rsize = strlen(buff);
+				if(!sh_isoption(SH_HISTVERIFY) || readf==ed_read)
+				{
+					sfputr(sfstderr, xp, -1);
+					break;
+				}
+				reedit = rsize - 1;
+				continue;
+			}
+			if((r & HIST_ERROR) && sh_isoption(SH_HISTREEDIT))
+			{
+				reedit  = rsize - 1;
+				continue;
+			}
+			if(r & (HIST_ERROR|HIST_PRINT))
+			{
+				*(char*)buff = '\n';
+				rsize = 1;
+			}
+		}
+#endif
+		break;
+	}
+	return(rsize);
 }
 
 /*
@@ -1159,7 +1245,7 @@ static int	io_prompt(Sfio_t *iop,register int flag)
 		{
 			register int c;
 #if defined(TIOCLBIC) && defined(LFLUSHO)
-			if(!sh_isoption(SH_VI|SH_EMACS|SH_GMACS))
+			if(!sh_isoption(SH_VI) && !sh_isoption(SH_EMACS) && !sh_isoption(SH_GMACS))
 			{
 				/*
 				 * re-enable output in case the user has
@@ -1210,11 +1296,7 @@ done:
  * This discipline is inserted on write pipes to prevent SIGPIPE
  * from causing an infinite loop
  */
-#ifdef SF_BUFCONST
 static int pipeexcept(Sfio_t* iop, int mode, void *data, Sfdisc_t* handle)
-#else
-static int pipeexcept(Sfio_t* iop, int mode, Sfdisc_t* handle)
-#endif
 {
 	NOT_USED(iop);
 	if(mode==SF_DPOP || mode==SF_FINAL)
@@ -1259,11 +1341,16 @@ static void	sftrack(Sfio_t* sp,int flag, int newfd)
 	if(sh_isstate(SH_NOTRACK))
 		return;
 	mode = sfset(sp,0,0);
+	if(sp==sh.heredocs && fd < 10 && flag==SF_NEW)
+	{
+		fd = sfsetfd(sp,10);
+		fcntl(fd,F_SETFD,FD_CLOEXEC);
+	}
 	if(fd < 3)
 		return;
 	if(flag==SF_NEW)
 	{
-		if(!sh.fdstatus[fd] && sh.fdstatus[fd]==IOCLOSE)
+		if(!sh.sftable[fd] && sh.fdstatus[fd]==IOCLOSE)
 		{
 			sh.sftable[fd] = sp;
 			flag = (mode&SF_WRITE)?IOWRITE:0;
@@ -1353,11 +1440,7 @@ Sfio_t *sh_sfeval(register char *argv[])
  * This code gets called whenever an end of string is found with eval
  */
 
-#ifdef SF_BUFCONST
 static int eval_exceptf(Sfio_t *iop,int type, void *data, Sfdisc_t *handle)
-#else
-static int eval_exceptf(Sfio_t *iop,int type, Sfdisc_t *handle)
-#endif
 {
 	register struct eval *ep = (struct eval*)handle;
 	register char	*cp;
@@ -1416,11 +1499,7 @@ static Sfio_t *subopen(Sfio_t* sp, off_t offset, long size)
 /*
  * read function for subfile discipline
  */
-#ifdef SF_BUFCONST
 static ssize_t subread(Sfio_t* sp,void* buff,register size_t size,Sfdisc_t* handle)
-#else
-static int subread(Sfio_t* sp,void* buff,register int size,Sfdisc_t* handle)
-#endif
 {
 	register struct subfile *disp = (struct subfile*)handle;
 	NOT_USED(sp);
@@ -1435,11 +1514,7 @@ static int subread(Sfio_t* sp,void* buff,register int size,Sfdisc_t* handle)
 /*
  * exception handler for subfile discipline
  */
-#ifdef SF_BUFCONST
 static int subexcept(Sfio_t* sp,register int mode, void *data, Sfdisc_t* handle)
-#else
-static int subexcept(Sfio_t* sp,register int mode, Sfdisc_t* handle)
-#endif
 {
 	register struct subfile *disp = (struct subfile*)handle;
 	if(mode==SF_CLOSING)
@@ -1662,23 +1737,6 @@ Notify_f    sh_fdnotify(Notify_f notify)
         old = fdnotify;
         fdnotify = notify;
         return(old);
-}
-
-Sfio_t	*sh_fd2sfio(int fd)
-{
-	register int status;
-	Sfio_t *sp = sh.sftable[fd];
-	if(!sp  && (status = sh_iocheckfd(fd))!=IOCLOSE)
-	{
-		register int flags=0;
-		if(status&IOREAD)
-			flags |= SF_READ;
-		if(status&IOWRITE)
-			flags |= SF_WRITE;
-		sp = sfnew(NULL, NULL, -1, fd,flags);
-		sh.sftable[fd] = sp;
-	}
-	return(sp);
 }
 
 Sfio_t *sh_pathopen(const char *cp)

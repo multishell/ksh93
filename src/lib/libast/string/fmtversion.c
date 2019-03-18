@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -24,24 +24,34 @@
 *                                                                  *
 *******************************************************************/
 #pragma prototyped
+/*
+ * Glenn Fowler
+ * AT&T Bell Laboratories
+ *
+ * return formatted <magicid.h> version string
+ */
 
 #include <ast.h>
 
-#if _std_malloc || _BLD_INSTRUMENT || cray
+char*
+fmtversion(register unsigned long v)
+{
+	register char*	cur;
+	register char*	end;
+	char*		buf;
+	int		n;
 
-void _STUB_libc(){}
-
-#else
-
-extern void*	memalign(size_t, size_t);
-extern void*	valloc(size_t);
-
-void*	__libc_calloc(size_t n, size_t m) { return calloc(n, m); }
-void	__libc_cfree(void* p) { cfree(p); }
-void	__libc_free(void* p) { free(p); }
-void*	__libc_malloc(size_t n) { return malloc(n); }
-void*	__libc_memalign(size_t a, size_t n) { return memalign(a, n); }
-void*	__libc_realloc(void* p, size_t n) { return realloc(p, n); }
-void*	__libc_valloc(size_t n) { return valloc(n); }
-
-#endif
+	buf = cur = fmtbuf(n = 18);
+	end = cur + n;
+	if (v >= 19700101L)
+		sfsprintf(cur, end - cur, "%04lu-%02lu-%02lu", (v / 10000) % 10000, (v / 100) % 100, v % 100);
+	else
+	{
+		if (n = (v >> 24) & 0xff)
+			cur += sfsprintf(cur, end - cur, "%d.", n);
+		if (n = (v >> 16) & 0xff)
+			cur += sfsprintf(cur, end - cur, "%d.", n);
+		sfsprintf(cur, end - cur, "%ld.%ld", (v >> 8) & 0xff, v & 0xff);
+	}
+	return buf;
+}

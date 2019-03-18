@@ -1,3 +1,4 @@
+.fp 5 CW
 .de MW
 \f5\\$1\fP
 ..
@@ -15,7 +16,7 @@ vmalloc \- virtual memory allocation
 .MW "int vmset(Vmalloc_t* region, int flags, int type);"
 .MW "Vmalloc_t* Vmheap;"
 .MW "Vmdisc_t* vmdisc(Vmalloc_t* region, Vmdisc_t* disc);"
-.MW "Vmalloc_t* vmmopen(char* file, Void_t* base);"
+.MW "Vmalloc_t* vmmopen(char* file, Void_t* base, size_t round);"
 .MW "Void_t* vmmset(Vmalloc_t* vm, int key, Void_t* data, int set);"
 .fi
 .SS "Allocation functions"
@@ -26,9 +27,11 @@ vmalloc \- virtual memory allocation
 .MW "int vmfree(Vmalloc_t* region, Void_t* addr);"
 .MW "Void_t* vmnewof(Vmalloc_t* region, Void_t* addr, type, size_t n, size_t x);"
 .MW "Void_t* vmoldof(Vmalloc_t* region, Void_t* addr, type, size_t n, size_t x);"
+.MW "Void_t* vmgetmem(Vmalloc_t* region, Void_t* addr, size_t size);"
 .fi
 .SS "Debugging"
 .nf
+.MW "int vmdebug(int);"
 .MW "int vmdbcheck(Vmalloc_t* vm);"
 .MW "int vmdbwatch(Void_t* addr);"
 .MW "static void vmdbwarn(Vmalloc_t*, char* mesg, int n);"
@@ -139,6 +142,10 @@ This function always returns the current discipline.
 creates a region to allocate memory given by the system call \fImmap(2)\fP.
 The given \fIfile\fP is the backing store for the map.
 If \fIbase\fP is not \f5NULL\fP, it is the address to map the data to.
+The \fIround\fP argument asserts that the size of the region is always
+a multiple of this value. However, note that \fIvmmopen\fP has
+an internally defined minimum round value (typically 64K) which may be
+used if the given value is too small.
 .PP
 .I vmmset
 sets a \fIdata\fP value associated with a \fIkey\fP if \f5set\fP is non-zero.
@@ -189,6 +196,28 @@ Additional space will be set to zero.
 .PP
 .I vmoldof
 is similar to \fIvmnewof\fP but it neither copies data nor clears space.
+.PP
+.I vmgetmem
+provides a handy function to creat/close regions and allocate/free memory
+based on chunks of memory obtained from the heap region \fIVmheap\fP.
+.TP
+.MW "vmgetmem(0,0,0)"
+This call opens a new region.
+.TP
+.MW "vmgetmem(region, 0, 0)"
+This call closes the given \f5region\fP.
+.TP
+.MW "vmgetmem(region,0,n)"
+This call allocates a block of length \f5n\fP and clears it to zeros.
+.TP
+.MW "vmgetmem(region,p,0)"
+This call frees the block \f5p\fP.
+.TP
+.MW "vmgetmem(region,p,n)"
+This call resizes the block \f5p\fP to length \f5n\fP
+and clears the new memory to zeros if the block grows.
+The block may be moved as deemed necessary by the allocator.
+.PP
 .SS "Memory disciplines"
 Memory disciplines have type \f5Vmdisc_t\fP,
 a structure with these members:
@@ -274,6 +303,15 @@ If negative, the allocation request will fail.
 Address \fIobj\fP, given to \fIvmfree\fP or \fIvmresize\fP,
 does not point to an allocated block from the region.
 The respective call will fail.
+.TP
+.MW VM_ALLOC
+Announce that a memory allocation request is finished and returning.
+.TP
+.MW VM_FREE
+Announce that a memory freeing request is finished and returning.
+.TP
+.MW VM_RESIZE
+Announce that a memory resizing request is finished and returning.
 
 .SS "Allocation methods"
 There are five methods, of type \f5Vmethod_t*\fP:
@@ -313,11 +351,16 @@ The optional flag \f5-DVMFL\fP, if used during compilation,
 enables recording of file names and line numbers.
 The following functions work with method \f5Vmdebug\fP.
 .PP
+.I vmdebug
+resets the file descriptor to write out warnings to the given argument.
+By default, this file descriptor is 2, the standard error.
+\fIvmdebug\fP returns the previous file descriptor.
+.PP
 .I vmdbcheck
-checks an entire \fIregion\fP
-for block boundary violations and other inconsistencies.  It calls
-\fIvmdbwarn\fP when errors are found.
-If flag \f5VM_DBCHECK\fP is on for the region, 
+checks a region using \f5Vmdebug\fP or \f5Vmbest\fP for integrity.
+If \f5Vmdebug\fP, this also checks for block overwriting errors.
+On errors, \fIvmdbwarn\fP is called.
+If flag \f5VM_DBCHECK\fP is on, 
 \fIvmdbcheck\fP is called at each invocation of
 \fIvmalloc\fP, \fIvmfree\fP, or \fIvmresize\fP.
 .PP

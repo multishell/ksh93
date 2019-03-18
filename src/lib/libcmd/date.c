@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,7 +31,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: date (AT&T Labs Research) 2002-04-05 $\n]"
+"[-?\n@(#)$Id: date (AT&T Labs Research) 2004-02-29 $\n]"
 USAGE_LICENSE
 "[+NAME?date - set/list/convert dates]"
 "[+DESCRIPTION?\bdate\b sets the current date and time (with appropriate"
@@ -46,8 +46,8 @@ USAGE_LICENSE
 "	\ayymmddHHMM.SS\a, or \ammddHHMMccyy.SS\a or \accyymmddHHMM.SS\a."
 "	Conflicting standards and practice allow a leading or trailing"
 "	2 or 4 digit year for the 10 and 12 digit forms; the X/Open trailing"
-"	form is used to disambiguate. Avoid the 10 digit form to avoid"
-"	confusion. The digit fields are:]{"
+"	form is used to disambiguate (\btouch\b(1) uses the leading form.)"
+"	Avoid the 10 digit form to avoid confusion. The digit fields are:]{"
 "		[+cc?Century - 1, 19-20.]"
 "		[+yy?Year in century, 00-99.]"
 "		[+mm?Month, 01-12.]"
@@ -108,14 +108,16 @@ USAGE_LICENSE
 "		[+j?1-offset Julian date]"
 "		[+J?0-offset Julian date]"
 "		[+k?\bdate\b(1) style date]"
-"		[+K?date as \ayyyy-mm-dd+HH:MM:SS\a]"
-"		[+l?\bls\b(1) \b-l\b date that formats recent dates with \b%g\b"
-"			and distant dates with \b%G\b]"
+"		[+K?all numeric date; equivalent to \b%Y-%m-%d+%H:%M:%S\b]"
+"		[+l?\bls\b(1) \b-l\b date; equivalent to \b%Q/%g/%G/\b]"
 "		[+m?month number]"
 "		[+M?minutes]"
 "		[+n?newline character]"
 "		[+N?time zone type name]"
 "		[+p?meridian (e.g., \bAM\b or \bPM\b)]"
+"		[+Q?\a<del>recent<del>distant<del>\a: \a<del>\a is a unique"
+"			delimter character; \arecent\a format for recent"
+"			dates, \adistant\a format otherwise]"
 "		[+r?12-hour time as \ahh:mm:ss meridian\a]"
 "		[+R?24-hour time as \ahh:mm\a]"
 "		[+s?number of seconds since the epoch]"
@@ -134,7 +136,7 @@ USAGE_LICENSE
 "		[+z?time zone \aSHHMM\a west of GMT offset where S is"
 "			\b+\b or \b-\b]"
 "		[+Z?time zone name]"
-"		[++|-flag?set (+) or clear (-) \aflag\a for the remainder"
+"		[++|!flag?set (+) or clear (!) \aflag\a for the remainder"
 "			of \aformat\a. \aflag\a may be:]{"
 "			[+l?enable leap second adjustments]"
 "			[+u?UTC time zone]"
@@ -168,6 +170,7 @@ USAGE_LICENSE
 
 #include <cmdlib.h>
 #include <ls.h>
+#include <proc.h>
 #include <tm.h>
 #include <times.h>
 
@@ -189,7 +192,7 @@ typedef struct Fmt
  */
 
 static int
-settime(time_t clock, int adjust, int network)
+settime(const char* cmd, time_t clock, int adjust, int network)
 {
 	char*		s;
 	char**		argv;
@@ -216,26 +219,29 @@ settime(time_t clock, int adjust, int network)
 	}
 #endif
 	argv = args;
-	*argv++ = error_info.id;
-	if (streq(astconf("UNIVERSE", NiL, NiL), "att"))
+	s = "/usr/bin/date";
+	if (!streq(cmd, s) && (!access(s, X_OK) || !access(s+=4, X_OK)))
 	{
-		tmfmt(buf, sizeof(buf), "%m%d%H%M%Y.%S", &clock);
-		if (adjust)
-			*argv++ = "-a";
+		*argv++ = s;
+		if (streq(astconf("UNIVERSE", NiL, NiL), "att"))
+		{
+			tmfmt(buf, sizeof(buf), "%m%d%H%M%Y.%S", &clock);
+			if (adjust)
+				*argv++ = "-a";
+		}
+		else
+		{
+			tmfmt(buf, sizeof(buf), "%Y%m%d%H%M.%S", &clock);
+			if (network)
+				*argv++ = "-n";
+			if (tm_info.flags & TM_UTC)
+				*argv++ = "-u";
+		}
+		*argv++ = buf;
+		*argv = 0;
+		if (!procrun(s, args))
+			return 0;
 	}
-	else
-	{
-		tmfmt(buf, sizeof(buf), "%Y%m%d%H%M.%S", &clock);
-		if (network)
-			*argv++ = "-n";
-		if (tm_info.flags & TM_UTC)
-			*argv++ = "-u";
-	}
-	*argv++ = buf;
-	*argv = 0;
-	s = "/bin/date";
-	execv(s, args);
-	error(ERROR_SYSTEM|2, "%s: cannot exec", s);
 	return -1;
 }
 
@@ -278,7 +284,8 @@ b_date(int argc, register char** argv, void* context)
 
 	time_t*		clock = 0;	/* use this time		*/
 	time_t*		filetime = 0;	/* use this st_ time field	*/
-	char*		format = 0;	/* tmform() format		*/
+	char*		cmd = argv[0];	/* original command path	*/
+	char*		format = 0;	/* tmfmt() format		*/
 	char*		string = 0;	/* date string			*/
 	int		elapsed = 0;	/* args are start/stop pairs	*/
 	int		increment = 0;	/* incrementally adjust time	*/
@@ -286,7 +293,7 @@ b_date(int argc, register char** argv, void* context)
 	int		show = 0;	/* show date and don't set	*/
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG);
+	cmdinit(argv, context, ERROR_CATALOG, 0);
 	setlocale(LC_ALL, "");
 	tm_info.flags |= TM_DATESTYLE;
 	fmts = &fmt;
@@ -417,12 +424,12 @@ b_date(int argc, register char** argv, void* context)
 		}
 		else
 			show = 1;
-		if (show)
+		if (format || show)
 		{
 			tmfmt(buf, sizeof(buf), format, clock);
 			sfprintf(sfstdout, "%s\n", buf);
 		}
-		else if (settime(*clock, increment, network))
+		else if (settime(cmd, *clock, increment, network))
 			error(ERROR_SYSTEM|3, "cannot set system time");
 	}
 	while (fmts != &fmt)

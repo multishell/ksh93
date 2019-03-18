@@ -1,5 +1,5 @@
 #
-# @(#)magic (AT&T Research) 2002-04-30
+# @(#)magic (AT&T Research) 2004-02-29
 #
 # magic number database for file(1) and magic(3)
 #
@@ -47,11 +47,12 @@
 0	long		0x04034b50	zip archive			application/zip
 +2	byte		>0		, version %d
 &3	byte		*		.%d
-0	long		0x223e9f78	ms outlook tnef archive
-0	string		MSCF
-&4	long		0		ms cabinet archive
+0	long		0x223e9f78	ms outlook tnef archive		application/pax
+0	string		MSCF		ms cabinet archive		application/pax
+&4	long		0
 +25	byte		*		, version %d
 +24	byte		*		.%d
+0	string		\x52\x61\x72\x21\x1a\x07	rar archive	application/pax
 0	long		0x0d010b05	make object			application/x-nmake
 o{
 +4	byte		<037		(version %ld)
@@ -459,6 +460,7 @@ o{
 +18	short		17		fujitsu500
 +18	short		18		sparc32+
 +18	short		20		powerpc
++18	short		22		s390
 +18	short		36		nec-v800
 +18	short		37		fujitsu-fr20
 +18	short		38		trw-rh32
@@ -515,7 +517,7 @@ o{
 +18	short		91		picojava
 +18	short		0x9026		alpha
 +18	short		0xa390		s390
-|18	short		*		machine=0x%l04X
+|18	short		*		machine=0x%04lX
 }
 +16	short		0		type=UNKNOWN
 +16	short		1		object				x-system/obj
@@ -588,6 +590,7 @@ o{
 +18	short		17		fujitsu500
 +18	short		18		sparc32+
 +18	short		20		powerpc
++18	short		22		s390
 +18	short		36		nec-v800
 +18	short		37		fujitsu-fr20
 +18	short		38		trw-rh32
@@ -644,7 +647,7 @@ o{
 +18	short		91		picojava
 +18	short		0x9026		alpha
 +18	short		0xa390		s390
-|18	short		*		machine=0x%l04X
+|18	short		*		machine=0x%04lX
 }
 +16	short		0		type=UNKNOWN
 +16	short		1		object				x-system/obj
@@ -1010,14 +1013,24 @@ v{
 0	long		0x14031004		tcpdump cons data	application/x-tcpdump
 v()
 
+257	string		ustar		pax archive			application/pax
+&156	match		[gx]
+o{
+&99	byte		0
+&107	byte		' '
+&115	byte		' '
+&100	match		+([ 0-7])[gx]
+}
+
 257	string		ustar		ustar archive			application/pax
 o{
 &99	byte		0
-&107	byte		0
-&115	byte		0
-&100	string		+([ 0-7])
+&107	byte		' '
+&115	byte		' '
+&100	match		+([ 0-7])
 &0	string		*		, [ %s ... ]
 }
+
 99	byte		0		tar archive			application/pax
 o()
 
@@ -1036,6 +1049,7 @@ o()
 
 0		short	0x5a4d
 &24		short	0x0040
+{
 +(@60H)		short	0x454c		os/2 linear
 +(@60H)		short	0x454e		os/2
 +(@60H)		short	0x4550		win32
@@ -1044,6 +1058,8 @@ o()
 +(@60H+4)	short	0x0162		mips
 +(@60H+4)	short	0x0166		mips, big endian?
 +(@60H+4)	short	0x0184		alpha
+|(@60H+4)	short	*		machine=0x%04lX
+}
 +(@60H+22)	short	&0x2002==0x0002	executable			x-system/exe
 +(@60H+22)	short	&0x2000		shared library			x-system/dll
 +(@60H+22)	short	&0x0100==0	, 16 bit
@@ -1194,14 +1210,14 @@ o()
 +2	byte		&0200		, blocked
 +2	byte		&037>0		, with %d bits
 
-0	short		0x1f10		pzip compressed data		application/zip
+0	short		0x1f10		pzip compressed data		application/pzip
 &2	byte		>0		, version %d
 &3	byte		<10		.%d
 
-0	short		0x1f8b		pzip compressed data		application/zip
+0	short		0x1f8b		pzip compressed data		application/pzip
 &10	short		0x9217
 
-0	short		0x1f8b		gzip compressed data		application/zip
+0	short		0x1f8b		gzip compressed data		application/gzip
 +9	byte		0		, dos
 +9	byte		1		, amiga
 +9	byte		2		, vms
@@ -1334,13 +1350,14 @@ v()
 &4	string		*		%s			application/x-%s
 &12	string		*		%s data
 &24	version		*		, version %s
++28	long		>0		, size %u
 {
 &28	long		>=4
-&32	long		*		, %u
+&32	long		>0		, %u
 }
 {
 &28	long		>=8
-&36	long		*		, %u
+&36	long		>0		, %u
 }
 
 #
@@ -1439,7 +1456,7 @@ name	match		core.*			unknown core dump	x-system/core
 |name	match	*.gst	MSMap.Datainst.8	application/x-ms-msmap
 |name	match	*.gwx	Genigraphics GraphicsLink	application/x-ms-graphicslink
 |name	match	*.gwz	Genigraphics GraphicsLink	application/x-ms-graphicslink
-|name	match	*.gz	WinZip File	application/x-gzip
+|name	match	*.gz	WinZip File	application/gzip
 |name	match	*.hep	HostExplorer Session Profile	application/x-ms-hostexplorer
 |name	match	*.hlp	Help File	application/x-ms-hlpfile
 |name	match	*.hpp	C++ Header File	application/x-ms-hppfile

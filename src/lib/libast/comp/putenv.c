@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -37,3 +37,23 @@ putenv(const char* s)
 	return setenviron(s) ? 0 : -1;
 }
 
+extern int
+setenv(const char* name, const char* value, int overwrite)
+{
+	char*	s;
+
+	if (overwrite || !getenv(name))
+	{
+		if (!(s = sfprints("%s=%s", name, value)) || !(s = strdup(s)))
+			return -1;
+		return setenviron(s) ? 0 : -1;
+	}
+	return 0;
+}
+
+extern void
+unsetenv(const char *name)
+{
+	if (!strchr(name, '='))
+		setenviron(name);
+}

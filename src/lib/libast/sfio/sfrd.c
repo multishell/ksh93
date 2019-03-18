@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -150,7 +150,7 @@ Sfdisc_t*	disc;
 
 			/* before mapping, make sure we have data to map */
 			if((f->flags&SF_SHARE) || (size_t)(r = f->extent-f->here) < n)
-			{	if((r = fstat(f->file,&st)) < 0)
+			{	if((r = sysfstatf(f->file,&st)) < 0)
 					goto do_except;
 				if((r = (f->extent = st.st_size) - f->here) <= 0 )
 				{	r = 0;	/* eof */
@@ -172,7 +172,7 @@ Sfdisc_t*	disc;
 				SFMUNMAP(f, f->data, f->endb-f->data);
 
 			for(;;)
-			{	f->data = (uchar*) mmap((caddr_t)0, (size_t)r,
+			{	f->data = (uchar*) sysmmapf((caddr_t)0, (size_t)r,
 							(PROT_READ|PROT_WRITE),
 							MAP_PRIVATE,
 							f->file, (sfoff_t)f->here);
@@ -269,7 +269,7 @@ Sfdisc_t*	disc;
 				else	f->mode |= SF_RC;
 			}
 		}
-		else	r = read(f->file,buf,n);
+		else	r = sysreadf(f->file,buf,n);
 
 		if(errno == 0 )
 			errno = oerrno;

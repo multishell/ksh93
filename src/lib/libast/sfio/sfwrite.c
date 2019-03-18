@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -69,7 +69,7 @@ reg size_t	n;	/* number of bytes. 		*/
 			for(w = n; w > 0; )
 			{	if((r = w) > sizeof(buf))
 					r = sizeof(buf);
-				if((r = read(f->file,buf,r)) <= 0)
+				if((r = sysreadf(f->file,buf,r)) <= 0)
 				{	n -= w;
 					break;
 				}

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -25,7 +25,7 @@
 *******************************************************************/
 #pragma prototyped
 
-static const char id[] = "\n@(#)$Id: ast (AT&T Labs Research) 2001-10-18 $\0\n";
+static const char id[] = "\n@(#)$Id: ast (AT&T Labs Research) 2003-06-11 $\0\n";
 
 #include <ast.h>
 

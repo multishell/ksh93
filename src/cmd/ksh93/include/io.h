@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -55,12 +55,13 @@
 #define IOCLEX 		0100
 #define IOCLOSE		(IOSEEK|IONOSEEK)
 
+#define IOSUBSHELL	0x8000	/* must be larger than any file descriptor */
 
 /*
  * The remainder of this file is only used when compiled with shell
  */
 
-#ifdef KSHELL
+#if KSHELL
 
 #ifndef ARG_RAW
     struct ionod;
@@ -73,7 +74,7 @@ extern void 	sh_ioinit(void);
 extern int 	sh_iomovefd(int);
 extern int	sh_iorenumber(int,int);
 extern void 	sh_pclose(int[]);
-extern void 	sh_iorestore(int);
+extern void 	sh_iorestore(int,int);
 #if defined(__EXPORT__) && defined(_BLD_DLL) && defined(_BLD_shell) 
    __EXPORT__
 #endif
@@ -84,6 +85,7 @@ extern void 	sh_iosave(int,int);
 extern void 	sh_iounsave(void);
 extern int	sh_chkopen(const char*);
 extern int	sh_ioaccess(int,int);
+extern int	sh_devtofd(const char*);
 
 /* the following are readonly */
 extern const char	e_pexists[];

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -173,11 +173,11 @@ int	b_kill(int argc,char *argv[],void *extra)
 			break;
 		case 'n':
 			sig = (int)opt_info.num;
-			break;
+			goto endopts;
 		case 's':
 			flag |= S_FLAG;
 			signame = opt_info.arg;
-			break;
+			goto endopts;
 		case 'l':
 			flag |= L_FLAG;
 			break;
@@ -248,6 +248,8 @@ static int sig_number(const char *string)
 		}
 		while(c);
 		stakseek(n);
+		if(memcmp(stakptr(n),"SIG",3)==0)
+			n += 3;
 		n = sh_lookup(stakptr(n),shtab_signals);
 		n &= (1<<SH_SIGBITS)-1;
 		if(n < SH_TRAP)

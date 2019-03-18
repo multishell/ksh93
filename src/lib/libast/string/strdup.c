@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -25,19 +25,10 @@
 *******************************************************************/
 #pragma prototyped
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide strdup
-#else
-#define strdup	______strdup
-#endif
+#undef	VMDEBUG
+#define	VMDEBUG		0
 
 #include <ast.h>
-
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide strdup
-#else
-#undef	strdup
-#endif
 
 /*
  * return a copy of s using malloc

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -98,7 +98,11 @@ extern _Ast_state_t		old;
 #define wctomb			0
 #endif
 
+#ifdef mblen
 #undef	mblen
+extern int		mblen(const char*, size_t);
+#endif
+
 #undef	mbtowc
 #undef	setlocale
 #undef	strcmp
@@ -112,7 +116,7 @@ extern _Ast_state_t		old;
 
 #if _UWIN
 
-#include <windows.h>
+#include <ast_windows.h>
 
 #undef	_lib_setlocale
 #define _lib_setlocale		1
@@ -300,7 +304,9 @@ debug_mbtowc(register wchar_t* p, register const char* s, size_t n)
 	register int		dr;
 	wchar_t			c;
 
-	if (!s || n < 1)
+	if (n < 1)
+		return -1;
+	if (!s || !*s)
 		return 0;
 	switch (((unsigned char*)s)[0])
 	{
@@ -593,8 +599,8 @@ set_numeric(Lc_category_t* cp)
 	{
 		if ((lp = localeconv()) && (dp = newof(0, Lc_numeric_t, 1, 0)))
 		{
-			dp->decimal = !lp->decimal_point ? '.' : *lp->decimal_point ? *lp->decimal_point : -1;
-			dp->thousand = !lp->thousands_sep ? '.' : *lp->thousands_sep ? *lp->thousands_sep : -1;
+			dp->decimal = lp->decimal_point && *lp->decimal_point ? *(unsigned char*)lp->decimal_point : '.';
+			dp->thousand = lp->thousands_sep && *lp->thousands_sep ? *(unsigned char*)lp->thousands_sep : -1;
 		}
 		else
 			dp = &default_numeric;

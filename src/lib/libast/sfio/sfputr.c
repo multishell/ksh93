@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -94,7 +94,7 @@ reg int		rc;	/* record separator.	*/
 			break;
 		}
 
-#if _lib_memccpy
+#if _lib_memccpy && !__ia64 /* these guys may never get it right */
 		if((ps = (uchar*)memccpy(ps,s,'\0',p)) != NIL(uchar*))
 			ps -= 1;
 		else	ps  = f->next+p;

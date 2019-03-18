@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,4 +23,17 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-void bad(}
+#pragma prototyped
+
+/*
+ * return p stat info
+ */
+
+#include "reglib.h"
+
+regstat_t*
+regstat(const regex_t* p)
+{
+	p->env->stats.re_record = (p && p->env && p->env->rex->type == REX_BM) ? p->env->rex->re.bm.size : -1;
+	return &p->env->stats;
+}

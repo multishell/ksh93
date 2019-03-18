@@ -1,3 +1,184 @@
+04-02-29 package.sh: add regress action to compare current and previous tests
+	 package.sh: fix sgi.mips[23] HOSTTYPE test for old irix cc
+	 package.sh: add `export variable ...'
+	 package.sh: admin action now handles host name with non-id chars
+	 package.sh: non-numeric M T W in admin.db disables that action
+	 package.sh: fix admin write binary local vs. shared clash
+	 cc.hp.pa: add _AST_CC_hp_pa_DEFAULT=+DAportable
+	 cc.hp.pa64: sync with cc.hp.pa
+	 cc.ibm.risc: -bnolibpath => -blibpath:/usr/lib:/lib
+	 probe.win32: sync with make.probe
+	 make.probe: fix last chance dynamic test
+	 make.probe: add hp.pa CC.EXPORT.DYNAMIC -Wl,-E
+	 make.probe: add ibm.risc CC.EXPORT.DYNAMIC -bexpall
+	 make.probe: move probe_dll_def to the end of probe_dll
+	 package.mk: capture subcomponent mamfile recursion
+04-02-24 make.probe: strip "..." from cc/ld traces
+	 iffe.sh: add ``set [no]define'' to disable macro #define/#undef
+04-02-23 make.probe: rework CC.LD search
+04-02-14 make.probe: add CC.EXPORT.DYNAMIC for main dynamic sym export
+	 make.probe: resurrect CC.PIC with separate semantics from CC.DLL
+	 make.probe: add CC.SHARED.LD for CC.SHARED linker
+	 C+probe: clear DISPLAY to stifle interactive windows
+04-02-11 iffe.sh: handle ``siz void*'', add cross{ ... }end
+	 make.probe: add { CC.AR CC.SIZE }, fix cross command search
+	 cc.darwin.ppc: change $cc => $CC for old ksh + libast conf bug
+04-02-09 make.probe: drop -nostartfiles from CC.SHARED for C++
+04-02-04 package.sh: fix cross compilation bug that mixed binary formats
+04-02-02 package.sh: package admin now ditto's bin/package too
+04-01-30 cc.sgi.mips3: drop warning 3421
+04-01-11 regress.sh: output label#count for tests in loops
+04-01-05 regress.sh: fix bug that ignored the first SAME
+04-01-04 crossexec.sh: fix typo that did not recognize rcp
+03-12-19 mamake.c: add `foolib:foo:libfoo' to recurse()
+03-10-11 regress.sh: add EXPORT, export COLUMNS=80 for message consistency
+03-09-23 ratz.c: fix tar header number parse bug that skipped to next number
+	 regress.sh: rm cleanup now handles files matching -*
+03-09-11 iffe.sh: add if-elif-else and unnamed { ... } blocks
+	 regress.sh: add COPY from to, like MOVE but comprison still done
+	 regress.sh: rm -rfu to handle test dirs w/o u+rwx
+03-08-14 Makfile: add hello.c to the manifest
+03-08-11 package.sh: fix `html binary' generation
+03-06-21 package.sh: fix INITROOT initialization bug
+	 package.sh: make sure admin logs exists before tail'ing
+03-06-11 probe.win32: fix $(BINDIR) typo that expanded in sh instead of make
+	 cc.mvs.390: return code 4 yields exit code 3 but its *really* ok
+	 package.sh: fix onpath function global var conflict
+	 make.probe: add CC.DIALECT { GNU -dD }
+	 package.mk: add Mamfile to lcl manifest
+03-06-10 package.sh: fix setup action typo that only checked the INIT package
+	 package.sh: *.s390x => *.s390-64
+03-06-09 package.mk: add cyg :POSTINSTALL:
+03-06-08 make.probe: fix CC.STDLIB logic
+	 hurl.sh: add User-Agent identification
+	 package.sh: tweak source and binary installation instructions
+	 cc.hp.pa,ld.hp.pa: +-Wl,+cdp,${INSTALLROOT}/lib/: drops abs lib paths
+	 ldd.hp.pa: add
+03-06-06 package.sh: fix $INSTALLROOT/bin/ldd check
+	 make.probe: add CC.STDLIB verification
+03-06-04 make.probe: add +forceread +noforceread
+03-05-11 hurl.sh: handle http://host:port/path
+03-05-06 package.sh: fix setup action PACKAGEROOT and INIT logic
+03-05-05 package.mk: fix cygwin tarball names
+03-04-30 package.sh: move (cc|ld|ldd).$HOSTTYPE updates from Makefile
+03-04-27 make.probe: fix mvs CC.PREFIX.SHARED "lib" => ""
+	 make.probe: add CC.DLL.DIR = $(BINDIR) or $(LIBDIR) 
+	 make.probe: add { CC.LD.LAZY CC.LD.NOLAZY CC.LD.RECORD CC.LD.NORECORD }
+	 probe.win32: sync with latest CC.*
+03-04-25 mamprobe.sh: add args to `. $makeprobe' for ancient sh
+03-04-23 package.mk: fix dup "covered by" licenses
+03-04-22 probe.win32: CC.DIALECT += "LIBPP -I-" for all cc's
+	 package.sh: fix admin write binary tarball snarf
+03-04-21 package.mk: package covered *.@(pkg|lic) too
+03-04-15 package.mk: don't generate incremental archives for lcl 
+	 package.mk: add incremental=[source:1 binary:0] archive control
+	 package.sh: generate $INSTALLROOT/bin/cc wrapper for CC != cc
+	 package.sh: admin must ditto lib/package/*.@(pkg|lic) too
+	 mamake.c: ignore time of ignore prereqs
+	 mamake.c: -D2 lists propagated times
+03-04-11 package.mk: tidy up cyg tarballs
+	 package.sh: fix old shell clash between get() and $get
+03-04-05 package.mk: restore *.inx generation somehow lost during cyg additions
+	 package.sh: add pthread_num_processors_np() last resort for cpu count
+	 package.sh: use `make believe' to accept mamake generated files
+	 package.sh: handle `make [make-flags] [target ...]'
+	 mamake.c: ignore -e
+03-03-21 package.mk: fix cyg old make typo
+	 package.sh: switch to `package setup' instructions
+03-03-19 package.sh: add registry checks for `host cpu'
+	 package.sh: `results failed' now lists core dump messages
+03-03-17 package.sh: on cygwin verify 'ntsec binmode' in $CYGWIN or die
+	 Makefile: install gcc wrapper if no cc
+	 package.mk: add :DETAILS: { :README: :EXPORT: :INSTALL: :TEST: } ops
+03-03-12 package.mk: add :DETAILS: for style-specific details
+03-03-11 package.sh: add beta setup/update support
+	 TEST.mk: add (TESTCC) prereq for .sh tests
+03-03-07 hurl.sh: add
+03-03-06 iffe.sh: fix lib win32 test cygwin vs native incompatibility
+	 iffe.sh: change internal stdio.h guard to handle C++ inline vs. macro
+03-03-03 package.sh: check for curl or wget for update
+	 package.sh: add setup action == update read make
+	 package.sh: fix packageroot() typo that showed up in non ~user shells
+	 mamake.c: treat name+=value args like name=value
+	 mamake.c: add ${var?*|value?match?no-match?}
+	 mamake.c: fix archive vs. dynamic bind logic
+03-02-28 package.sh: add the "cyg" (cygwin) package type
+	 package.mk: add "cyg" stubs, :CATEGORY: for category name(s)
+03-02-25 mamake.c: add -D4 system(3) debug trace
+03-02-24 package.mk: change --mismatch to --corrupt=accept
+03-02-14 ratz.c: add _WIN32 setmode([01],O_BINARY) and fopen "rb"/"wb"
+03-02-12 Makefile: handle getconf LIBPATH with host pattern
+03-01-31 package.mk: fix .lic search
+03-01-30 package.sh: handle { INIT ksh nmake } already installed elsewhere
+	 package.sh: admin handles command outside of $PACKAGEROOT/bin
+	 Makefile: install $(INSTALLROOT)/lib/make/package.mk
+03-01-28 package.sh: admin remote commands on one line to please syslog
+03-01-23 probe.win32: borland and mingw32 tweaks
+03-01-22 package.sh: fix $CC test to ignore set -x trace -- duh
+03-01-16 ditto.sh: tw --chop on by default
+03-01-14 package.sh: use /bin/cp to copy previous binaries to bin/ok/
+	 package.sh: admin now initiates remote exec and copy from local host
+03-01-12 package.sh: handle admin "xxx:" default root
+03-01-03 probe.win32: add /usr/include/borland path truncation workaround
+02-12-10 iffe.sh: add <&$nullin >&$nullout to checkread() $cc
+02-12-06 probe.win32: fix inlcude => include typo, add lcc lib
+	 probe.win32: CC.MAKE.OPTIONS = nativepp=0
+02-12-04 mamake.c: fix ${foo-bar} to expand foo if defined
+02-11-28 probe.win32: add C++ and -I- CC.DIALECT checks
+02-11-26 package.sh: package release now checks for second level files
+02-11-22 package.sh: update action now uses HTTP/1.0
+02-11-21 probe.win32: update the vc include dir test
+02-11-20 make.probe: fix CC.LD.ORIGIN typo that expanded make var
+02-11-13 packahe.mk: fix list.install => list.installed typo
+02-11-12 make.probe: add CC.LD.ORIGIN for a.out origin dir relative dll search
+	 make.probe: add CC.LD.STRIP for link time a.out strip
+	 package.sh: fix package_use vs. PACKAGE_USE check
+02-10-24 WWW.mk: fix bug that required a :WWWBIN: assertion to post
+02-10-23 mamake.c: fix unuinitialized time in make()
+	 ratz.c: fix meter buffer overflow
+02-10-20 package.sh: fix lib/probe/C/make/probe update test
+02-10-18 probe.win32: update for mingw
+	 make.probe: add bash workaround to SHELLMAGIC test
+	 package.sh: work around yet another cygwin hassle
+02-10-17 iffe.sh: short circuit id check for *[-+/\\]*
+02-10-08 regress.sh: unset FIGNORE to avoid rm . errors
+	 package.sh: unset FIGNORE to avoid rm . errors
+	 package.sh: $CC must at least compile and executable hello world
+02-10-04 package.sh: $INSTALLROOT/lib/package/tgz=>$PACKAGEROOT/lib/package/tgz
+	 package.mk: $(ED) => $(STDED), $(EDFLAGS) => $(STDEDFLAGS)
+	 iffe.sh: add identifier checks for tests that (implicitly) require them
+	 iffe.sh: disambiguate a few --config macros
+02-10-02 iffe.sh: fix shell=bsh `hdr a/b'
+02-09-30 package.sh: handle chmod of -* files
+	 package.sh: verify that $SHELL is Bourne compatible
+	 package.sh: tighten PACKAGE_USE logic PATH,LIBPATH,etc. validation
+	 iffe.sh: fix bug that didn't define mac variable on success
+02-09-22 package.sh: handle admin_action=ditto
+	 iffe.sh: --config sizeof(foo) macro is SIZEOF_foo
+	 iffe.sh: fix long.long test so it doesn't defeat uwin "typ long.long"
+	 mamprobe.sh: convert $("foo") nmake string constants
+02-09-21 mamprobe.sh: "-" info-path writes probe info to stdout
+02-09-11 make.probe: move from nmake src to be part of mamprobe.sh
+	 mamprobe: generate from mamprobe.beg C.probe make.probe mamprobe.end
+	 mamake.c: pass cc absolute path to mamprobe
+	 package.sh: generate mamprobe -- yuk (at least its confined to INIT)
+	 iffe.sh: lcl,nxt: drop default sys/ check
+	 ditto.sh: tw --logical by default; add --physical
+02-09-10 package.sh: SHELLMAGIC creeps into package too -- duh and fooey
+02-09-09 ditto.sh: test that remote .profile exists before sourcing
+02-09-06 package.sh: don't ditto nfs junk
+	 ditto.sh: --show now lists directory ops instead of enumerating all
+02-09-05 ditto.sh: add --remote={rsh|ssh}
+	 package.sh: add admin [[{rsh|ssh|-}]:]directory
+02-09-02 iffe.sh: change 'print -r --' to 'print -r -' for ksh86 compatibility
+02-09-01 cc.unix.mc68k: add for ancient 3b1
+02-08-22 package.sh: fix component() to test for components -- duh
+	 Makefile: add LICENSE:.DONTCARE to workaround mam
+02-08-11 iffe.sh: provide defaults for LD_* additions
+02-08-07 ratz.c: change -m to use * instead of non-portable inverse video
+02-07-17 mamprobe.sh: close tmp file in trap before rm for cygwin
+	 package.sh: fix "type" to handle i1586 (P4)
+	 package.sh: add the view action
 02-06-28 package.sh: handle multiple packages for release action
 02-06-27 package.sh: catch sol*.sparc=>sol*.sun4 when CC=gcc
 02-06-14 package.sh: fix admin_action to not include qualifiers

@@ -1,4 +1,5 @@
-.TH SFIO 3 "15 May 2000"
+.fp 5 CW
+.TH SFIO 3 "01 December 2002"
 .SH NAME
 \fBsfio\fR \- safe/fast string/file input/output
 .SH SYNOPSIS
@@ -63,6 +64,7 @@ SF_STATIC
 SF_IOCHECK
 SF_WHOLE
 SF_MTSAFE
+SF_IOINTR
 .ft 1
 .fi
 .Ss "OPENING/CLOSING STREAMS"
@@ -224,7 +226,7 @@ int        sfulen(Sfulong_t v);
 int        sfllen(Sflong_t v);
 int        sfdlen(Sfdouble_t v);
 ssize_t    sfpkrd(int fd, Void_t* buf, size_t n,
-                  int rsc, long tm, int peek);
+                  int rsc, long tm, int action);
 .ft 1
 .fi
 .Ss "FULL STRUCTURE SFIO_T"
@@ -242,13 +244,14 @@ ssize_t    sfpkrd(int fd, Void_t* buf, size_t n,
 int        sfdcdio(Sfio_t* f, size_t bufsize);
 int        sfdcdos(Sfio_t* f);
 int        sfdcfilter(Sfio_t* f, const char* cmd);
-int        sfdclzw(Sfio_t* f);
 int        sfdcseekable(Sfio_t* f);
 int        sfdcslow(Sfio_t* f);
 int        sfdcsubstream(Sfio_t* f, Sfio_t* parent,
                          Sfoff_t offset, Sfoff_t extent);
 int        sfdctee(Sfio_t* f, Sfio_t* tee);
 int        sfdcunion(Sfio_t* f, Sfio_t** array, int n);
+int        sfdclzw(Sfio_t* f);
+int        sfdcgzip(Sfio_t* f, int flags);
 .ft 1
 .fi
 .Ss "STDIO-COMPATIBILITY"
@@ -441,6 +444,14 @@ the stream. Note that this flag can only be set at stream opening time
 Certain fast macro functions such as \f5sfgetc()\fP and \f5sfputc()\fP will
 no longer behave as macros. Thus, an application that requires such fast macro functions
 should leave \f5SF_MTSAFE\fP off and performs explicit locking with \f5sfmutex()\fP.
+.Tp
+\f5SF_IOINTR\fP:
+This flag indicates that I/O system calls should not be resumed 
+after being interrupted by signals. It is useful for 
+aborting I/O operations on such interruptions. Note, however,
+than certain operating systems (e.g., BSD Unix systems) may automatically
+resume interrupted system calls outside the scope of the library. On such systems,
+\f5SF_IOINTR\fP will be ineffective.
 
 .PP
 .Ss "OPENING/CLOSING STREAMS"
@@ -757,16 +768,17 @@ This function moves objects
 from input stream \f5fr\fP to output stream \f5fw\fP.
 \f5sfmove()\fP returns the number of objects moved or \f5-1\fP on failure.
 
-An object is either a byte or a record.
-The latter is indicated by a non-negative value for the record separator
-character \f5rsc\fP.
-If \f5n\fP is negative, all of \f5fr\fP will be moved.
+An object can be either a byte if the record separator argument
+\f5rsc\fP is negative or a record of \f5rsc\fP is non-negative.
+In the latter case, a record is incomplete if it does not end in \f5rsc\fP. 
+Generally speaking, a stream can have at most one incomplete record.
+If \f5n\fP is negative, all complete objects of \f5fr\fP will be moved.
 Otherwise, \f5n\fP indicates the number of objects to move.
 If either \f5fr\fP or \f5fw\fP is \f5NULL\fP, it acts
 as if it is a stream corresponding to \f5/dev/null\fP,
 the UNIX device that has no read data and throws away any write data.
 For example, the call \f5sfmove(f,(Sfio_t*)0,(Sfoff_t)(-1),'\en')\fP
-simply counts the number of lines in stream \f5f\fP.
+counts the number of complete lines in stream \f5f\fP.
 
 .Ss "  ssize_t sfread(Sfio_t* f, Void_t* buf, size_t n)"
 This function reads up to \f5n\fP bytes from \f5f\fP into buffer \f5buf\fP.
@@ -811,33 +823,33 @@ Otherwise, the current position is the logical stream position.
 
 .Ss "  Void_t* sfreserve(Sfio_t* f, ssize_t n, int type)"
 This function reserves a data block from the stream \f5f\fP.
-If \f5f\fP is a \f5SF_READ\fP stream, the data block is a segment of input data
-and if it is a \f5SF_WRITE\fP stream, the data block is a buffer
+If \f5f\fP is a \f5SF_READ\fP stream, the data block is a segment of input data.
+If \f5f\fP is a \f5SF_WRITE\fP stream, the data block is a buffer
 suitable for writing output data.
 For consistency, if \f5f\fP is opened with \f5SF_READ|SF_WRITE\fP,
 it will be treated as if it is a \f5SF_READ\fP stream
-(see \f5sfset()\fP for forcing a particular mode.)
-Note that a reserved data block is only valid until
+(see \f5sfset()\fP for forcing a particular mode) but the returned
+buffer can also be written into (more below).
+A \f5sfreserve()\fP call is successful if it can reserve a data block 
+of size at least the absolute value of \f5n\fP.
+\f5sfreserve()\fP returns the reserved data block on success
+and \f5NULL\fP on failure.
+Any partially reserved data block can be obtained in
+a subsequent \f5sfreserve()\fP call with \f5type\fP being \f5SF_LASTR\fP.
+
+After a \f5sfreserve()\fP call, whether or not it succeeds,
+\f5sfvalue(f)\fP gives the size of the available data block.
+A successfully reserved data block is valid only until
 a future access to the stream \f5f\fP. Thus, after a successful reservation,
 the application should process the reserved data block before
 accessing the stream \f5f\fP again.
 
-A \f5sfreserve()\fP call is successful if it can reserve a data block 
-of size at least the absolute value of \f5n\fP when \f5n\fP is negative
-or exactly \f5n\fP when \f5n\fP is non-negative.
-After a \f5sfreserve()\fP call, whether or not it succeeds,
-\f5sfvalue(f)\fP can be used to obtain the size of the would-have-been
-available data block.
-\f5sfreserve()\fP returns the reserved data block on success
-and \f5NULL\fP on failure.
-
-When \f5type <= 0\fP and \f5f\fP is in \f5SF_READ\fP mode,
-even if \f5sfreserve()\fP fails to obtain a large enough data block,
-the I/O position of \f5f\fP will be advanced
-by the size of the available data block
-(but only up to \f5n\fP if \f5n\fP is positive.)
-Such a partial data block can be obtained using a subsequent \f5sfreserve()\fP
-call with \f5type\fP being \f5SF_LASTR\fP.
+When \f5type <= 0\fP, if \f5f\fP is in \f5SF_READ\fP mode,
+the I/O position of \f5f\fP will be advanced by an amount as follows.
+Let \fIa\fP be the size of the available data block.
+If \f5n\fP is negative, the I/O position is advanced by \fIa\fP.
+If \f5n\fP is non-negative, the I/O position is advanced by
+the lesser value between \f5n\fP and \fIa\fP.
 
 When \f5type > 0\fP, there are two cases:
 .Tp
@@ -857,7 +869,8 @@ data to be consumed. For example, if \f5f\fP is a locked \f5SF_READ\fP stream,
 the call \f5sfread(f,rsrv,0)\fP will reopen the stream without advancing the
 stream I/O position. Finally, a stream opened for both reading and writing
 can release the lock with either call (with associated operational semantics!)
-For example, the below code modify data in place:
+For example, the below code modify data in place if \f5f\fP was
+opened for both reading and writing:
 
 .nf
 .ft 5
@@ -1266,6 +1279,10 @@ the form is \fIbase#number\fP where \fIbase\fP is the conversion base
 and \fInumber\fP is represented by digits for this \fIbase\fP.
 For example, a base \f52\fP conversion with \f5%#..2d\fP for \f510\fP
 is \f52#1010\fP instead of \f51010\fP as printed with \f5%..2d\fP.
+Finally, for \f5%c\fP, bytes will be printed in the C format.
+For example, when the ASCII character set is used,
+the byte value 10 will be printed as \f5\\n\fP while 255 is printed
+as \f5\\377\fP.
 .Tp
 \f5width\fP:
 This defines the width of the printing field. A value to be printed will
@@ -1497,14 +1514,21 @@ If \fIbase\fP is larger than \f536\fP, the set of digits is:
 .Ss "BUFFERING, SYNCHRONIZATION"
 .PP
 .Ss "  Void_t* sfsetbuf(Sfio_t* f, Void_t* buf, size_t size)"
-This function changed the buffering scheme for \f5f\fP.
-Except for buffer inquiry (the case \f5size == 0\fP),
-\f5f\fP will be synchronized before any buffer modification.
+This function changed the buffering scheme for the stream \f5f\fP.
+The stream will be synchronized before any buffer modification.
 If a new buffer is successfully set and the old buffer has not been freed,
 \f5sfsetbuf()\fP returns the old buffer. Otherwise, it returns \f5NULL\fP.
-
 After a \f5sfsetbuf()\fP call,
 \f5sfvalue()\fP returns the size of the returned buffer.
+
+Sfio attempts to read data in blocks likely to be serviced fast by the file system.
+This means block sizes being multiples of a suitable alignment value
+(e.g., 512, 1024 or 8192). By default, the alignment value
+is computed via some internal mechanism depending on the local platform but
+it can also be explicitly set via the call \f5sfsetbuf(f, (Void_t*)f, size)\fP.
+
+In invocations of \f5sfsetbuf()\fP other than the above case,
+the \f5size\fP argument is treated as follows:
 .Tp
 \f5size == SF_UNBOUND\fP:
 Sfio will pick a suitable buffer size.
@@ -1551,6 +1575,12 @@ can be performed on them without blocking.
 This is useful for multiplexing I/O over a set of streams.
 If a stream has a discipline, the exception function may be called
 before and after the stream is polled (see \f5sfdisc()\fP for details).
+After a successful \f5sfpoll()\fP call,
+for each ready stream \f5f\fP, \f5sfvalue(f)\fP returns
+a bit combination of \f5SF_READ\fP and \f5SF_WRITE\fP to tell which I/O
+mode is available. If \f5SF_READ\fP is available, an attempt to read
+a byte will not block. If \f5SF_WRITE\fP is available,
+an attempt to flush will not block.
 \f5sfpoll()\fP returns the number of ready streams or \f5-1\fP on failure.
 .Tp
 \f5flist\fP and \f5n\fP:
@@ -1559,7 +1589,7 @@ Upon return, ready streams are moved to the front
 of \f5flist\fP in the same relative order.
 .Tp
 \f5timeout\fP:
-This defines an ellapse time in milliseconds
+This defines an elapse time in milliseconds
 to wait to see if any stream is ready for I/O.
 If \f5timeout\fP is negative, \f5sfpoll()\fP will block until some stream become ready.
 Note that \f5SF_STRING\fP and normal file streams never block
@@ -1567,7 +1597,7 @@ and are always ready for I/O.
 If a stream with discipline is being polled and
 its readiness is as yet undetermined (e.g., empty buffer,)
 the discipline exception function will be called with \f5SF_DPOLL\fP
-before normal actions are taken.
+before querying the operating system.
 
 .Ss "  Sfio_t* sfpool(Sfio_t* f, Sfio_t* poolf, int mode)"
 This function manipulates pools of streams.
@@ -1671,6 +1701,8 @@ The on-going operation shall terminate.
 \f5>0\fP:
 If the event was raised due to an I/O error,
 the error has been repaired and the on-going operation shall continue normally.
+For some events, e.g., \f5SF_DPOLL\fP, the return value may also have
+additional meanings.
 .Tp
 \f5=0\fP:
 The on-going operation performs default actions with respect to the raised event.
@@ -1735,17 +1767,17 @@ This event is raised by
 \f5sfpoll()\fP to see if the stream is ready for I/O.
 \f5*((int*)value)\fP indicates a time-out interval to wait.
 A negative return value from the exception function means blocking.
-A positive return value means non-blocking.
 A zero return value means that \f5sfpoll()\fP should
-query the stream file descriptor using default methods.
+query the underlying file descriptor.
+A positive return value means non-blocking. In addition,
+this value will be a bit combination of \f5SF_READ\fP and \f5SF_WRITE\fP
+to indicate what I/O modes are ready.
 .Tp
 \f5SF_READY\fP:
-This event is raised by \f5sfpoll()\fP for each ready stream
-after they are determined.
-A negative return value from the exeption handler causes \f5sfpoll()\fP
-to return immediately with the same return value.
-A positive return value causes \f5sfpoll()\fP to retry polling
-the whole set of streams.
+This event is raised by \f5sfpoll()\fP for each ready stream.
+The third argument to the event handler is an integer composed with
+the two bits \f5SF_READ\fP and \f5SF_WRITE\fP to indicate which
+I/O modes are ready.
 .Tp
 \f5SF_SYNC\fP, \f5SF_PURGE\fP:
 If \f5SF_IOCHECK\fP is set,
@@ -1761,13 +1793,19 @@ Note that \f5sfsync()\fP is called for each
 This event is raised for each open stream before the process exits.
 
 .Ss "  int sfraise(Sfio_t* f, int type, Void_t* data)"
-This function calls all exception handlers
-of stream \f5f\fP with the event \f5type\fP and associated \f5data\fP.
+If \f5f\fP is non-\f5NULL\fP, \f5sfraise()\fP calls all exception handlers
+of \f5f\fP with the event \f5type\fP and associated \f5data\fP.
 If an exception handler returns a non-zero value,
 \f5sfraise()\fP immediate returns the same value.
 Application-defined events should start from the value \f5SF_EVENT\fP
 so as to avoid confusion with system-defined events,
 \f5sfraise()\fP returns \f50\fP on success and \f5-1\fP on failure.
+
+If \f5f\fP is \f5NULL\fP, \f5sfraise()\fP iterates over all streams
+and raise events as described above. In this case,
+\f5sfraise()\fP returns \f50\fP on success and a negative value
+on failure. The absolute value of the return value tells how many
+streams failed on raising the given event.
 
 .Ss "  ssize_t sfrd(Sfio_t* f, Void_t* buf, size_t n, Sfdisc_t* disc)"
 .Ss "  ssize_t sfwr(Sfio_t* f, const Void_t* buf, size_t n, Sfdisc_t* disc)"
@@ -2024,11 +2062,6 @@ It basically transforms pairs of \er\en to \en.
 This creates a discipline that sends data from \f5f\fP
 to the given command \f5cmd\fP to process, then reads back the processed data.
 
-.Ss "int sfdclzw(Sfio_t* f)"
-This creates a discipline that would decompress data in \f5f\fP.
-The stream \f5f\fP should have data from a source compressed by
-the Unix \fBcompress\fP program.
-
 .Ss "int sfdcseekable(Sfio_t* f)"
 This creates a discipline that makes an unseekable reading stream seekable.
 
@@ -2049,6 +2082,15 @@ any data written to \f5f\fP.
 This creates a discipline that makes \f5f\fP act as if it is
 the concatenation of the \f5n\fP streams given in \f5array\fP.
 
+.Ss "int sfdclzw(Sfio_t* f)"
+This creates a discipline that would decompress data in \f5f\fP.
+The stream \f5f\fP should have data from a source compressed by
+the Unix \fBcompress\fP program.
+
+.Ss "int sfdcgzip(Sfio_t* f, int opt)"
+This creates a discipline for reading/writing data compressed by zlib.
+The argument \f5opt\fP defines the optimization level.
+
 .PP
 .Ss "STDIO-COMPATIBILITY"
 .PP
@@ -2063,6 +2105,7 @@ original Stdio operations. For example, the Sfio's version of
 unlike the original call which only allows a coprocess to be opened for a single mode.
 Similarly, the Sfio's \f5fopen()\fP call can be used to create
 string streams in addition to file streams.
+.PP
 The standard streams \f5stdin\fP, \f5stdout\fP and \f5stderr\fP
 are mapped via \f5#define\fP to \f5sfstdin\fP, \f5sfstdout\fP and \f5sfstderr\fP.
 The latter are typically declared of the type \f5Sfio_t*\fP.
@@ -2197,6 +2240,18 @@ However it conflicts with a different token of the same name
 defined in the system header \f5socket.h\fP of AIX Unix systems.
 On such systems, we shall not define \f5SF_CLOSE\fP and this
 symbol may be removed in a future release.
+.PP
+The printing and scanning functions were extended to handle multibyte characters
+and to conform to the C99 standard.
+.PP
+The function \f5sfpoll()\fP was rehauled to make it useful
+for writing servers that must commnunicate with multiple streams
+without blocking.
+.PP
+The formatting pattern \f5%c\fP for \f5sf*printf\fP was extended
+to allow the flag \f5#\fP to print unprintable character values
+using the C convention. For example, \f5%#c\fP prints the octal value 012
+as \f5\\n\fP.
 
 .SH AUTHORS
 Kiem-Phong Vo, kpv@research.att.com,

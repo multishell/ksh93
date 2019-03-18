@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -145,7 +145,7 @@ regsubcomp(regex_t* p, register const char* s, const regflags_t* map, int minmat
 	p->env->sub = 1;
 	op = sub->re_ops;
 	o = s;
-	if (!(p->env->flags & (REG_DELIMITED|REG_DELIMITED_OLD)))
+	if (!(p->env->flags & REG_DELIMITED))
 		d = 0;
 	else
 		switch (d = *(s - 1))

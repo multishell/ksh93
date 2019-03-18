@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -143,9 +143,9 @@ reg Sfio_t*	f;
 
 	/* destroy the mutex */
 	if(f->mutex)
-	{	vtmtxclrlock(f->mutex);
+	{	(void)vtmtxclrlock(f->mutex);
 		if(f != sfstdin && f != sfstdout && f != sfstderr)
-		{	vtmtxclose(f->mutex);
+		{	(void)vtmtxclose(f->mutex);
 			f->mutex = NIL(Vtmutex_t*);
 		}
 	}

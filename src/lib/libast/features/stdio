@@ -16,7 +16,9 @@ cat{
 	#undef	fpos_t
 	#undef	fpos64_t
 
-	#define FILE		struct _sfio_s
+	typedef struct _sfio_s _sfio_FILE;
+
+	#define FILE		_sfio_FILE
 	#define _FILE		FILE
 	#define __FILE		FILE
 
@@ -70,8 +72,6 @@ cat{
 		unsigned char	_sf_state[64 - sizeof(_ast_intmax_t)];
 	} _ast_fpos_t;
 
-	#include <getopt.h>	/* to be dropped by Xopen -- we can't wait */
-
 	#define _base		_data
 	#define _ptr		_next
 	#define _IOFBF		0
@@ -89,6 +89,7 @@ cat{
 
 	extern int	_doprnt(const char*, _ast_va_list, FILE*);
 	extern int	_doscan(FILE*, const char*, _ast_va_list);
+	extern int	asprintf(char**, const char*, ...);
 	extern int	clearerr(FILE*);
 	extern int	fclose(FILE*);
 	extern FILE*	fdopen(int, const char*);
@@ -135,6 +136,7 @@ cat{
 	extern int	sscanf(const char*, const char*, ...);
 	extern FILE*	tmpfile(void);
 	extern int	ungetc(int, FILE*);
+	extern int	vasprintf(char**, const char*, _ast_va_list);
 	extern int	vfprintf(FILE*, const char*, _ast_va_list);
 	extern int	vfscanf(FILE*, const char*, _ast_va_list);
 	extern int	vprintf(const char*, _ast_va_list);
@@ -224,6 +226,7 @@ output{
 		printf("\n");
 		printf("#define _doprnt		_ast_doprnt\n");
 		printf("#define _doscan		_ast_doscan\n");
+		printf("#define asprintf	_ast_asprintf\n");
 		printf("#define clearerr	_ast_clearerr\n");
 		printf("#define fclose		_ast_fclose\n");
 		printf("#define fdopen		_ast_fdopen\n");
@@ -266,6 +269,7 @@ output{
 		printf("#define sscanf		_ast_sscanf\n");
 		printf("#define tmpfile		_ast_tmpfile\n");
 		printf("#define ungetc		_ast_ungetc\n");
+		printf("#define vasprintf	_ast_vasprintf\n");
 		printf("#define vfprintf	_ast_vfprintf\n");
 		printf("#define vfscanf		_ast_vfscanf\n");
 		printf("#define vprintf		_ast_vprintf\n");
@@ -318,12 +322,6 @@ macro{
 	#endif
 	<<"#define L_ctermid">> L_ctermid
 	<<"#endif">>
-	<<"#ifndef L_cuserid">>
-	#ifndef L_cuserid
-	#define L_cuserid 9
-	#endif
-	<<"#define L_cuserid">> L_cuserid
-	<<"#endif">>
 	<<"#ifndef L_tmpnam">>
 	#ifndef L_tmpnam
 	#define L_tmpnam (sizeof(P_tmpdir)+15)
@@ -340,7 +338,6 @@ cat{
 	#else
 	extern char*	ctermid(char*);
 	#endif
-	extern char*	cuserid(char*);
 	extern char*	tmpnam(char*);
 	extern char*	tempnam(const char*, const char*);
 	extern void	perror(const char*);
@@ -361,6 +358,7 @@ cat{
 
 	extern int	_doprnt(const char*, _ast_va_list, FILE*);
 	extern int	_doscan(FILE*, const char*, _ast_va_list);
+	extern int	asprintf(char**, const char*, ...);
 	extern int	clearerr(FILE*);
 	extern int	fclose(FILE*);
 	extern FILE*	fdopen(int, const char*);
@@ -407,6 +405,7 @@ cat{
 	extern int	sscanf(const char*, const char*, ...);
 	extern FILE*	tmpfile(void);
 	extern int	ungetc(int, FILE*);
+	extern int	vasprintf(char**, const char*, _ast_va_list);
 	extern int	vfprintf(FILE*, const char*, _ast_va_list);
 	extern int	vfscanf(FILE*, const char*, _ast_va_list);
 	extern int	vprintf(const char*, _ast_va_list);
@@ -484,17 +483,20 @@ cat{
 
 	#else
 
-	#if !_BLD_ast && defined(__IMPORT__) && !_UWIN
-	#define __PUBLIC_DATA__	__IMPORT__
-	#else
-	#define __PUBLIC_DATA__
+	#if !_UWIN
+	#if _BLD_ast && defined(__EXPORT__)
+	#define extern		extern __EXPORT__
+	#endif
+	#if !_BLD_ast && defined(__IMPORT__)
+	#define extern		extern __IMPORT__
+	#endif
 	#endif
 
-	extern __PUBLIC_DATA__ FILE	_Sfstdin;
-	extern __PUBLIC_DATA__ FILE	_Sfstdout;
-	extern __PUBLIC_DATA__ FILE	_Sfstderr;
+	extern FILE	_Sfstdin;
+	extern FILE	_Sfstdout;
+	extern FILE	_Sfstderr;
 
-	#undef	__PUBLIC_DATA__
+	#undef	extern
 
 	#define feof(f)		(_sf_(f)->_flags&_SF_EOF)
 	#define ferror(f)	(_sf_(f)->_flags&_SF_ERROR)

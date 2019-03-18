@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -24,9 +24,10 @@
 function err_exit
 {
 	print -u2 -n "\t"
-	print -u2 -r $Command: "$@"
+	print -u2 -r $Command[$1]: "${@:2}"
 	let Errors+=1
 }
+alias err_exit='err_exit $LINENO'
 
 integer Errors=0
 Command=$0
@@ -74,6 +75,7 @@ read <<-!
 if	[[ $REPLY != foobar ]]
 then	err_exit REPLY variable not working
 fi
+integer save=$LINENO
 # LINENO
 LINENO=10
 #
@@ -82,6 +84,7 @@ LINENO=10
 if	(( LINENO != 13))
 then	err_exit LINENO variable not working
 fi
+LINENO=save+10
 ifs=$IFS
 IFS=:
 x=a::b::c
@@ -265,4 +268,94 @@ x  y z
 if	[[ $b != y ]]
 then	err_exit 'IFS not restored after subshell'
 fi
+if	[[ $( (print ${12345:?}) 2>&1) != *12345* ]]
+then	err_exit 'Incorrect error message with ${12345?}'
+fi
+unset foobar
+if	[[ $( (print ${foobar:?}) 2>&1) != *foobar* ]]
+then	err_exit 'Incorrect error message with ${foobar?}'
+fi
+unset bar
+if	[[ $( (print ${bar:?bam}) 2>&1) != *bar*bam* ]]
+then	err_exit 'Incorrect error message with ${foobar?}'
+fi
+{ $SHELL -c '
+function foo
+{
+	typeset SECONDS=0
+	sleep 1.5
+	print $SECONDS
+	
+}
+x=$(foo)
+(( x >1 && x < 2 )) 
+'
+} 2> /dev/null   || err_exit 'SECONDS not working in function'
+trap 'rm -f /tmp/script$$ /tmp/out$$' EXIT
+cat > /tmp/script$$ <<-\!
+	posixfun()
+	{
+		unset x
+	 	nameref x=$1
+	 	print  -r -- "$x"
+	}
+	function fun
+	{
+	 	nameref x=$1
+	 	print  -r -- "$x"
+	}
+	if	[[ $1 ]]
+	then	file=${.sh.file}
+	else	print -r -- "${.sh.file}"
+	fi
+!
+chmod +x /tmp/script$$
+. /tmp/script$$  1
+[[ $file == /tmp/script$$ ]] || err_exit ".sh.file not working for dot scripts"
+[[ $($SHELL /tmp/script$$) == /tmp/script$$ ]] || err_exit ".sh.file not working for scripts"
+[[ $(posixfun .sh.file) == /tmp/script$$ ]] || err_exit ".sh.file not working for posix functions"
+[[ $(fun .sh.file) == /tmp/script$$ ]] || err_exit ".sh.file not working for functions"
+[[ $(posixfun .sh.fun) == posixfun ]] || err_exit ".sh.fun not working for posix functions"
+[[ $(fun .sh.fun) == fun ]] || err_exit ".sh.fun not working for functions"
+[[ $(posixfun .sh.subshell) == 1 ]] || err_exit ".sh.subshell not working for posix functions"
+[[ $(fun .sh.subshell) == 1 ]] || err_exit ".sh.subshell not working for functions"
+(
+    [[ $(posixfun .sh.subshell) == 2 ]]  || err_exit ".sh.subshell not working for posix functions in subshells"
+    [[ $(fun .sh.subshell) == 2 ]]  || err_exit ".sh.subshell not working for functions in subshells"
+    (( .sh.subshell == 1 )) || err_exit ".sh.subshell not working in a subshell"
+)
+TIMEFORMAT='this is a test'
+[[ $({ { time :;} 2>&1;}) == "$TIMEFORMAT" ]] || err_exit 'TIMEFORMAT not working'
+: ${.sh.version}
+[[ $(alias integer) == *.sh.* ]] && err_exit '.sh. prefixed to alias name'
+: ${.sh.version}
+[[ $(whence rm) == *.sh.* ]] && err_exit '.sh. prefixed to tracked alias name'
+: ${.sh.version}
+[[ $(cd /bin;env | grep PWD) == *.sh.* ]] && err_exit '.sh. prefixed to PWD'
+# unset discipline bug fix
+dave=dave
+function dave.unset
+{
+    unset dave
+}
+unset dave
+[[ $(typeset +f) == *dave.* ]] && err_exit 'unset discipline not removed'
+print 'print ${VAR}' >  /tmp/script$$
+VAR=foo /tmp/script$$ > /tmp/out$$
+[[ $(</tmp/out$$) == foo ]] || err_exit 'environment variables not passed to scripts'
+(
+	unset dave
+	function  dave.append
+	{
+		.sh.value+=$dave
+		dave=
+	}
+	dave=foo; dave+=bar
+	[[ $dave == barfoo ]] || exit 2
+) 2> /dev/null  
+case $? in
+0)	 ;;
+1)	 err_exit 'append discipline not implemented';;
+*)	 err_exit 'append discipline not working';;
+esac
 exit $((Errors))

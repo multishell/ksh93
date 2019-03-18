@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -26,10 +26,10 @@
 #pragma prototyped
 /*
  * Glenn Fowler
- * AT&T Bell Laboratories
+ * AT&T Research
  *
- * convert \x character constants in s in place
- * the length of the converted s is returned (may have imbedded \0's)
+ * convert \X character constants in s in place
+ * the length of the converted s is returned (may have embedded \0's)
  */
 
 #include <ast.h>
@@ -37,24 +37,26 @@
 int
 stresc(register char* s)
 {
-	register char*	t;
-	register int	c;
-	char*		b;
-	char*		p;
+	register char*		t;
+	register unsigned int	c;
+	char*			b;
+	char*			e;
 
 	b = t = s;
-	for (;;)
+	while (c = *s++)
 	{
-		switch (c = *s++)
+		if (c == '\\')
 		{
-		case '\\':
-			c = chresc(s - 1, &p);
-			s = p;
-			break;
-		case 0:
-			*t = 0;
-			return(t - b);
+			c = chresc(s - 1, &e);
+			s = e;
+			if (c > UCHAR_MAX)
+			{
+				t += wctomb(t, c);
+				continue;
+			}
 		}
 		*t++ = c;
 	}
+	*t = 0;
+	return t - b;
 }

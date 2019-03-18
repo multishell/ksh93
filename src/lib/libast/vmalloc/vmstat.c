@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_vmstat(){}
 
@@ -46,7 +46,7 @@ Vmstat_t*	st;
 {
 	reg Seg_t*	seg;
 	reg Block_t	*b, *endb;
-	reg size_t	s;
+	reg size_t	s = 0;
 	reg Vmdata_t*	vd = vm->data;
 
 	if(!st)

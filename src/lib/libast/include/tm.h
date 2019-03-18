@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -42,7 +42,8 @@
 
 #undef	daylight
 
-#define tmset(z)	do{if(!tm_info.zone||(z)&&tm_info.zone!=(z)||!(z)&&tm_info.zone!=tm_info.local)tminit(z);}while(0)
+#define tmset(z)	tminit(z)
+#define tmisleapyear(y)	(!((y)%4)&&(((y)%100)||!((((y)<1900)?((y)+1900):(y))%400)))
 
 #define TM_ADJUST	(1<<0)		/* local doesn't do leap secs	*/
 #define TM_LEAP		(1<<1)		/* do leap seconds		*/
@@ -135,19 +136,16 @@ typedef struct				/* tm library global info	*/
 typedef struct tm Tm_t;
 
 #if _BLD_ast && defined(__EXPORT__)
-#define __PUBLIC_DATA__		__EXPORT__
-#else
+#define extern		extern __EXPORT__
+#endif
 #if !_BLD_ast && defined(__IMPORT__)
-#define __PUBLIC_DATA__		__IMPORT__
-#else
-#define __PUBLIC_DATA__
-#endif
+#define extern		extern __IMPORT__
 #endif
 
-extern __PUBLIC_DATA__ Tm_data_t	tm_data;
-extern __PUBLIC_DATA__ Tm_info_t	tm_info;
+extern Tm_data_t	tm_data;
+extern Tm_info_t	tm_info;
 
-#undef	__PUBLIC_DATA__
+#undef	extern
 
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		__EXPORT__
@@ -163,7 +161,7 @@ extern time_t		tmleap(time_t*);
 extern int		tmlex(const char*, char**, char**, int, char**, int);
 extern char**		tmlocale(void);
 extern Tm_t*		tmmake(time_t*);
-extern char*		tmpoff(char*, const char*, int, int);
+extern char*		tmpoff(char*, size_t, const char*, int, int);
 extern time_t		tmscan(const char*, char**, const char*, char**, time_t*, long);
 extern time_t		tmtime(Tm_t*, int);
 extern Tm_zone_t*	tmtype(const char*, char**);

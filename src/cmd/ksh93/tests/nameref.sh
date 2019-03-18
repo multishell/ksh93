@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -84,7 +84,7 @@ nameref x=.foo.bar
 if	[[ ${!x} != .foo.bar ]]
 then	err_exit "${!x} not working"
 fi
-typeset +n x
+typeset +n x $(typeset +n) 
 unset x
 nameref x=.foo.bar
 function x.set
@@ -175,4 +175,23 @@ if	[[ $(
 ) != $'3\n4' ]]
 then	err_exit 'nameref optimization error'
 fi
+[[ $(
+unset x y var
+var=(foo=bar)
+for i in y var
+do	typeset -n x=$i
+	if	[[ ${!x.@} ]]
+	then	print ok
+	fi
+	typeset +n x
+done) != ok ]] && err_exit 'invalid for loop optimization of name references'
+function setval # name value
+{
+        nameref arg=$1
+	nameref var=arg.bar
+	var=$2
+}
+foo=( integer bar=0)
+setval foo 5
+(( foo.bar == 5)) || err_exit 'nested nameref not working'
 exit $((Errors))

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -75,7 +75,7 @@ Sfdisc_t*	disc;
 
 	if(type == SF_CLOSING)
 	{
-		vtmtxlock(_Sfmutex);
+		(void)vtmtxlock(_Sfmutex);
 		for(last = NIL(File_t*), ff = File; ff; last = ff, ff = ff->next)
 			if(ff->f == f)
 				break;
@@ -88,12 +88,12 @@ Sfdisc_t*	disc;
 				(*_Sfnotify)(f,SF_CLOSING,f->file);
 			CLOSE(f->file);
 			f->file = -1;
-			while(remove(ff->name) < 0 && errno == EINTR)
+			while(sysremovef(ff->name) < 0 && errno == EINTR)
 				errno = 0;
 
 			free((Void_t*)ff);
 		}
-		vtmtxunlock(_Sfmutex);
+		(void)vtmtxunlock(_Sfmutex);
 	}
 
 	return 0;
@@ -106,12 +106,12 @@ static void _rmfiles()
 #endif
 {	reg File_t	*ff, *next;
 
-	vtmtxlock(_Sfmutex);
+	(void)vtmtxlock(_Sfmutex);
 	for(ff = File; ff; ff = next)
 	{	next = ff->next;
 		_tmprmfile(ff->f, SF_CLOSING, NIL(Void_t*), ff->f->disc);
 	}
-	vtmtxunlock(_Sfmutex);
+	(void)vtmtxunlock(_Sfmutex);
 }
 
 static Sfdisc_t	Rmdisc =
@@ -135,15 +135,15 @@ char*	file;
 
 	if(!(ff = (File_t*)malloc(sizeof(File_t)+strlen(file))) )
 		return -1;
-	vtmtxlock(_Sfmutex);
+	(void)vtmtxlock(_Sfmutex);
 	ff->f = f;
 	strcpy(ff->name,file);
 	ff->next = File;
 	File = ff;
-	vtmtxunlock(_Sfmutex);
+	(void)vtmtxunlock(_Sfmutex);
 
 #else	/* can remove now */
-	while(remove(file) < 0 && errno == EINTR)
+	while(sysremovef(file) < 0 && errno == EINTR)
 		errno = 0;
 #endif
 
@@ -259,22 +259,22 @@ Sfio_t*	f;
 		if(!file)
 			return -1;
 #if _has_oflags
-		if((fd = open(file,O_RDWR|O_CREAT|O_EXCL|O_TEMPORARY,SF_CREATMODE)) >= 0)
+		if((fd = sysopenf(file,O_RDWR|O_CREAT|O_EXCL|O_TEMPORARY,SF_CREATMODE)) >= 0)
 			break;
 #else
-		if((fd = open(file,O_RDONLY)) >= 0)
+		if((fd = sysopenf(file,O_RDONLY)) >= 0)
 		{	/* file already exists */
 			CLOSE(fd);
 			fd = -1;
 		}
-		else if((fd = creat(file,SF_CREATMODE)) >= 0)
+		else if((fd = syscreatf(file,SF_CREATMODE)) >= 0)
 		{	/* reopen for read and write */
 			CLOSE(fd);
-			if((fd = open(file,O_RDWR)) >= 0)
+			if((fd = sysopenf(file,O_RDWR)) >= 0)
 				break;
 
 			/* don't know what happened but must remove file */
-			while(remove(file) < 0 && errno == EINTR)
+			while(sysremovef(file) < 0 && errno == EINTR)
 				errno = 0;
 		}
 #endif /* _has_oflags */
@@ -327,8 +327,8 @@ Sfdisc_t*	disc;
 		return -1;
 
 	if(newf.mutex) /* don't need a mutex for this stream */
-	{	vtmtxclrlock(newf.mutex);
-		vtmtxclose(newf.mutex);
+	{	(void)vtmtxclrlock(newf.mutex);
+		(void)vtmtxclose(newf.mutex);
 		newf.mutex = NIL(Vtmutex_t*);
 	}
 

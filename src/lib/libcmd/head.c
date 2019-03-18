@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1992-2002 AT&T Corp.                *
+*                Copyright (c) 1992-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,7 +31,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: head (AT&T Labs Research) 1999-04-10 $\n]"
+"[-?\n@(#)$Id: head (AT&T Labs Research) 2004-01-05 $\n]"
 USAGE_LICENSE
 "[+NAME?head - output beginning portion of one or more files ]"
 "[+DESCRIPTION?\bhead\b copies one or more input files to standard output "
@@ -84,7 +84,7 @@ b_head(int argc, register  char *argv[], void* context)
 	int			header = 1;
 	char			*format = header_fmt+1;
 
-	cmdinit(argv, context, ERROR_CATALOG);
+	cmdinit(argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	case 'c':
@@ -101,7 +101,7 @@ b_head(int argc, register  char *argv[], void* context)
 		header = 0;
 		break;
 	case 's':
-		skip = opt_info.num;
+		skip = opt_info.number;
 		break;
 	case ':':
 		error(2, "%s", opt_info.arg);

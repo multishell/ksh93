@@ -1,7 +1,7 @@
 ####################################################################
 #                                                                  #
 #             This software is part of the ast package             #
-#                Copyright (c) 1982-2002 AT&T Corp.                #
+#                Copyright (c) 1982-2004 AT&T Corp.                #
 #        and it may only be used by you under license from         #
 #                       AT&T Corp. ("AT&T")                        #
 #         A copy of the Source Code Agreement is available         #
@@ -33,7 +33,23 @@ integer Errors=0
 Command=$0
 mkdir /tmp/ksh$$
 cd /tmp/ksh$$
-trap 'rm -rf /tmp/ksh$$' EXIT
+trap "PATH=$PATH; cd /; rm -rf /tmp/ksh$$" EXIT
+cat > bug1 <<- \EOF
+	print print ok > /tmp/ok$$
+	/bin/chmod 755 /tmp/ok$$
+	trap 'cd /; rm -f /tmp/ok$$' EXIT
+	function a
+	{
+	        typeset -x PATH=/tmp
+	        ok$$
+	}
+	path=$PATH
+	unset PATH
+	a
+	PATH=$path
+}
+EOF
+[[ $($SHELL ./bug1  2> /dev/null) == ok ]]  || err_exit "PATH in function not working"
 cat > bug1 <<- \EOF
 	function lock_unlock
 	{
@@ -75,6 +91,8 @@ print 'print hello' > date
 chmod +x date
 print 'print notfound' >  $cmd
 chmod +x "$cmd"
+> foo
+chmod 755 foo
 for PATH in $path :$path $path: .:$path $path: $path:. $PWD::$path $PWD:.:$path $path:$PWD $path:.:$PWD
 do	
 #	print path=$PATH $(whence date)
@@ -105,9 +123,11 @@ PATH=/dev/null
 if	date > /dev/null 2>&1
 then	err_exit 'programs in . should not be found'
 fi
+[[ $(whence ./foo) != "$PWD/"./foo ]] && err_exit 'whence ./foo not working'
+[[ $(whence "$PWD/foo") != "$PWD/foo" ]] && err_exit 'whence $PWD/foo not working'
+[[ $(whence ./xxxxx) ]] && err_exit 'whence ./xxxx not working'
 PATH=$d:
 cp "$rm" kshrm$$
-chmod 755 kshrm$$
 if	[[ $(whence kshrm$$) != kshrm$$  ]]
 then	err_exit 'trailing : in pathname not working'
 fi
@@ -131,4 +151,15 @@ then	PATH=
 	then	err_exit 'unsetting path  not working'
 	fi
 fi
+PATH=/dev:/tmp/ksh$$
+x=$(whence rm)
+typeset foo=$(PATH=/xyz:/abc :)
+y=$(whence rm)
+[[ $x != "$y" ]] && err_exit 'PATH not restored after command substitution'
+PATH=$(getconf PATH)
+x=$(whence ls)
+PATH=.:$PWD:${x%/ls}
+[[ $(whence ls) == "$x" ]] || err_exit 'PATH search bug when .:$PWD in path'
+PATH=$PWD:.:${x%/ls}
+[[ $(whence ls) == "$x" ]] || err_exit 'PATH search bug when :$PWD:. in path'
 exit $((Errors))

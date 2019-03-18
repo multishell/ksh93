@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -31,24 +31,12 @@
 **	Written by Kiem-Phong Vo, kpv@research.att.com, 03/18/1998.
 */
 
-#ifndef O_NONBLOCK
-#ifdef	O_NDELAY
-#define O_NONBLOCK	O_NDELAY
-#else
-#ifdef	FNDELAY
-#define O_NONBLOCK	FNDELAY
-#else
-#define O_NONBLOCK	0
-#endif
-#endif
-#endif
-
 typedef struct _filter_s
-{	Sfdisc_t	disc;		/* discipline structure */
-	Sfio_t*		filter;		/* the filter stream */
-	char		raw[1024];	/* raw data buffer */
-	char*		next;		/* remainder of data unwritten to pipe */
-	char*		endb;		/* end of data */
+{	Sfdisc_t	disc;		/* discipline structure	*/
+	Sfio_t*		filter;		/* the filter stream	*/
+	char*		next;		/* data unwritten 	*/
+	char*		endb;		/* end of data		*/
+	char		raw[4096];	/* raw data buffer	*/
 } Filter_t;
 
 /* read data from the filter */
@@ -67,19 +55,9 @@ Sfdisc_t*	disc;	/* discipline */
 
 	fi = (Filter_t*)disc;
 	for(;;)
-	{	if(!fi->next)
-			fi->next = fi->endb = fi->raw;
-		else
-		{	/* try to get data from filter, if any */
-			errno = 0;
-			if((r = sfread(fi->filter,buf,n)) > 0)
-				return r;
-			if(errno != EWOULDBLOCK)
-				return 0;
-		}
-
+	{	
 		/* get some raw data to stuff down the pipe */
-		if(fi->next >= fi->endb)
+		if(fi->next && fi->next >= fi->endb )
 		{	if((r = sfrd(f,fi->raw,sizeof(fi->raw),disc)) > 0)
 			{	fi->next = fi->raw;
 				fi->endb = fi->raw+r;
@@ -89,17 +67,36 @@ Sfdisc_t*	disc;	/* discipline */
 				sfset(fi->filter,SF_READ,0);
 				close(sffileno(fi->filter));
 				sfset(fi->filter,SF_READ,1);
+				fi->next = fi->endb = NIL(char*);
 			}
 		}
 
-		if((w = fi->endb - fi->next) > 0)
+		if(fi->next && (w = fi->endb - fi->next) > 0 )
+		{	/* see if pipe is ready for write */
+			sfset(fi->filter, SF_READ, 0);
+			r = sfpoll(&fi->filter, 1, 1);
+			sfset(fi->filter, SF_READ, 1);
+
+			if(r == 1) /* non-blocking write */
+			{	errno = 0;
+				if((w = sfwr(fi->filter, fi->next, w, 0)) > 0)
+					fi->next += w;
+				else if(errno != EAGAIN)
+					return 0;
+			}
+		}
+
+		/* see if pipe is ready for read */
+		sfset(fi->filter, SF_WRITE, 0);
+		w = sfpoll(&fi->filter, 1, fi->next ? 1 : -1);
+		sfset(fi->filter, SF_WRITE, 1);
+
+		if(!fi->next || w == 1) /* non-blocking read */
 		{	errno = 0;
-			if((w = sfwrite(fi->filter,fi->next,w)) > 0)
-				fi->next += w;
-			else if(errno != EWOULDBLOCK)
+			if((r = sfrd(fi->filter, buf, n, 0)) > 0)
+				return r;
+			if(errno != EAGAIN)
 				return 0;
-			/* pipe is full, sleep for a while, then continue */
-			else	sleep(1);
 		}
 	}
 }
@@ -108,8 +105,8 @@ Sfdisc_t*	disc;	/* discipline */
 static ssize_t filterwrite(Sfio_t* f, const Void_t* buf, size_t n, Sfdisc_t* disc)
 #else
 static ssize_t filterwrite(f, buf, n, disc)
-Sfio_t*		f;	/* stream reading from */
-Void_t*		buf;	/* buffer to read into */
+Sfio_t*		f;	/* stream writing to */
+Void_t*		buf;	/* buffer to write into */
 size_t		n;	/* number of bytes requested */
 Sfdisc_t*	disc;	/* discipline */
 #endif
@@ -136,9 +133,9 @@ Sfdisc_t*	disc;
 
 /* on close, remove the discipline */
 #if __STD_C
-static filterexcept(Sfio_t* f, int type, Void_t* data, Sfdisc_t* disc)
+static int filterexcept(Sfio_t* f, int type, Void_t* data, Sfdisc_t* disc)
 #else
-static filterexcept(f,type,data,disc)
+static int filterexcept(f,type,data,disc)
 Sfio_t*		f;
 int		type;
 Void_t*		data;
@@ -163,41 +160,25 @@ char*	cmd;	/* program to run as a filter	*/
 {
 	reg Filter_t*	fi;
 	reg Sfio_t*	filter;
-	int		fl;
 
 	/* open filter for read&write */
 	if(!(filter = sfpopen(NIL(Sfio_t*),cmd,"r+")) )
 		return -1;
 
-	/* unbuffered so that write data will get to the pipe right away */
+	/* unbuffered stream */
 	sfsetbuf(filter,NIL(Void_t*),0);
-
-	/* make the write descriptor nonblocking */
-	sfset(filter,SF_READ,0);
-	if ((fl = fcntl(sffileno(filter),F_GETFL,0)) == -1)
-		fl = 0;
-	fcntl(sffileno(filter),F_SETFL,fl|O_NONBLOCK);
-	sfset(filter,SF_READ,1);
-
-	/* same for the read descriptor */
-	sfset(filter,SF_WRITE,0);
-	if ((fl = fcntl(sffileno(filter),F_GETFL,0)) == -1)
-		fl = 0;
-	fcntl(sffileno(filter),F_SETFL,fl|O_NONBLOCK);
-	sfset(filter,SF_WRITE,1);
 
 	if(!(fi = (Filter_t*)malloc(sizeof(Filter_t))) )
 	{	sfclose(filter);
 		return -1;
 	}
-	memset(fi, 0, sizeof(*fi));
 
 	fi->disc.readf = filterread;
 	fi->disc.writef = filterwrite;
 	fi->disc.seekf = filterseek;
 	fi->disc.exceptf = filterexcept;
 	fi->filter = filter;
-	fi->next = fi->endb = NIL(char*);
+	fi->next = fi->endb = fi->raw;
 
 	if(sfdisc(f,(Sfdisc_t*)fi) != (Sfdisc_t*)fi)
 	{	sfclose(filter);

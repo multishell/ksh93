@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,7 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#ifdef _UWIN
+#if defined(_UWIN) && defined(_BLD_ast)
 
 void _STUB_vmtrace(){}
 
@@ -40,12 +40,12 @@ static int	Trfile = -1;
 static char	Trbuf[128];
 
 #if __STD_C
-static char* trstrcpy(char* to, char* from, int endc)
+static char* trstrcpy(char* to, const char* from, int endc)
 #else
 static char* trstrcpy(to, from, endc)
-char*	to;
-char*	from;
-int	endc;
+char*		to;
+const char*	from;
+int		endc;
 #endif
 {	reg int	n;
 
@@ -114,9 +114,9 @@ size_t		align;		/* alignment			*/
 {
 	char		buf[1024], *bufp, *endbuf;
 	Vmdata_t*	vd = vm->data;
-	char*		file = NIL(char*);
+	const char*	file = 0;
 	int		line = 0;
-	Void_t*		func = NIL(Void_t*);
+	const Void_t*	func = 0;
 	int		comma;
 	int		n;
 	int		m;
@@ -180,7 +180,11 @@ size_t		align;		/* alignment			*/
 	{	if(comma)
 			*bufp++ = ',';
 		bufp = trstrcpy(bufp, "func", '=');
+#if _PACKAGE_ast
+		bufp = trstrcpy(bufp, (const char*)func, 0);
+#else
 		bufp = trstrcpy(bufp, tritoa((Vmulong_t)func,0), 0);
+#endif
 		comma = 1;
 	}
 	if(comma)
@@ -191,6 +195,38 @@ size_t		align;		/* alignment			*/
 
 	write(Trfile,buf,(bufp-buf));
 }
+
+#if DEBUG
+#if __STD_C
+void _Vmessage(const char* s1, long n1, const char* s2, long n2)
+#else
+void _Vmessage(s1, n1, s2, n2)
+const char*	s1;
+long		n1;
+const char*	s2;
+long		n2;
+#endif
+{
+	char	buf[1024], *bufp;
+
+	bufp = buf;
+	bufp = trstrcpy(bufp, "vmalloc", ':');
+	if (s1)
+	{
+		bufp = trstrcpy(bufp, s1, ':');
+		if (n1)
+			bufp = trstrcpy(bufp, tritoa(n1, 1), ':');
+	}
+	if (s2)
+	{
+		bufp = trstrcpy(bufp, s2, ':');
+		if (n2)
+			bufp = trstrcpy(bufp, tritoa(n2, 0), ':');
+	}
+	*bufp++ = '\n';
+	write(2,buf,(bufp-buf));
+}
+#endif
 
 #if __STD_C
 int vmtrace(int file)

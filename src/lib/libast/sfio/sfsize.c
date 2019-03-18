@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -69,7 +69,7 @@ reg Sfio_t*	f;
 #if _sys_stat
 			else
 			{	sfstat_t	st;
-				if(fstat(f->file,&st) < 0)
+				if(sysfstatf(f->file,&st) < 0)
 					f->extent = -1;
 				else if((f->extent = st.st_size) < f->here)
 					f->here = SFSK(f,(Sfoff_t)0,SEEK_CUR,disc);

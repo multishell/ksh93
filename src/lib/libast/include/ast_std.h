@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -53,13 +53,14 @@
  */
 
 #ifndef _AST_STD_H
-#define _AST_STD_H
+#define _AST_STD_H		1
+#define _AST_STD_I		1
 
 #include <ast_common.h>
 #include <ast_lib.h>
-#include <getopt.h>	/* <stdlib.h> does this */
+#include <ast_getopt.h>	/* <stdlib.h> does this */
 
-#if (__hppa || __mips == 2) && !defined(_NO_LARGEFILE64_SOURCE)
+#if __mips == 2 && !defined(_NO_LARGEFILE64_SOURCE)
 #define	_NO_LARGEFILE64_SOURCE	1
 #endif
 #if !defined(_NO_LARGEFILE64_SOURCE) && _typ_off64_t && _lib_lseek64 && _lib_stat64
@@ -113,11 +114,20 @@ struct _sfio_s;
 #if !_std_def_calloc
 __STDPP__directive pragma pp:hide calloc
 #endif
+#if !_std_def_cfree
+__STDPP__directive pragma pp:hide cfree
+#endif
 #if !_std_def_free
 __STDPP__directive pragma pp:hide free
 #endif
 #if !_std_def_malloc
 __STDPP__directive pragma pp:hide malloc
+#endif
+#if !_std_def_memalign
+__STDPP__directive pragma pp:hide memalign
+#endif
+#if !_std_def_pvalloc
+__STDPP__directive pragma pp:hide pvalloc
 #endif
 #if !_std_def_realloc
 __STDPP__directive pragma pp:hide realloc
@@ -125,17 +135,19 @@ __STDPP__directive pragma pp:hide realloc
 #if !_std_def_valloc
 __STDPP__directive pragma pp:hide valloc
 #endif
-__STDPP__directive pragma pp:hide bcopy bzero execl execle execlp execv
+__STDPP__directive pragma pp:hide execl execle execlp execv
 __STDPP__directive pragma pp:hide execve execvp execvpe
 __STDPP__directive pragma pp:hide getcwd getopt getsubopt putenv realpath
-__STDPP__directive pragma pp:hide setenv setpgrp sleep spawnlp
-__STDPP__directive pragma pp:hide spawnve spawnveg spawnvp spawnvpe
+__STDPP__directive pragma pp:hide resolvepath setenv setpgrp sleep spawnveg
 __STDPP__directive pragma pp:hide strtol strtoul strtoll strtoull
-__STDPP__directive pragma pp:hide strtod strtold
-__STDPP__directive pragma pp:hide strdup vfprintf vprintf vsprintf
+__STDPP__directive pragma pp:hide strtod strtold strdup strmode
+__STDPP__directive pragma pp:hide unsetenv vfprintf vprintf vsprintf
 #else
 #if !_std_def_calloc
 #define calloc		______calloc
+#endif
+#if !_std_def_cfree
+#define cfree		______cfree
 #endif
 #if !_std_def_free
 #define free		______free
@@ -143,14 +155,18 @@ __STDPP__directive pragma pp:hide strdup vfprintf vprintf vsprintf
 #if !_std_def_malloc
 #define malloc		______malloc
 #endif
+#if !_std_def_memalign
+#define memalign	______memalign
+#endif
+#if !_std_def_pvalloc
+#define pvalloc		______pvalloc
+#endif
 #if !_std_def_realloc
 #define realloc		______realloc
 #endif
 #if !_std_def_valloc
 #define valloc		______valloc
 #endif
-#define bcopy		______bcopy
-#define bzero		______bzero
 #define execl		______execl
 #define execle		______execle
 #define execlp		______execlp
@@ -163,14 +179,11 @@ __STDPP__directive pragma pp:hide strdup vfprintf vprintf vsprintf
 #define getsubopt	______getsubopt
 #define putenv		______putenv
 #define realpath	______realpath
+#define resolvepath	______resolvepath
 #define setenv		______setenv
 #define setpgrp		______setpgrp
 #define sleep		______sleep
-#define spawnlp		______spawnlp
-#define spawnve		______spawnve
 #define spawnveg	______spawnveg
-#define spawnvp		______spawnvp
-#define spawnvpe	______spawnvpe
 #define strtol		______strtol
 #define strtoul		______strtoul
 #define strtoll		______strtoll
@@ -178,6 +191,8 @@ __STDPP__directive pragma pp:hide strdup vfprintf vprintf vsprintf
 #define strtod		______strtod
 #define strtold		______strtold
 #define strdup		______strdup
+#define strmode		______strmode
+#define unsetenv	______unsetenv
 #define vfprintf	______vfprintf
 #define vprintf		______vprintf
 #define vsprintf	______vsprintf
@@ -235,11 +250,20 @@ __STDPP__directive pragma pp:noinitial
 #if !_std_def_calloc
 __STDPP__directive pragma pp:nohide calloc
 #endif
+#if !_std_def_cfree
+__STDPP__directive pragma pp:nohide cfree
+#endif
 #if !_std_def_free
 __STDPP__directive pragma pp:nohide free
 #endif
 #if !_std_def_malloc
 __STDPP__directive pragma pp:nohide malloc
+#endif
+#if !_std_def_memalign
+__STDPP__directive pragma pp:nohide memalign
+#endif
+#if !_std_def_pvalloc
+__STDPP__directive pragma pp:nohide pvalloc
 #endif
 #if !_std_def_realloc
 __STDPP__directive pragma pp:nohide realloc
@@ -247,17 +271,19 @@ __STDPP__directive pragma pp:nohide realloc
 #if !_std_def_valloc
 __STDPP__directive pragma pp:nohide valloc
 #endif
-__STDPP__directive pragma pp:nohide bcopy bzero execl execle execlp execv
+__STDPP__directive pragma pp:nohide execl execle execlp execv
 __STDPP__directive pragma pp:nohide execve execvp execvpe
 __STDPP__directive pragma pp:nohide getcwd getopt getsubopt putenv realpath
-__STDPP__directive pragma pp:nohide setenv setpgrp sleep spawnlp
-__STDPP__directive pragma pp:nohide spawnve spawnveg spawnvp spawnvpe
+__STDPP__directive pragma pp:nohide resolvepath setenv setpgrp sleep spawnveg
 __STDPP__directive pragma pp:nohide strtol strtoul strtoll strtoull
-__STDPP__directive pragma pp:nohide strtod strtold
-__STDPP__directive pragma pp:nohide strdup vfprintf vprintf vsprintf
+__STDPP__directive pragma pp:nohide strtod strtold strdup strmode
+__STDPP__directive pragma pp:nohide unsetenv vfprintf vprintf vsprintf
 #else
 #if !_std_def_calloc
 #undef	calloc	
+#endif
+#if !_std_def_cfree
+#undef	cfree	
 #endif
 #if !_std_def_free
 #undef	free	
@@ -265,14 +291,18 @@ __STDPP__directive pragma pp:nohide strdup vfprintf vprintf vsprintf
 #if !_std_def_malloc
 #undef	malloc	
 #endif
+#if !_std_def_memalign
+#undef	memalign	
+#endif
+#if !_std_def_pvalloc
+#undef	pvalloc	
+#endif
 #if !_std_def_realloc
 #undef	realloc	
 #endif
 #if !_std_def_valloc
 #undef	valloc	
 #endif
-#undef	bcopy
-#undef	bzero
 #undef	execl
 #undef	execle
 #undef	execlp
@@ -285,14 +315,11 @@ __STDPP__directive pragma pp:nohide strdup vfprintf vprintf vsprintf
 #undef	getsubopt
 #undef	putenv
 #undef	realpath
+#undef	resolvepath
 #undef	setenv
 #undef	setpgrp
 #undef	sleep
-#undef	spawnlp
-#undef	spawnve
 #undef	spawnveg
-#undef	spawnvp
-#undef	spawnvpe
 #undef	strtol
 #undef	strtoul
 #undef	strtoll
@@ -300,6 +327,8 @@ __STDPP__directive pragma pp:nohide strdup vfprintf vprintf vsprintf
 #undef	strtod
 #undef	strtold
 #undef	strdup
+#undef	strmode
+#undef	unsetenv
 #undef	vfprintf
 #undef	vprintf
 #undef	vsprintf
@@ -324,6 +353,7 @@ extern int		atexit(void(*)(void));
 extern void		exit(int);
 extern char*		getenv(const char*);
 extern char*		realpath(const char*, char*);
+extern char*		resolvepath(const char*, char*, size_t);
 extern void		swab(const void*, void*, ssize_t);
 extern int		system(const char*);
 
@@ -355,6 +385,11 @@ extern long			strtol(const char*, char**, int);
 extern unsigned long		strtoul(const char*, char**, int);
 
 extern double			strtod(const char*, char**);
+
+#if !_UWIN
+#undef	extern
+#endif
+
 extern _ast_fltmax_t		strtold(const char*, char**);
 
 #undef	extern
@@ -367,14 +402,26 @@ extern unsigned _ast_intmax_t	strtoull(const char*, char**, int);
 #if !_std_def_calloc
 extern void*		calloc(size_t, size_t);
 #endif
+#if !_std_def_cfree
+extern void		cfree(void*);
+#endif
 #if !_std_def_free
 extern void		free(void*);
 #endif
 #if !_std_def_malloc
 extern void*		malloc(size_t);
 #endif
+#if !_std_def_memalign
+extern void*		memalign(size_t, size_t);
+#endif
+#if !_std_def_pvalloc
+extern void*		pvalloc(size_t);
+#endif
 #if !_std_def_realloc
 extern void*		realloc(void*, size_t);
+#endif
+#if !_std_def_valloc
+extern void*		valloc(size_t);
 #endif
 
 #if _std_string
@@ -672,6 +719,7 @@ extern int		execvp(const char*, char* const[]);
 extern int		execvpe(const char*, char* const[], char* const[]);
 extern pid_t		fork(void);
 extern long		fpathconf(int, int);
+extern int		fsync(int);
 extern int		ftruncate(int, off_t);
 extern char*		getcwd(char*, size_t);
 extern gid_t		getegid(void);
@@ -697,11 +745,6 @@ extern int		setpgid(pid_t, pid_t);
 extern pid_t		setsid(void);
 extern int		setuid(uid_t);
 extern unsigned		sleep(unsigned int);
-extern pid_t		spawnlp(const char*, const char*, ...);
-extern pid_t		spawnve(const char*, char* const[], char* const[]);
-extern pid_t		spawnveg(const char*, char* const[], char* const[], pid_t);
-extern pid_t		spawnvp(const char*, char* const[]);
-extern pid_t		spawnvpe(const char*, char* const[], char* const[]);
 extern long		sysconf(int);
 extern pid_t		tcgetpgrp(int);
 extern int		tcsetpgrp(int, pid_t);
@@ -750,6 +793,7 @@ extern long		fpathconf(int, int);
 extern long		pathconf(const char*, int);
 extern long		sysconf(int);
 
+extern pid_t		spawnveg(const char*, char* const[], char* const[], pid_t);
 extern char*		strdup(const char*);
 
 #endif
@@ -1055,23 +1099,22 @@ typedef struct
 	int		(*mb_width)(wchar_t);
 	int		(*mb_conv)(char*, wchar_t);
 
-	void*		extra[237];
+	unsigned _ast_int4_t	env_serial;
+
+	char		pad[944];
 
 } _Ast_info_t;
 
 #if _BLD_ast && defined(__EXPORT__)
-#define __PUBLIC_DATA__		__EXPORT__
-#else
+#define extern		extern __EXPORT__
+#endif
 #if !_BLD_ast && defined(__IMPORT__)
-#define __PUBLIC_DATA__		__IMPORT__
-#else
-#define __PUBLIC_DATA__
-#endif
+#define extern		extern __IMPORT__
 #endif
 
-extern __PUBLIC_DATA__ _Ast_info_t	_ast_info;
+extern _Ast_info_t	_ast_info;
 
-#undef	__PUBLIC_DATA__
+#undef	extern
 
 /* stuff from std headers not used by ast, e.g., <stdio.h> */
 
@@ -1085,15 +1128,15 @@ extern int		rename(const char*, const char*);
 #undef	off_t
 #define off_t		off64_t
 #endif
-#if _lib_ftruncate64
+#if !defined(ftruncate) && _lib_ftruncate64
 #define ftruncate	ftruncate64
 extern int		ftruncate64(int, off64_t);
 #endif
-#if _lib_lseek64
+#if !defined(lseek) && _lib_lseek64
 #define lseek		lseek64
 extern off64_t		lseek64(int, off64_t, int);
 #endif
-#if _lib_truncate64
+#if !defined(truncate) && _lib_truncate64
 #define truncate	truncate64
 extern int		truncate64(const char*, off64_t);
 #endif
@@ -1103,20 +1146,14 @@ extern int		truncate64(const char*, off64_t);
 #if !defined(__cplusplus)
 
 #if !defined(memcpy) && !defined(_lib_memcpy) && defined(_lib_bcopy)
-extern void		bcopy(void*, void*, size_t);
 #define memcpy(t,f,n)	(bcopy(f,t,n),(t))
 #endif
 
-#if !defined(memzero)
-#if defined(_lib_bzero)
-extern void		bzero(void*, size_t);
-#if defined(FD_ZERO)
-#undef	FD_ZERO
-#define FD_ZERO(p)	memzero(p,sizeof(*p))
-#endif
-#define memzero(b,n)	(bzero(b,n),(b))
-#else
+#if !defined(memzero) && !defined(_lib_memzero)
+#if defined(_lib_memset) || !defined(_lib_bzero)
 #define memzero(b,n)	memset(b,0,n)
+#else
+#define memzero(b,n)	(bzero(b,n),(b))
 #endif
 #endif
 
@@ -1148,5 +1185,7 @@ extern char*		rindex(const char*, int);
 extern int		_ast_getpgrp(void);
 
 #undef	extern
+
+#undef	_AST_STD_I
 
 #endif

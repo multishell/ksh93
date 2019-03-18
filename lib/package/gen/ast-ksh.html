@@ -1,29 +1,30 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
 <HEAD>
-<META name="generator" content="mm2html (AT&T Labs Research) 2002-06-09">
+<META name="generator" content="mm2html (AT&T Labs Research) 2004-02-29">
 <META name="description" content="ast-ksh package">
 <META name="keywords" content="software, package">
 <TITLE> ast-ksh package </TITLE>
 </HEAD>
-<BODY  link=slateblue vlink=teal bgcolor=white >
+<BODY bgcolor=white link=slateblue vlink=teal >
 <TABLE border=0 align=center width=96%>
 <TBODY><TR><TD valign=top align=left>
 <!--INDEX--><!--/INDEX-->
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="ast-ksh package">ast-ksh package</A></H3></FONT></FONT></CENTER>
-The AT&amp;T Labs Research ast-ksh package contains ksh and
-support libraries. This is the minimal set of components
-needed to build ksh.
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ast-ksh package">ast-ksh package</A></H3></FONT></FONT></CENTER>
+The AT&amp;T Software Technology ast-ksh package from AT&amp;T Labs
+Research contains ksh and support libraries. This is the
+minimal set of components needed to build ksh.
 Components in this package:
 <P>
 <P></P><TABLE border=0 frame=void rules=none width=100%><TBODY><TR><TD>
-<TABLE  width=99% align=center border=0 cellspacing=0 frame=void rules=none bordercolor=white cellpadding=0 >
+<TABLE align=center border=0 bordercolor=white cellpadding=0 cellspacing=0 frame=void rules=none width=99% >
 <TBODY>
 <TR><TD align=left>
 <A href="#ksh93">ksh93</A>&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libast&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libcmd&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libdll</TD></TR>
 </TBODY></TABLE></TD></TR></TBODY></TABLE>
 <P>
+This package is a superset of the following package: ksh; you won't need this if you download ast-ksh.
 The software is covered by this license:
 <UL type=square>
 <LI>
@@ -36,7 +37,7 @@ A recent
  <A href="#release change log">release change log</A>
 is also included.
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="ksh93">ksh93</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93">ksh93</A></H3></FONT></FONT></CENTER>
 KSH-93 is the most recent version of the KornShell Language
 described in
 "The KornShell Command and Programming Language,"
@@ -178,15 +179,296 @@ README file.  In addition, the "New KornShell Command and Programming
 Language," book is available from Prentice Hall.
 
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="release change log">release change log</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="release change log">release change log</A></H3></FONT></FONT></CENTER>
+<!--LABELS-->
+<B><FONT font face="verdana,arial,helvetica,geneva,sans-serif">
+<TABLE border=0 bordercolor=white cellpadding=0 cellspacing=0 width=90% align=center><TR>
+<TD align=left><A href="#ksh93 changes">ksh93</A></TD>
+<TD align=left><A href="#libast changes">libast</A></TD>
+<TD align=left><A href="#libcmd changes">libcmd</A></TD>
+<TD align=left><A href="#libdll changes">libdll</A></TD>
+</TR></TABLE>
+</FONT></B>
+<!--/LABELS-->
 <PRE>
 
 All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
+
+04-02-28  --- Release ksh93p  ---
+04-02-28  The ability to apply an append discipline to any variable has
+	  been added.
+04-02-14  A bug in which the exportall option (set -a) would cause incorrect
+	  results for arrays has been fixed.
+04-02-02  A bug in which an exported array would pass more than
+	  the first element to a script invoked by name has been fixed.
+04-02-02  A bug on some systems in which name=value pairs preceding a script
+	  invoked by name was not getting passed to the script has been fixed.
+04-01-20  A bug in which an unset discipline function could cause a core
+	  dump on some systems has been fixed.
+04-01-12  A bug in which a continue or break called outside a loop from
+	  inside a function defined with name() syntax could affect 
+	  the invoking function has been fixed.
+04-01-08  If a command name begins with ~, only filename completion will be
+	  attempted rather than pathname completion using the builtin editors. 
+04-01-08  A bug in the vi edit mode in which the wrong repeat count on
+	  multiple word replacements with the . directive has been fixed.
+04-01-06  Backspace characters are now handled correctly in prompt strings.
+04-01-06  The getopts builtin has been modified to accept numerical
+	  arguments of size long long on systems that support this.
+04-01-06  A bug in which unsetting all elements of an associative array
+	  would cause it to be treated as an indexed array has been fixed.
+03-12-15  A bug in which q quoted string ending with an unescaped $ would
+	  delete the ending $ in certain cases has been fixed.
+03-12-05  A bug in which the shell could hang when set -x tracing a command
+	  when an invalid multibyte character is encountered has been fixed. 
+03-12-05  On some systems, if the KEYBD trap is set, then commands that use
+	  the meta key were not processed until return was hit.  This
+	  has been fixed.
+03-12-05  A problem which occured when the login shell was not a group
+	  leader that could cause it to fail has been fixed.
+03-12-05  A problem in which a shell could core dump after receiving a signal
+	  that should cause it to terminate while it was in the process
+	  of acquiring more space has been fixed.
+03-12-05  If ENV is not specified, the shell will default to $HOME/.kshrc
+	  for interactive shells.
+03-11-21  A bug introduced in ksh93o in which the DEBUG trap could get
+	  disabled after it triggered has been fixed. 
+03-11-04  A bug in which using arithetic prefix opertors ++ or -- on a
+	  non-lvalue could cause a core dump has been fixed.
+03-11-04  A bug in which leading zeros were stripped from variable
+	  expansions within arithmetic compution to avoid being treated
+	  as octal constants when they should not have, has been fixed.
+03-10-08  A bug introduced in ksh93o in which a large here document inside
+	  a function definition could get corrupted has been fixed.
+03-09-22  A bug in which the .get discipline function was not being
+	  called when a string variable was implictly referenced from
+	  within a numerical expression has been fixed.
+03-09-22  A bug in which a script without a leading #! could get executed
+	  by /bin/sh rather than the current shell on some systems has
+	  been fixed.
+03-09-12  To improve conformance with ksh88, leading zeros will be ignored
+	  when getting the numerical value of a string variable so that
+	  they will not be treated as octal constants.
+03-09-03  The builtin kill command now processes obsolete invocations
+	  such as kill -1 -pid.
+03-09-02  The restriction on modifying FPATH in a restricted shell (sh -r)
+	  has been documented.
+03-09-02  The restricted shell (sh -r) has been modified to disallow
+	  executing command -p.
+03-08-07  A bug in which the KEYBD trap was not being invoked when
+	  characters with the 8th bit set has been fixed.
+03-08-02  A parser bug introduced in ksh93o which caused the character
+	  after () in a Posix function definition to be skipped 
+	  when reading from standard input has been fixed.
+03-08-01  A bug in which "${foo#pattern}(x)" treated (x) as if it were
+	  part of the pattern has been fixed.
+03-08-01  The command -x option has been modified so that any trailing
+	  arguments that do expand to a single word will be included
+	  on each invocation, so that commands like command -x mv * dir
+	  work as expected.
+
+03-07-20  --- Release ksh93o+  ---
+03-07-20  A bug in which could cause memory corruption when a posix
+	  function invoked another one has been fixed.
+03-07-15  A bug in which a file descriptor&gt;2 could be closed before
+	  executing a script has been fixed.
+03-07-15  A parsing error for &lt;() and &gt;() process subsitituions inside
+	  command substitution has been fixed.
+03-07-15  A parsing error for patterns of the form {...}(...) when
+	  used inside ${...} has been fixed.
+03-07-15  An error in which expanding an indexed array inside a compound
+	  variable could cause a core dump has been fixed.
+03-07-15  A bug in which under on rare ocassions a job completion interrupt
+	  could cause to core dump has been fixed.
+03-06-26  A bug in which process substitution embeded within command
+	  substitution would generate a syntax error has been fixed.
+03-96-23  A bug in which ${@:offset:len} could core dump when there
+	  were no arguments has been fixed.
+03-96-23  A bug in which ${X&#0091;@&#0093;:offset:len} could core dump when X
+	  was unset has been fixed.
+03-06-22  The -x option was added to the command builtin.  If this
+	  option is on, and the number of arguments would exceed ARG_MAX,
+	  the command will be invoked multiple times with a subset of
+	  the arguments.  For example, with alias grep='command -x grep,
+	  any number of arguments can be specified.
+03-06-14  A bug in which could cause a core dump on some systems with
+	  vi and emacs editors with the MULTIBYTE option has been fixed.
+03-06-06  A bug in which the shell could core dump when a script was
+	  run from its directory, and the script name a symlink to a file
+	  beginning with .., has been fixed.
+03-06-05  A bug in which the shell could core dump when a child process
+	  that it is unaware of terminates while it is calling malloc()
+	  has been fixed.
+03-06-02  An option named globstar (set -G) has been added.  When enabled,
+	  during pathname expansion, any component that consists only of ** is
+	  matches all files and any number of directory levels.
+03-05-30  A bug in which the PATH search could give incorrect results when
+	  run from directory foo and PATH contained .:foo:xxx has been fixed.
+03-05-29  Some changes were made to the code that displays the prompt in edit 
+	  mode to better handle escape sequences in the prompt.
+03-05-27  I added = to the list of characters that mark the beginning of
+	  a word for edit completion so that filenames in assignments
+	  can be completed.
+03-05-20  A bug in which read -N could hang on some systems when reading
+	  from a terminal or a pipe has been fixed.
+03-05-19  A bug in which the ouput of uname from a command substitution
+	  would go to the standard output of the invoking command when
+	  uname was invoked with a non-standard option has been fixed.
+03-05-19  A job control bug which would cause the shell to exit because 
+	  it hadn't take back the terminal has been fixed.  The bug
+	  could occur when running a function that contained a pipeline
+	  whose last element was a function.
+03-05-19  A job control timing bug introduced in ksh93o on some systems
+	  which could cause a pipeline to hang if the first component
+	  completed quickly has been fixed.
+03-05-13  The read builtin has been modified so that the builtin editors
+	  will not overwrite output from a previous incomplete line. 
+03-05-13  A bug in which the name of an identifier could have the string
+	  .sh. prefixed to it after expanding a variable whose name begins
+	  with .sh. has been fixed.
+03-05-13  A bug in the expansion of $var for compound variables in which
+	  some elements would not be output when the name was a prefix
+	  of another name in the compound variable has been fixed.
+03-05-08  The last item in the ksh93o release on 03-01-02 has been
+	  altered sligthly to preserve the leading 0's when the
+	  preceding character is a digit.  Thus, with typeset -LZ3 x=10,
+	  $(( 1$x)) will be 1010 whereas $(( $x) will be 10.
+03-04-25  A bug in which if x is a name reference, then nameref y=x.foo
+	  did not follow x has been fixed.
+
+03-03-18  --- Release ksh93o  ---
+03-03-18  A -N unary operator was added to test and &#0091;&#0091;...&#0093;&#0093; which returns
+	  true if the file exists and the file has been modified since it
+	  was last read.
+03-03-18  The TIMEFORMAT variable was added to control the format for
+	  the time compound command.  The formatting description is
+	  described in the man page.
+03-03-06  A -N n option was added to read which causes exactly n bytes
+	  to be read unlike -n n which causes at most n bytes to be read.
+03-03-03  Three new shell variables were added.  The variable .sh.file
+	  stores the full pathname of the file that the current command
+	  was found in.  The variable .sh.fun names the current function
+	  that is running.  The variable .sh.subshell contains the depth
+	  of the current subshell or command substitution.
+03-03-03  When the DEBUG trap is executed, the current command line after
+	  expansions is placed in the variable .sh.command.  The trap
+	  is also now triggered before each iteration of a for, select,
+	  and case command and before each assignment and redirection.
+03-02-28  Function definitions are no longer stored in the history file so
+	  that set -o nolog no longer has any meaning.
+03-02-28  All function definitions can be displayed with typeset -f not
+	  just those stored in the history file.  In addition, typeset +f
+	  displays the function name followed by a comment containg the
+	  line number and the path name for the file that defined this function.
+03-02-28  A bug in which the value of $LINENO was not correct when executing
+	  command contained inside mult-line command substitutions has been
+	  fixed.
+03-02-19  Since some existing ksh88 scripts use the undocumented and
+	  unintended ability to insert a : in front of the % and # parameter
+	  expansion operators, ksh93 was modified to accept :% as equivalent
+	  to % and :# as equivalent to # with ${name op word}.
+03-02-14  A bug which could cause a core dump when reading from standard
+	  error when standard error was a pty has been fixed.
+03-02-14  The shell arithmetic was modified to use long double on systems
+	  that provide this data type.
+03-02-09  A bug in which a function located in the first directory in FPATH
+	  would not be found when the last component of PATH was . and the
+	  current directory was one of the directories in PATH has been fixed.
+03-02-07  The trap and kill builtin commands now accept a leading SIG prefix
+	  on the signal names as documented.
+03-02-05  A bug in the expansion of ${var/$pattern}, when pattern contained
+	  \&#0091; has been fixed.
+03-02-05  A bug in which .sh.match&#0091;n&#0093;, n&gt;0, was not being set for substring
+	  matches with % and %% has been fixed.
+03-01-15  A bug in which getopts did not work for numerical arguments specified
+	  as n#var in the getopts string has been fixed.
+03-01-09  A bug in which using ${.sh.match} multiple times could lead to
+	  a memory exception has been fixed.
+03-01-06  A bug in the expansion of ${var/pattern/$string} in the case that
+	  $string contains \digit has been fixed. 
+03-01-02  A -P option was added for systems such as Solaris 8 that support
+	  profile shell.
+03-01-02  For backward compatibility with ksh88, arithmetic expansion
+	  with ((...)) and let has been modified so that if x is a zero-filled
+	  variable, $x will not be treated as an octal constant.
+
+02-12-05  --- Release ksh93n+  ---
+02-11-30  A bug that can show up in evaluating arithmetic statements that
+	  are in an autoloaded function when the function is autoload from
+	  another function has been fixed.
+02-11-30  An optimization bug in which an expansion of the form ${!name.@},
+	  which occurred inside a for or a while loop, when name is a name
+	  reference, has been fixed.
+02-11-18  A bug in which modifying array variables in a subshell could leave
+	  side effects in the parent shell environment has been fixed.
+02-11-18  A memory leak when unsetting an associative array has been fixed.
+02-11-14  The code to display compound objects was rewritten to make
+	  it easier for runtime extensions to reuse this code.
+02-11-14  A change was made to allow runtime builtins to be notified when
+	  a signal is received so that cleanup can be performed.
+02-10-31  User applications can now trap the ALRM signal.  Previously,
+	  the ALRM signal was used internally and could not be used
+	  by applications. 
+02-10-31  A bug in which signals received while reading from a coprocess
+	  for which traps were set was not handled correctly has been fixed.
+02-10-31  A bug in which a file opened with exec inside a subshell could
+	  be closed before the subshell completed has been fixed.
+02-10-21  A bug in which setting PATH or FPATH inside a function might not
+	  take effect has been fixed.
+02-10-21  A bug which could cause a core dump when a local SECONDS variable
+	  is defined in a function has been fixed.
+02-10-15  A bug in which the associate array name operator ${!array&#0091;@&#0093;}
+	  could return the same name multiple times has been fixed.
+02-10-15  A bug in which the zero'th element of an associative array was
+	  not getting set when an assignment was made without a subscript
+	  specified has been fixed.
+
+02-09-30  --- Release ksh93n  ---
+02-09-30  The maximum indexed array size was increased to 16Megs.
+02-09-30  A bug which could cause a core dump when changing attributes
+	  of associative array has been fixed.
+02-09-30  A bug in which exporting an array variable would not export the
+	  0-th element has been fixed.
+02-09-30  A bug in which an array assignment of the form a=($a ...) would unset
+	  'a' before the right hand side was evaluated has been fixed.
+02-09-27  A bug in which the error message for ${var?message} when var was
+	  null or unset did not contain the variable name var has been fixed.
+02-09-27  A bug in which closing file descriptors 0 through 2 could
+	  cause a subsequent here document to fail has been fixed. 
+02-09-14  A bug in whence which occurs when the specified name contained
+	  a / has been fixed.
+02-09-14  A bug in the parser for strings of the form name$((expr))=value
+	  has been fixed.
+02-09-14  A for loop optimization bug in which the number of elements in
+	  an array was treated as an invariant has been fixed.
+02-09-09  A bug in which redirection or closing of a file descriptor between
+	  3 and 9 could cause a subsequent here document to fail has been
+	  fixed. 
+02-09-09  A bug in which a background job was not removed from the job list
+	  when a subshell completed has been fixed, for example (prog&amp;). 
+02-09-03  A bug in which an assignment of the form name=(integer x=3)
+	  could be interpretted as an array assignment rather than a
+	  compound variable assignment has been fixed.
+02-08-19  A command completion bug which occurred on file systems that
+	  are case insensitive has been fixed.
+02-08-19  A bug which could lead to an exception on some systems (for
+	  example FREEBSD) which occurred when setting PATH has been fixed.
+02-08-11  A bug in arithmetic rounding in which a value input as a decimal
+	  string would output as a rounded version of the string has
+	  been fixed.
+02-08-11  A bug in which the last character could be deleted from shell
+	  traces and from whence when called from a multibyte locale
+	  has been fixed.
+02-08-01  A bug which could cause a core dump to occur when a shell script
+	  is executed while a coprocess is running that has closed the
+	  output pipe has been fixed.
+02-08-01  A bug in which command completion in multibyte mode could
+	  corrupt memory for long command lines has been fixed.
 
 02-06-17  --- Release ksh93n-  ---
 02-06-17  A bug in which user defined macros could cause a core dump in
@@ -200,8 +482,8 @@ All recorded changes follow.
 	  builtin to terminate prematurely has been fixed.
 02-06-17  A bug in which the shell could core dump if getopts was called
 	  when the OPTIND variable contained a negative value has been fixed. 
-02-06-10  The edit mode prompt has been modified to hande escape sequences.  
-02-06-10  A bug which occured for interactive shells in which the builtin
+02-06-10  The edit mode prompt has been modified to handle escape sequences.  
+02-06-10  A bug which occurred for interactive shells in which the builtin
 	  cat command was used in command substitution on a file whose
 	  size was larger than PIPE_BUF has been fixed.
 02-06-10  A bug in which the trap on ERR was not being processed when
@@ -216,7 +498,7 @@ All recorded changes follow.
 02-05-07  A bug in substitutions of the form ${var/pattern/string} in which
 	  a backslash was inserted in the replacement string when it contained
 	  a special pattern character has been fixed.
-02-05-01  A bug in the emacs edit mode which occured in versions compiled
+02-05-01  A bug in the emacs edit mode which occurred in versions compiled
 	  for multibyte character sets which occurred when a repeated search
 	  was requested after a long line had been returned for the previous
 	  search has been fixed.
@@ -241,7 +523,7 @@ All recorded changes follow.
 02-01-07  A bug in which the first word of a compound assignment,
 	  x=(word ...), was treated as a reserved word has been fixed.
 02-01-07  A bug in the handling of &nbsp;when noglob was enabled and a
-	  substitution of the form ${word op pattern} occured in the
+	  substitution of the form ${word op pattern} occurred in the
 	  same word has been fixed.
 02-01-07  A compilation option, CMDLIB_BLTIN in the file OPTION, has
 	  been added.  When this options is set, all commands implemented
@@ -252,9 +534,9 @@ All recorded changes follow.
 	  directory when PATH have no valid directories has been fixed.
 01-11-28  The value of $? was not being set when called with exit.
 01-11-28  If the last command was of the form (...) and a trap on EXIT or
-	  ERR was set, and the command inside () modifed the trap, then
+	  ERR was set, and the command inside () modified the trap, then
 	  the original trap wasn't executed.
-01-11-26  The value for 0 is now precdeded by the base number when
+01-11-26  The value for 0 is now preceded by the base number when
 	  the base was not 10.
 01-11-26  The default has compilation mode has been changes so that
 	  viraw mode will always be on.
@@ -270,7 +552,7 @@ All recorded changes follow.
 01-10-11  An optimization bug in which ${!x) was treated as invariant in
 	  a for loop has been fixed.
 01-10-11  Unsigned integer variables in bases other than 10 are printed now
-	  exxpand in that base with the base prefix.
+	  expand in that base with the base prefix.
 01-10-10  A number of typos in the self generating man pages for shell
 	  built-ins have been fixed.
 01-10-04  The self generated man pages for hist and fc were not working
@@ -291,7 +573,7 @@ All recorded changes follow.
 	  associative.
 01-09-25  The code was modified to use the ast multibyte macros
 	  and functions for handing multibyte locales.
-01-09-25  The expansion ${parameter:offset:length} now hanles negative
+01-09-25  The expansion ${parameter:offset:length} now handles negative
 	  offsets which cause offsets to be measured from the end.
 01-09-25  Some spelling errors in the documentation were corrected.
 01-09-24  The /dev/tcp/host/port and /dev/udp/host/port now allow
@@ -324,7 +606,7 @@ All recorded changes follow.
 	  reference has been fixed.
 01-09-04  A bug introduced in ksh93l in which export -p did not prefix
 	  each export with the word export has been fixed.
-01-08-29  A bug in multibyte input which occurered when a partial multibyte
+01-08-29  A bug in multibyte input which occurred when a partial multibyte
 	  character was received has been fixed.
 01-08-29  A bug introduced in ksh93l which could cause a core dump
 	  when an assignment list containing PATH is specified inside
@@ -332,7 +614,7 @@ All recorded changes follow.
 01-08-09  Another bug in the optimization of for loops in ksh93l caused
 	  errors in recursive functions using local variables that
 	  contained for loops has been fixed.
-01-07-27  A bug in which IFS would be unset after a command substituion
+01-07-27  A bug in which IFS would be unset after a command substitution
 	  inside a here document has been fixed.
 01-07-26  To conform to the POSIX standard, if you invoked ksh name,
 	  and name does not contain a /,  it will first try to run
@@ -343,7 +625,7 @@ All recorded changes follow.
 01-07-23  A bug in which unset -f invoked in a subshell could unset a
 	  function defined in the parent has been fixed.
 01-07-16  A bug in the optimization of for loops in ksh93l caused
-	  name references to be treated as invariantes has been fixed.
+	  name references to be treated as invariants has been fixed.
 01-07-09  A bug in which a discipline function applied to a local variable
 	  could cause a shell exception has been fixed.  Discipline
 	  functions can only be specified for global variables. 
@@ -743,7 +1025,7 @@ All recorded changes follow.
 	  the value of a name reference contained a positional
 	  parameter and the name reference was not defined inside
 	  a function has been fixed.
-97-06-30  Arithmetic expressions now correctly handle hexidecimal
+97-06-30  Arithmetic expressions now correctly handle hexadecimal
 	  constants.
 97-06-30  A bug in which integer variables could be expanded
 	  with a leading 10# when declared with typeset -i
@@ -1027,9 +1309,310 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+04-02-29 comp/omitted.c: move env trace after PATH fixup
+	 comp/omitted.c: cygwin spawn _P_DETACH =&gt; _P_NOWAIT+setpgid(pid,0)
+	 misc/optget.c: fix html mailto: match
+	 port/astlicense.c: add type=test for fixed 2001 date
+	 features/float: check local NaNQ first
+	 vmalloc/vmhdr.h: fix _vmextern_ vm_truncate return type
+	 misc/magic.tab: add elf s390 index=22
+04-02-26 vmalloc: VMCHECK a:assertions c:arena-check w:warn-instead-of-abort
+	 sfio/sfvscanf.c: fix extf arg selection
+04-02-24 features/dirent: set nodefine to avoid ast_std.h _typ_off64_t undef
+	 disc/sfkeyprintf.c: only case pattern must be ()&#0091;&#0093; balanced
+04-02-14 include/sfio_t.h: add SF_DCDOWN, SFDCNEXT(), SFDCPREV()
+04-02-13 string/strmatch.c: fix bug that didn't save one-time sub&#0091;&#0093; size
+	 vmalloc: -g: export VMCHECK=1 enable malloc/free checks
+	 vmalloc: -g: free(0) to check and disable malloc/free checks
+	 vmalloc: -g: free(1) to check and enable malloc/free checks
+04-02-11 Makefile: add :P=A: to conf and lcgen exec for cross-compile
+	 regex: use MBSIZE() instead of mbsize() to grab 1 char on err
+	 vmalloc/vmbest.c: updated to do more comprehensive DEBUG tests
+04-02-04 sfio/sfraise.c: add sfraise(0,a,b) to iterate over all streams
+04-02-01 vmalloc/vmbest.c: _BLD_DEBUG free(0) checks the arena
+04-01-31 features/vmalloc: fix typo that missed _mmap_zero
+04-01-23 string/strerror.c: handle real strerror() return value overwrite
+04-01-11 path/pathpath.c: fix size vs. sizeof(buf) typo
+03-12-22 misc/magic.tab: dos EXE tweaks
+03-12-05 vmalloc: sync with kpv, adding exceptf announcements
+03-12-04 port/astlicense.c: fix expand() loop sentinel bug
+03-12-02 include/ast.h: mbchar() advances by 1 on mbtowc() error
+	 misc/fts.c: increase MINNAME to 32
+03-11-21 vmalloc/vmbest.c: export VMCHECK=1 to enable $(CC.DEBUG) vmcheck()
+         vmalloc/vmbest.c: export VMCHECK=2 to disable KPVCOMPACT
+	 misc/magic.c: add { cobol copybook pl1 } and suffix preference
+03-11-12 features/stdio: drop cuserid,getopt for SUSV3
+03-11-11 vmalloc/*: merge kpv update -- this should stomp the compaction bug
+03-10-23 comp/iconv.c: fix sfreserve lock fallback
+03-10-20 sfio/_sfopen.c: add to allow user sfopen() intercept
+03-10-17 regnexec.c: fix exec time REG_LEFT, \x.... =&gt; wctomb()
+03-10-12 string/strtoi.h: fix strton '.' overconsumption
+03-10-12 comp/iconv.c: identity is always (iconv_t)0
+03-10-09 string/fmtesc.c: fix FMT_SHELL to check for all shell magic chars
+03-10-01 port/astlicense.c: unknown authors copied verbatim (instead of ignored)
+03-09-30 string/chresc.c: handle \u..., \x... consumes all trailing hex digits
+	 string/stresc.c: \u... and \x... &gt; UCHAR_MAX =&gt; wctomb()
+03-09-29 fnv.h: add
+03-09-23 modedata.c: table is for external modes, so no arch specific hacks
+	 optget.c: fix option prefix match translation bug
+	 optget.c: add `&lt;length&gt; &lt;name&gt;=&lt;value&gt; to optstr()
+	 features/lib: add memcmp() test for sgi optimzation bug
+03-09-22 regex.h,regcomp.c: add regncomp()
+	 regclass.c: fix for loop dangling ; in regaddclass()
+03-09-20 sftable.c,sfvprintf.c: fix SFFMT_CHAR handling to match extf api
+03-09-19 sfmode.c: update release to kpv's
+03-09-17 regcomp.c: add pedantic backref error checks
+03-09-16 regnexec.c: exec time REG_LEFT =&gt; don't advance past initial position
+	 regclass.c: add regaddclass() for user defined &#0091;:class:&#0093;
+	 regexec.h: REG_VERSION_N2X, add redisc_t {re_map} ccode map
+	 regstat.c: add regstat_t
+03-09-11 optget.c: --n:=v sets opt_info.assign=':', opt_info.number enabled
+03-09-09 disc/sfkeyprintf.c: *pn on lookup is arg separator; lookup "" arg too
+03-09-05 optget.c: &#0091;f:l*?&#0093; preserves user long name past '*' in opt_info.name&#0091;&#0093;
+03-09-03 sfstr.h: add sfstrpend() for #pending bytes in read buffer
+03-08-25 regex: add REG_FIRST, optimize bm
+	 features/lib: _AST_no_spawnveg==1 falls back to fork/exec
+03-08-22 features/stdio,stdio/asprintf.c,stdio/vasprintf.c: add
+03-08-21 path/pathnative.c,path/pathposix.c: interix updates
+	 features/botched: add cygwin _stat =&gt; _stat64
+03-08-15 include/ast.h: map out bsd strmode()
+	 features/common: add interix _ast_intmax_t workarounds
+	 misc/fs3d.c: 3d mount test now uses "" instead of NiL (or cygwin dumps)
+03-08-11 string/fmtesc.c: fix optional quoting checks
+	 tm/tmdate.c: fix &gt; 1 year of seconds arithmetic
+	 tm/tmfix.c: fix leap year adjustments
+03-08-01 features/lib: beef up sock_peek test for interix
+03-07-29 features/float: add -lm to frexp... test
+	 Makefile: fix -lm astmath test sense
+03-07-26 features/mem.c: favor _mem_sbrk over _mem_mmap_*
+03-07-22 vmalloc/vmbest.c: fall back to sbrk() if mmap() fails
+	 features/mem.c: _mem_sbrk means sbrk() and brk() work
+03-07-17 regex/regcomp.c: fix bug that treated KRE X{n,m} like {n,m}(X)
+	 misc/magic.c: check MAGIC_VERBOSE for all load() messages
+03-07-14 misc/optget.c: handle &#0091;...&#0093;{&#0091;...&#0093;<.>..</.><.>..}</.>
+03-06-21 misc/sigcrit.c: block SIGCHLD if _lib_sigprocmask || _lib_sigsetmask
+	 comp/spawnveg.c,sfio/sfmode.c: use sigcritical() SIG_REG_* macros
+	 comp/spawnveg.c: drop ENOEXEC logic
+	 vmalloc/*: snarf kpv KPVCOMPACT() fix
+	 vmalloc/vmbest.c: export VMCHECK=2 to disable KPVCOMPACT (just in case)
+	 string/strdup.c: drop __strdup() etc. intercepts -- malloc gets it
+	 features/mem: define _mem_method and _mem_* possible values
+	 vmalloc/malloc.c: _AST_mem_method==_mem_* to force mem get method
+	 sfio/sfputr.c: __ia64 memccpy is bogus -- how many tries do they get?
+	 path/pathshell.c: verify abs path and access(path,X_OK) -- duh
+	 vmalloc/vmhdr.h: add private _Vmessage() for non-sfio ASSERT() 
+	 port/astconf.c: fix bug that always returned the minmax value
+03-06-11 comp/*.c: reorder macro hding for mvs.390 and &lt;ast_map.h&gt; 
+	 features/vmalloc: add _lib_brk and _lib_sbrk verification
+	 include/ast_std.h,etc.: add _map_malloc for malloc =&gt; _ast_malloc
+	 comp/conf.sh: fix SI_* and *_SI_* macro redefs
+	 ast.h: VMDEBUG or _BLD_DEBUG enable &lt;vmalloc.h&gt; and VMFL tracing
+	 vmalloc/vmtrace.c: _PACKAGE_ast __FUNCTION__ is a string
+	 vmalloc/vmtrace.c: set trace file fd FD_CLOEXEC
+	 vmalloc/vmbest.c: set /dev/zero mmap fd FD_CLOEXEC
+	 features/mmap: fix ancient read() vs. mmap() time arithmetic typo
+	 vmalloc/malloc.c: _AST_std_malloc==1 to force standard malloc
+03-06-09 comp/omitted.c: add _imp__FUNCTION sybols for __CYGWIN__ static link
+	 vmalloc/vmbest.c: handle systems with sbrk() but no brk()
+03-06-04 port/astconf.c: drop non-standard diagnostics
+03-06-03 comp/conf.sh: rework symbol collision logic
+03-05-30 conf.tab,conf.sh,astconf.c: add &lt;sys/systeminfo.h&gt; sysinfo() SI_*
+03-05-29 ccode.h: rework for extensibility, drop obsolete mematoe(), memetoa()
+03-05-28 regex/*: recode to use isw*() directly when needed, is*() otherwise
+03-05-27 features/vmalloc: fix _std_malloc test
+03-05-25 misc/optget.c: fix optstr() ???* internal options
+03-05-24 misc/optget.c: fix (ancient) argv null dereference
+03-05-23 comp/getcwd.c: don't intercept on _WINIX -- unreliable st_ino
+03-05-22 sfio/sfsprintf.c: n&lt;0 =&gt; don't append '&nbsp;'
+03-05-18 misc/fts.c: re-stat FTS_DP to update nlink/times 
+	 misc/fts.c: add FTSENT.stack to eliminate getlist() recursion
+	 regex/ucs_names.h: use "..." catenation to placate some cc's
+03-05-11 string/strtoi.h: handle "-" "+" "0x" "11#"
+03-05-09 vmalloc/vmbest.c: large memory allocation tweaks
+03-05-06 misc/optget.c: fix getopt_long() prefix==1 bug that missed short flags
+03-04-27 comp/system.c: handle &lt;ast_map.h&gt;
+03-04-24 vmalloc/vmmopen.c: drop dup &lt;unistd.h&gt;
+03-04-21 tm/tmdate.c: fix next hour/min logic
+03-04-15 vmalloc/malloc.c: intercept __malloc() along with __libc_malloc()
+	 string/strdup.c: intercept __strdup() along with __libc_strdup()
+	 features/mmap: consolidate from features/(lib|sfio|vmalloc)
+	 add _NO_MMAP==1 to disable all mmap()/munmap() calls
+	 path/pathposix.c: add
+03-04-14 comp/setlocale.c: fix debug_mbtowc() return value for *s==0 || n &lt; 1
+	 comp/iconv.c: fix error return errno values
+03-04-11 misc/stk.c: fix stkgrow() realloc bug
+03-04-05 string/tok.c: support readonly single token input strings
+	 disc/sfdcdio.c: fix F_DIOINFO and FDIRECT #ifdef's
+	 include/ast_std.h: allow _LARGEFILE64_SOURCE on __hppa
+	 features/common: fix `tst _foo_' =&gt; `tst foo_' typo
+	 features/float: fix `tst _foo_' =&gt; `tst foo_' typo
+	 features/float: add FLTMAX_(UINTMAX_MAX,INTMAX_MAX,INTMAX_MIN)
+	 comp/omitted.c: fix pathconf =&gt; _pathconf =&gt; _ast_pathconf loop
+03-04-03 features/float: add _ast_no_um2fm: no usinged intmax =&gt; floatmax cast
+	 vmalloc/vmbest.c: add getenv("VMCHECK") to initialize Vmcheck
+03-03-28 include/ast_dir.h: add D_TYPE; { D_FILENO D_TYPE } must be #ifdef'd
+	 misc/fts.c|getcwd.c|glob.c,preroot/getpreroot.c: add D_FILENO #ifdef's
+	 Makefile: make sure _BLD_ast is defined for all compiles
+03-03-27 ast_vfork.h: generate from features/vfork to pick up headers/pragmas
+03-03-25 comp/omitted.c: drop free() of live environ
+	 path/pathshell.c: allow trailing .exe -- pox on that
+	 string/strtoi.h: fix bug leading 3 digits before thousands sep bug
+	 string/(fmt|str)&#0091;gu&#0093;id.c: we know root when we see it
+03-03-24 misc/optget.c: handle : and ? in := default value
+03-03-21 ast_std.h: drop all spawn*() but spawnveg()
+	 obsolete/spawn.c: add for dropped spawn*()
+	 features/lib: _use_spawnveg if spawnveg() is a win over fork()/exec()
+	 features/lib: drop NutForkExecve() and _map_spawnve
+	 features/lib: fix memccpy test to clean up /tmp droppings
+	 comp/spawnveg.c: call posix_spawn() if implemented
+	 comp/omitted.c: add spawnve() intercept
+	 comp/getoptl.c: set getopt_long() optind even if no options
+	 tm/tmfmt.c: add %Q&lt;delim&gt;recent&lt;delim&gt;distant&lt;delim&gt;
+	 misc/optget.c: fix trailing '*' for option and option args
+	 sfio/sfmode.c: getenv("_AST_SFIO_OPTIONS") &#0091;,&#0093;SF_LINE&#0091;,&#0093; for fd {0,1,2}
+	 vmalloc/*: kpv sync for uwin build independent of libast
+03-03-18 port/astconf.c: switch to dynamic string values (saves 7K data/bss)
+	 string/strmatch.c: switch to dynamic regex cache (saves 3K data/bss)
+	 regex/regcoll.c,ucs_names.h: initialize rw tables from smaller ro data
+	 features/lib: add vfork test for passing SIG_IGN across exec
+	 features/lib: add spawn test for passing SIG_IGN across spawn
+03-03-17 comp/omitted.c: unlink() renames to .deleted dir in case file open
+	 sfio/sfpopen.c: handle mode "" for spawn with no pipe
+	 features/float,comp/frexp.c,comp/frexpl.c: add pow2() table alternative
+03-03-12 features/lib: fix linux.ia64 memccpy() tests -- now its their turn
+	 features/vmalloc: fix /dev/zero test
+	 features/align: _ast_intmax_t and _ast_fltmax_t join the union
+	 misc/stk.c: fix struct frame size to align data
+	 disc/sfdcdos.c: change sfslen() =&gt; sfvalue(f)
+03-03-10 misc/optget.c: handle &#0091;f<:>x:lll</:><?>ddd&#0093;</?>
+03-03-07 port/astconf.c: uninitialized CONFORMANCE + POSIXLY_CORRECT =&gt; standard
+03-03-05 comp/omitted.c: make sure at least /bin is in PATH to find cygwin dlls
+03-03-02 path/pathshell.c: write access to /bin is effectively root
+03-02-28 features/float: add (FLT|DBL|LDBL)_U?(LONG|LONGLONG|INTMAX)_(MIN|MAX)
+03-02-25 features/lib: change vfork() test to use _exit() instead of exit()
+03-02-23 include/error.h: update ERROR_VERSION for error_info.number space
+03-02-22 comp/conf.sh: wrap ksh check in eval to avoid premature exit
+03-02-21 misc/fts.c: verify chdir(..) to avoid malicious dir rename()
+03-02-19 string/strtoip4.c: isspace() instead of ' '||'\t'
+03-02-17 regex/regcomp.c: fix stats.l REX_REP logic that botched REX_BM
+03-02-13 string/base64.c: handle catenated encodings
+03-02-11 features/libpath.sh: change LIBPATH to &lt;dir&gt;&#0091;:&lt;env&gt;&#0091;:&lt;pat&gt;&#0093;&#0093;&#0091;,...&#0093;
+03-02-07 path/pathfind.c: allow "/dev/null" to be PATH_REGULAR
+03-02-06 include/ast.h,fmtquote.c: add FMT_ALWAYS|FMT_ESCAPED|FMT_SHELL|FMT_WIDE
+03-02-05 tm/tmdate.c,tm/tmword.c,string/strelapsed.c: '_' treated like ' '
+03-02-01 string/strelapsed.c: handle ps style &#0091;day-&#0093;&#0091;hour:&#0093;min:sec
+03-01-31 port/astlicense.c: fix author=* match
+03-01-30 include/tm.h: add tmisleapyear() macro
+03-01-29 comp/getopt.h,comp/getoptl.c: add gnu getopt_long(), getopt_long_only()
+	 include/ast_getopt.h: for non-gnu part of comp/getopt.h
+	 include/ast_std.h: include &lt;ast_getopt.h&gt; instead of &lt;getopt.h&gt;
+03-01-28 ast.h,string/base64.c: add base64encode() and base64decode()
+	 path/pathfind.c: verify S_ISREG()
+03-01-24 path/pathexists.c: fix abs dir bug and deal with case ignorance
+03-01-23 path/pathpath.c: honor PATH_ABSOLUTE for the easy case too
+03-01-22 path/pathprobe.c: fix search to find both the probe script and command
+03-01-17 misc/magic.tab: application/zip =&gt; appplication/(gzip|pzip|zip)
+03-01-14 misc/optget.c: change href="" to href="."
+03-01-10 include/ast_std.h: strtold() import hackery for static __CYGWIN__
+03-01-03 include/regex.h,regex/regcomp.h: add REG_SHELL_GROUP
+	 include/ast.h,string/strmatch.c: add STR_GROUP for REG_SHELL_GROUP
+02-12-15 include/error.h: errorcontext =&gt; Error_context_s (compatible til 2004)
+02-12-06 misc/sigdata.c: add NoF(sigdadata) -- why nmake was uninterruptable!
+02-12-03 comp/omitted.c,features/omitted: handle cygwin alarm() return botch
+02-11-27 misc/swapop.c: op=3,size=4 =&gt; op=7
+	 string/strlcat.c,strlcpy.c: fix uwin decl clash
+02-11-26 sfio/sfvprintf.c: fix sfsprintf() '&nbsp;' termination bug
+02-11-22 misc/glob.c: move static struniq() to libast extern
+	 string/fmtversion.c,include/ast.h: add fmtversion
+02-11-18 string/strncopy.c: add
+	 misc/magic.tab: list size for magicid.h magic
+02-11-14 sfio/sfvprintf.c: add %#c for C escapes
+	 include/error.h: add ERROR_NOTIFY context flag for builtin commands
+02-11-11 string/strtoi.h: add S2I_size for strnto*() size_t 2nd arg
+	 sfio/sfstrtof.h: add S2I_size for strnto*() size_t 2nd arg
+	 comp/putenv.c: add setenv() and unsetenv() wrappers for setenviron()
+02-10-31 path/pathfind.c: add dir of including file to the pathinclude() list
+	 misc/optesc.c: add
+02-10-30 string/strtoip4.c: set next char pointer even on error
+02-10-29 comp/resolvepath.c: add (size_t version of realpath())
+	 misc/mime.c: fix mimehead() to ignore null content values
+02-10-28 misc/glob.c: add GLOB_STARSTAR for /**/ and GLOB_NOTDIR optimization
+02-10-27 string/struniq.c: add
+02-10-23 features/common: fix off-by-one loop check
+02-10-18 include/ast_std.h: avoid off_t,ftruncate,lseek,truncate redefinitions
+02-10-17 misc/mime.c: handle type/* match, fix bogus header parse
+02-10-04 sfio/sfstrtof.h: S2F_static &lt;0:export =0:private &gt;0:static
+02-10-02 features/common: don't define _WIN32; define _WINIX =&gt; unix on windows
+	 features/tty: finally stomp the bsd _POSIX_VDISABLE redefinition
+	 misc/fastfind.c: add more specific findwrite() error messages
+	 comp/omitted.c: fix cygwin utime() to update st_ctime
+	 comp/strtol.c,strtoul.c: __CYGWIN__ static link workaround XXX
+	 string/fmtls.c,fmttime.c: tmform() =&gt; tmfmt()
+02-09-22 port/astconf.c: return values in fmtbuf() buffer instead of stack
+	 port/mnt.c: don't set MNT_REMOTE for win32 ?:paths
+	 sfio/sfvscanf.c: _sfdscan() is library global (not static)
+02-09-21 path/pathkey.c: add tool arg for mamake compatible hash
+	 features/fcntl.c: handle iffe _hdr_lcl_* =&gt; _lcl_* change
+02-09-15 comp/conf.sh: fix enum vs. macro test
+	 cdt: kpv sync
+02-09-11 ast.h,features/common: move _WIN32 macro init to features/common
+	 features/common: enable __EXTERN__ and __DEFINE__ for _WIN32&amp;!_UWIN
+	 features/float: add -lm to _ast_*_nan_init tests
+	 vmalloc: kpv sync with vmresizef =&gt; vmgetmem
+	 features/iconv: must have both &lt;iconv.h&gt; and iconv_open()!
+	 features/vmalloc: alloca test must compile *and* link
+	 sfio/sfvscanf.c,sfstrtof.h: add flag arg to char get, fix NaN loop
+02-09-10 vmalloc/vmhdr.h: enable getpagesize() and sbrk() prototypes
+	 features/fcntl.c: enable mmap64() prototype
+	 include/ast_windows.h: windows.h wrapper with ast namespace workarounds
+02-09-07 misc/mime.c: fix quoted value parse bug that ate the whole line
+02-09-05 features/vmalloc: add free() to _std_malloc test
+	 include/ast.h: NoF(x) now defines _DATA_x for !_BLD_DLL too
+	 tm/tmlocale.c: { C POSIX en } == unix dadgummit
+02-08-29 path/pathfind.c: initialize Dir_t.next=0
+02-08-28 uwin/rint.c: update
+	 features/libpath.sh: "bin" is now the default value
+02-08-22 vmtrace.h: add for debugging
+02-08-20 misc/magic.c: convert to use &lt;cdt.h&gt;
+	 vmalloc/vmresizef.c: add for generic discipline resizef default
+	 string/strelapsed.c: allow long time component names
+02-08-19 misc/optget.c: add `.fp 5 CW' to --nroff output
+	 string/(fmtfs|fmtuid|fmtgid|strgid|struid).c: convert to use &lt;cdt.h&gt;
+	 include/dt.h,cdt/dtnew.c: add for dtopen() in specific vm region
+02-08-13 comp/omitted.c: fix bzero logic for e.g. unixware.i386
+	 include/ast.h: add fmtbase-&gt;fmtbasell; swap in 2003-09-01
+02-08-12 regex/regnexec.c: fix REG_MINIMAL REX_DOT mb bug
+02-08-08 features/iconv: &lt;ast_common.h&gt; instead of &lt;sys/types.h&gt; &lt;ast_common.h&gt;
+02-08-07 regex/regcomp.c: recognize anchors in BRE subexpressions
+02-08-06 comp/iconv.c: handle win32 cpNNNN == windows-NNNN aliases
+02-08-05 cdt/*: sync with kpv src
+02-08-02 features/iconv: include sys/types.h for ast_types.h
+02-08-01 misc/magic.c: magic file "." names the default
+	 misc/magic.c: handle addr type (from irix string)
+	 features/lib: move malloc tests to features/vmalloc
+	 features/vmalloc: snarf tests from features/lib
+	 vmalloc/*: sync with kpv src
+	 comp/libc.c: dropped -- __libc_* intercepts moved to vmalloc/malloc.c
+02-07-30 features/lib: handle __libc_malloc() in _std_malloc test
+	 vmalloc/malloc.c: add gnu pvalloc()
+	 features/vmalloc: fix alloca check
+02-07-29 features/limits.c: handle netbsd guards
+02-07-27 sfio/sfpoll.c: handle rw pipes
+02-07-25 features/iconv: include ast_types.h for size_t in ast_iconv.h
+02-07-18 apply LARGEFILE64 header prototype clash patches
+	 misc/optget.c: __EXTERN__ _opt_info_ instead of opt_info
+02-07-17 ast_std.h: memzero() now defaults to memset() instead of bzero()
+02-07-16 ast_std.h: add ast.env_serial
+	 misc/setenviron.c: increment ast.env_serial
+	 include/tm.h: tmset() now calls tminit() directly
+	 tm/tminit.c: check ast.env_serial for env change
+	 tm/tmfix.c: speed up for large values of tm_mday
+02-07-15 comp/fnmatch.c: fix memory leak caused by missing regfree()
+	 comp/strstr.c: fix broken interpretation and implementation
+	 comp/iconv.c: intercept (but no-op) null to and from buffer pointers
 02-06-27 ast_std.h: map _sysconf =&gt; _ast_sysconf for sun
 02-06-26 cdt,sfio,vmalloc: kpv sync -- is this ever easy?
 02-06-24 sfio: kpv sync, vfwscanf(),fputw() fix (wcslen(x)*sizeof(wchar_t)!!)
@@ -1879,9 +2462,36 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+04-02-29 cp.c: decouple -f and -i for standard CONFORMANCE
+	 cp.c: mv attempts rename() before remove()+rename()
+	 date.c: -f format or +format disables system clock set
+04-02-14 cp.c: add -F --fsync to call fsync(2) for each copied file
+04-01-05 head.c: -s now uses opt_info.number for &gt;2Gb skip
+03-09-18 tail.c: add --log
+03-09-11 rm.c: add --unconditional
+03-08-11 fold.c: add --delimiter=c to break at c
+03-07-28 features/time: change settimeofday() test to 2nd arg of (void*)0
+	 expr.c: add {match,substr,index,length,quote}
+03-07-15 fmt.c: fix trailing space bug
+03-06-20 uname.c: fix -p constant string overwrite
+03-06-04 stty.c: add undef to control assignment docs
+03-05-31 uname.c: add -f and sysinfo()/confstr() compatibility via astconf()
+03-05-27 rm.c: fix inappropriate "/.." append path overflow
+	 cut.c: snarf from dgk
+03-05-18 rm.c: check st_nlink to verify progress w.r.t. ftwalk/fts
+03-05-15 join.c: fix stealth -v2 bug (thanks ahs)
+03-05-04 wc.c: drop trailing space for `wc -l &lt; file'
+03-03-21 date.c: add %Q/recent/distant/ docs
+03-02-19 date.c: fix %+|!flag docs
+02-11-14 update for cmdinit() 4th arg and ERROR_NOTIFY for interrupt cleanup
+02-10-02 date.c: tmform() =&gt; tmfmt()
+02-09-30 date.c,uname.c: change execv() calls to procrun(): exec|exit =&gt; bad
+02-09-06 wclib.c: fix 1 char-at-a-time miscount bug
+02-08-19 chgrp.c: convert to use &lt;cdt.h&gt;
+02-07-23 join.c: fix comm snarf typo
 02-04-05 date.c: add %u
 02-01-24 stty.c: ifdef a few more macros for uts (yes, its still running)
 01-12-14 date.c: clarify %z doc
@@ -1987,9 +2597,23 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT face=courier><FONT color=red><H3><A name="libdll changes">libdll changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libdll changes">libdll changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+04-01-30 dllfind.c: dllplug(error_info.id) then dllplug(0)
+04-01-28 dllscan.c: update for new plugin scheme: lib/foo/bar.xxx
+	 dllplug.c: add dllplug() for plugin dllfind()
+03-03-12 dllfind.c: dlopen() with RTLD_GLOBAL|RTLD_PARENT defaults
+03-02-11 dllscan.c: change LIBPATH to &lt;dir&gt;&#0091;:&lt;env&gt;&#0091;:&lt;pat&gt;&#0093;&#0093;&#0091;,...&#0093;
+03-01-08 dllscan.c: hack version logic again -- is consistency rocket science?
+03-01-07 dlfcn.c: fix darwin.ppc dlopen/dlsym/dlclose
+02-11-18 dllfind.c: add path,size args (with backwards compatibility checks)
+02-11-15 dllfind.c: check for ./path if '.' in path but no '/'
+02-08-30 dllfind.c: fix a bug that returned uninitialized value on not found
+02-08-28 dllscan.c: handle and display bin as a sibling dir
+02-07-31 dllscan.c: add dllsopen,dllsread,dllsclose
+	 dllfind.c: use dllsopen,dllsread,dllsclose
+02-07-26 dllfind.c: add dllinfo()
 02-06-27 dllnext.c: define _GNU_SOURCE to enable RTLD_NEXT
 02-03-17 dllfind.c: fix dll prefix search (for cygwin)
 02-01-11 features/dll: include &lt;dlfcn.h&gt; only if _hdr_dlfcn&amp;&amp;_lib_dlopen
@@ -2013,22 +2637,16 @@ All recorded changes follow.
 </PRE>
 <P>
 <HR>
-<DIV align=right>
+<TABLE border=0 align=center width=96%>
+<TR>
+<TD align=left></TD>
+<TD align=center></TD>
+<TD align=right>March 12, 2004</TD>
+</TR>
+</TABLE>
 <P>
-June 27, 2002
-</DIV>
 
 </TD></TR></TBODY></TABLE>
 
 </BODY>
 </HTML>
-<!--LABELS-->
-<B><FONT font face="verdana,arial,helvetica,geneva,sans-serif">
-<TABLE border=0 bordercolor=white cellpadding=0 cellspacing=0 width=90% align=center><TR>
-<TD align=left><A href="#ksh93 changes">ksh93 changes</A></TD>
-<TD align=left><A href="#libast changes">libast changes</A></TD>
-<TD align=left><A href="#libcmd changes">libcmd changes</A></TD>
-<TD align=left><A href="#libdll changes">libdll changes</A></TD>
-</TR></TABLE>
-</FONT></B>
-<!--/LABELS-->

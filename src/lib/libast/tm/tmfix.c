@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -34,8 +34,8 @@
 #include <ast.h>
 #include <tm.h>
 
-#define DAYS(p)	(tm_data.days[(p)->tm_mon]+LEAP(p))
-#define LEAP(p)	((p)->tm_mon==1&&!((p)->tm_year%4)&&(((p)->tm_year%100)||!((1900+(p)->tm_year)%400)))
+#define DAYS(p)	(tm_data.days[(p)->tm_mon]+((p)->tm_mon==1&&LEAP(p)))
+#define LEAP(p)	(tmisleapyear((p)->tm_year))
 
 /*
  * correct out of bounds fields in tm
@@ -110,6 +110,11 @@ tmfix(register Tm_t* tm)
 		tm->tm_year -= (12 - tm->tm_mon) / 12;
 		tm->tm_mon = (12 - tm->tm_mon) % 12;
 	}
+	while (tm->tm_mday < -365)
+	{
+		tm->tm_year--;
+		tm->tm_mday += 365 + LEAP(tm);
+	}
 	while (tm->tm_mday < 1)
 	{
 		if (--tm->tm_mon < 0)
@@ -118,6 +123,11 @@ tmfix(register Tm_t* tm)
 			tm->tm_year--;
 		}
 		tm->tm_mday += DAYS(tm);
+	}
+	while (tm->tm_mday > 365)
+	{
+		tm->tm_mday -= 365 + LEAP(tm);
+		tm->tm_year++;
 	}
 	while (tm->tm_mday > (n = DAYS(tm)))
 	{

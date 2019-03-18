@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -41,6 +41,7 @@
 #define sfstrclose(f)	sfclose(f)
 
 #define sfstrtell(f)	((f)->_next - (f)->_data)
+#define sfstrpend(f)	((f)->_endb - (f)->_next)
 #define sfstrrel(f,p)	((p) == (0) ? (char*)(f)->_next : \
 			 ((f)->_next += (p), \
 			  ((f)->_next >= (f)->_data && (f)->_next  <= (f)->_endb) ? \

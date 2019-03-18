@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -170,13 +170,15 @@ struct _dtstat_s
 #define DT_CLOSE	2	/* a dictionary is being closed		*/
 #define DT_DISC		3	/* discipline is about to be changed	*/
 #define DT_METH		4	/* method is about to be changed	*/
+#define DT_ENDOPEN	5	/* dtopen() is done			*/
+#define DT_ENDCLOSE	6	/* dtclose() is done			*/
 
 _BEGIN_EXTERNS_	/* public data */
 #if _BLD_cdt && defined(__EXPORT__)
-#define extern	__EXPORT__
+#define extern		extern __EXPORT__
 #endif
 #if !_BLD_cdt && defined(__IMPORT__)
-#define extern	__IMPORT__
+#define extern		extern __IMPORT__
 #endif
 
 extern Dtmethod_t* 	Dtset;

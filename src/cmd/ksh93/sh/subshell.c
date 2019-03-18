@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1982-2002 AT&T Corp.                *
+*                Copyright (c) 1982-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -27,10 +27,6 @@
  *
  *   David Korn
  *   AT&T Labs
- *   Room 2B-102
- *   Murray Hill, N. J. 07974
- *   Tel. x7975
- *   research!dgk
  *
  */
 
@@ -44,11 +40,19 @@
 #include	"variables.h"
 #include	"path.h"
 
-#undef nv_name
-
 #ifndef PIPE_BUF
 #   define PIPE_BUF	512
 #endif
+
+/*
+ * Note that the following structure must be the same
+ * size as the Dtlink_t structure
+ */
+struct Link
+{
+	struct Link	*next;
+	Namval_t	*node;
+};
 
 /*
  * The following structure is used for command substitution and (...)
@@ -58,13 +62,17 @@ static struct subshell
 	struct subshell	*prev;	/* previous subshell data */
 	struct subshell	*pipe;	/* subshell where output goes to pipe on fork */
 	Dt_t		*var;	/* variable table at time of subshell */
-	Dt_t		*svar;	/* save shell variable table */
+	struct Link	*svar;	/* save shell variable table */
 	Dt_t		*sfun;	/* function scope for subshell */
 	Dt_t		*salias;/* alias scope for subshell */
 #ifdef PATH_BFPATH
 	Pathcomp_t	*pathlist; /* for PATH variable */
 #endif
+#if (ERROR_VERSION >= 20030214L)
+	struct Error_context_s *errcontext;
+#else
 	struct errorcontext *errcontext;
+#endif
 	Shopt_t		options;/* save shell options */
 	pid_t		subpid;	/* child process id */
 	Sfio_t*	saveout;/*saved standard output */
@@ -162,12 +170,15 @@ void sh_subfork(void)
 	}
 	else
 	{
+		short subshell;
 		/* this is the child part of the fork */
 		/* setting subpid to 1 causes subshell to exit when reached */
-		sh_onstate(SH_FORKED|SH_NOLOG);
+		sh_onstate(SH_FORKED);
+		sh_onstate(SH_NOLOG);
 		sh_offstate(SH_MONITOR);
 		subshell_data = 0;
-		sh.subshell = 0;
+		subshell = sh.subshell = 0;
+		nv_putval(SH_SUBSHELLNOD, (char*)&subshell, NV_INTEGER|NV_SHORT);
 		sp->subpid=0;
 	}
 }
@@ -180,89 +191,75 @@ void sh_subfork(void)
 Namval_t *sh_assignok(register Namval_t *np,int add)
 {
 	register Namval_t *mp;
-	register Dt_t	 *htab = subshell_data->svar;
-	register Namfun_t *fp;
+	register struct Link *lp;
+	register struct subshell *sp = (struct subshell*)subshell_data;
+	int save;
 	/* don't bother with this */
-	if(!htab || (nv_isnull(np) && !add))
+	if(!sp->shpwd || (nv_isnull(np) && !add))
 		return(np);
 	/* don't bother to save if in newer scope */
-	if(nv_search((char*)np,subshell_data->var,HASH_BUCKET)!=np)
+	if(nv_search((char*)np,sp->var,HASH_BUCKET)!=np)
 		return(np);
-	if(sh.last_table || sh.namespace)
-		mp = nv_search(nv_name(np),htab,NV_ADD);
-	else
-		mp = nv_search((char*)np,htab,NV_ADD|HASH_BUCKET);
-	if(mp->nvflag || mp->nvalue.cp)		/* see if already saved */
-		return(np);
-	nv_setsize(mp,nv_size(np));
-	mp->nvflag = np->nvflag;
-	mp->nvenv = np->nvenv;
-	if(nv_isnull(np))
+	for(lp=subshell_data->svar; lp; lp = lp->next)
 	{
-		/* mark so that it can be restored */
-		nv_onattr(mp,NV_NOFREE);
-		return(np);
+		if(lp->node==np)
+			return(np);
 	}
-	for(fp=np->nvfun;fp;fp=fp->next)
-		fp->nofree++;
-	mp->nvfun = np->nvfun;
-	mp->nvalue.cp = np->nvalue.cp;
-	nv_onattr(np,NV_NOFREE);
+	mp =  newof(0,Namval_t,1,0);
+	lp = (struct Link*)mp;
+	lp->node = np;
+	lp->next = subshell_data->svar; 
+	subshell_data->svar = lp;
+	save = sh.subshell;
+	sh.subshell = 0;;
+	nv_clone(np,mp,NV_NOFREE);
+	sh.subshell = save;
 	return(np);
 }
-
-#ifdef _ENV_H
-extern void env_put(Env_t*,Namval_t*);
-#endif
 
 /*
  * restore the variables
  */
 static void nv_restore(struct subshell *sp)
 {
-	register Namval_t *mp, *np, *nq;
-	register Namfun_t *fp;
-	for(np=(Namval_t*)dtfirst(sp->svar); np; np=nq)
+	register struct Link *lp, *lq;
+	register Namval_t *mp, *np;
+	const char *save = sp->shpwd;
+	sp->shpwd = 0;	/* make sure sh_assignok doesn't save with nv_unset() */
+	for(lp=sp->svar; lp; lp=lq)
 	{
-		nq = (Namval_t*)dtnext(sp->svar,np);
-		if(mp = nv_search((char*)np,sp->var,HASH_BUCKET))
-		{
-			if(mp!=nv_scoped(IFSNOD))
-				mp->nvfun = 0;
-			nv_unset(mp);
-			nv_setsize(mp,nv_size(np));
+		np = (Namval_t*)lp;
+		mp = lp->node;
+		lq = lp->next;
+		if(nv_isarray(mp))
+			 nv_putsub(mp,NIL(char*),ARRAY_SCAN);
+		nv_unset(mp);
+		nv_setsize(mp,nv_size(np));
+		if(!nv_isattr(np,NV_MINIMAL))
 			mp->nvenv = np->nvenv;
-			mp->nvfun = np->nvfun;
-			for(fp=np->nvfun;fp;fp=fp->next)
-				fp->nofree--;
-			mp->nvalue.cp = np->nvalue.cp;
-			mp->nvflag = np->nvflag;
-			np->nvfun = 0;
-			if(nv_isattr(mp,NV_EXPORT))
-			{
-				char *name = nv_name(mp);
-#ifdef _ENV_H
-				env_put(sh.env,mp);
-#endif
-				if(*name=='_' && strcmp(name,"_AST_FEATURES")==0)
-					astconf(NiL, NiL, NiL);
-			}
-#ifdef _ENV_H
-			else if(nv_isattr(np,NV_EXPORT))
-				env_delete(sh.env,nv_name(mp));
-#endif
-		}
-		dtdelete(sp->svar,np);
-		free((void*)np);
-#if 0
+		mp->nvfun = np->nvfun;
+		if(mp==nv_scoped(PATHNOD))
+			nv_putval(mp, np->nvalue.cp,0);
 		else
+			mp->nvalue.cp = np->nvalue.cp;
+		mp->nvflag = np->nvflag;
+		np->nvfun = 0;
+		if(nv_isattr(mp,NV_EXPORT))
 		{
-			np->nvalue.cp = 0;
-			np->nvflag = NV_DEFAULT;
-		}
+			char *name = nv_name(mp);
+#ifdef _ENV_H
+			sh_envput(sh.env,mp);
 #endif
+			if(*name=='_' && strcmp(name,"_AST_FEATURES")==0)
+				astconf(NiL, NiL, NiL);
+		}
+#ifdef _ENV_H
+		else if(nv_isattr(np,NV_EXPORT))
+			env_delete(sh.env,nv_name(mp));
+#endif
+		free((void*)np);
 	}
-	dtclose(sp->svar);
+	sp->shpwd=save;
 }
 
 /*
@@ -327,6 +324,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 	register struct subshell *sp = &sub_data;
 	int jmpval,nsig;
 	int savecurenv = shp->curenv;
+	short subshell;
 	char *savsig;
 	Sfio_t *iop=0;
 	struct checkpt buff;
@@ -343,7 +341,9 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 	shp->curenv = ++subenv;
 	savst = shp->st;
 	sh_pushcontext(&buff,SH_JMPSUB);
-	shp->subshell++;
+	subshell = shp->subshell+1;
+	nv_putval(SH_SUBSHELLNOD, (char*)&subshell, NV_INTEGER|NV_SHORT);
+	shp->subshell = subshell;
 	sp->prev = subshell_data;
 	subshell_data = sp;
 	sp->errcontext = &buff.err;
@@ -352,7 +352,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 	sp->jobs = job_subsave();
 #ifdef PATH_BFPATH
 	/* make sure initialization has occurred */ 
-	if(!shp->defpathlist)
+	if(!shp->pathlist)
 		path_get("/");
 	sp->pathlist = path_dup((Pathcomp_t*)shp->pathlist);
 #endif
@@ -373,7 +373,6 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 			shp->st.otrapcom = (char**)savsig;
 		}
 		sh_sigreset(0);
-		sp->svar = dtopen(&_Nvdisc,Dtbag);
 	}
 	jmpval = sigsetjmp(buff.buff,0);
 	if(jmpval==0)
@@ -404,7 +403,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 		else if(sp->prev)
 		{
 			sp->pipe = sp->prev->pipe;
-			flags &= ~SH_NOFORK;
+			flags &= ~sh_state(SH_NOFORK);
 		}
 		sh_exec(t,flags);
 	}
@@ -476,12 +475,15 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 		sfseek(iop,(off_t)0,SEEK_SET);
 	if(shp->subshell)
 		shp->subshell--;
+	subshell = shp->subshell;
+	nv_putval(SH_SUBSHELLNOD, (char*)&subshell, NV_INTEGER|NV_SHORT);
 #ifdef PATH_BFPATH
 	path_delete((Pathcomp_t*)shp->pathlist);
 	shp->pathlist = (void*)sp->pathlist;
 #endif
 	job_subrestore(sp->jobs);
-	if(sp->svar)	/* restore environment if saved */
+	shp->jobenv = savecurenv;
+	if(sp->shpwd)	/* restore environment if saved */
 	{
 		shp->options = sp->options;
 		nv_restore(sp);
@@ -497,7 +499,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 		}
 		sh_sigreset(1);
 		shp->st = savst;
-		shp->jobenv = shp->curenv = savecurenv;
+		shp->curenv = savecurenv;
 		if(nsig)
 		{
 			memcpy((char*)&shp->st.trapcom[0],savsig,nsig);
@@ -532,7 +534,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 	sh_argfree(argsav,0);
 	shp->trapnote = 0;
 	if(shp->topfd != buff.topfd)
-		sh_iorestore(buff.topfd);
+		sh_iorestore(buff.topfd|IOSUBSHELL,jmpval);
 	if(shp->exitval > SH_EXITSIG)
 	{
 		int sig = shp->exitval&SH_EXITMASK;

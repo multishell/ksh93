@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -32,8 +32,9 @@
  * fts implementation unwound from the kpv ftwalk() of 1988-10-30
  */
 
-#include "dirlib.h"
-
+#include <ast.h>
+#include <ast_dir.h>
+#include <error.h>
 #include <fs3d.h>
 
 struct Ftsent;
@@ -86,6 +87,7 @@ typedef int (*Stat_f)(const char*, struct stat*);
 	FTSENT*		left;			/* left child		*/ \
 	FTSENT*		right;			/* right child		*/ \
 	FTSENT*		pwd;			/* pwd parent		*/ \
+	FTSENT*		stack;			/* getlist() stack	*/ \
 	FTS*		fts;			/* for fts verification	*/ \
 	long		nlink;			/* FTS_D link count	*/ \
 	unsigned char	must;			/* must stat		*/ \
@@ -101,19 +103,19 @@ typedef int (*Stat_f)(const char*, struct stat*);
 
 
 #if MAXNAMLEN > 16
-#define MINNAME		24
+#define MINNAME		32
 #else
 #define MINNAME		16
 #endif
 
-#define drop(p,f)	((f)->fts_link = (p)->free, (p)->free = (f))
+#define drop(p,f)	(((f)->fts_namelen < MINNAME) ? ((f)->fts_link = (p)->free, (p)->free = (f)) : (free(f), (p)->free))
 
 #define ACCESS(p,f)	((p)->cd==0?(f)->fts_name:(f)->fts_path)
 #define PATH(f,p,l)	((!((f)->flags&FTS_SEEDOTDIR)&&(l)>0&&(p)[0]=='.'&&(p)[1]=='/')?((p)+2):(p))
 #define SAME(one,two)	((one)->st_ino==(two)->st_ino&&(one)->st_dev==(two)->st_dev)
 #define SKIPLINK(p,f)	((f)->fts_parent->nlink == 0)
 
-#if defined(DT_UNKNOWN) && defined(DT_DIR) && defined(DT_LNK)
+#ifdef D_TYPE
 #define ISTYPE(f,t)	((f)->type == (t))
 #define TYPE(f,t)	((f)->type = (t))
 #define SKIP(p,f)	((f)->fts_parent->must == 0 && (((f)->type == DT_UNKNOWN) ? SKIPLINK(p,f) : ((f)->type != DT_DIR && ((f)->type != DT_LNK || ((p)->flags & FTS_PHYSICAL)))))
@@ -127,9 +129,20 @@ typedef int (*Stat_f)(const char*, struct stat*);
 #define SKIP(p,f)	((f)->fts_parent->must == 0 && SKIPLINK(p,f))
 #endif
 
+#ifndef D_FILENO
+#define D_FILENO(d)	(1)
+#endif
+
+/*
+ * NOTE: a malicious dir rename() could change .. underfoot so we
+ *	 must always verify; undef verify to enable the unsafe code
+ */
+
+#define verify		1
+
 /*
  * FTS_NOSTAT requires a dir with
- *	dirent_t.d_type!=DT_UNKNOWN
+ *	D_TYPE(&dirent_t)!=DT_UNKNOWN
  *	    OR
  *	st_nlink>=2
  */
@@ -346,23 +359,43 @@ deleteroot(register FTSENT* root)
 }
 
 /*
- * convert a binary search tree into a sorted todo (link) list
+ * generate ordered fts_link list from binary tree at root
+ * FTSENT.stack instead of recursion to avoid blowing the real
+ * stack on big directories
  */
 
 static void
 getlist(register FTSENT** top, register FTSENT** bot, register FTSENT* root)
 {
-	if (root->left)
-		getlist(top, bot, root->left);
-	if (*top)
+	register FTSENT*	stack = 0;
+
+	for (;;)
 	{
-		(*bot)->fts_link = root;
-		*bot = root;
+		if (root->left)
+		{
+			root->stack = stack;
+			stack = root;
+			root = root->left;
+		}
+		else
+		{
+			for (;;)
+			{
+				if (*top)
+					*bot = (*bot)->fts_link = root;
+				else
+					*bot = *top = root;
+				if (root->right)
+				{
+					root = root->right;
+					break;
+				}
+				if (!(root = stack))
+					return;
+				stack = stack->stack;
+			}
+		}
 	}
-	else
-		*top = *bot = root;
-	if (root->right)
-		getlist(top, bot, root->right);
 }
 
 /*
@@ -416,28 +449,33 @@ setpdir(register char* home, register char* path, register char* base)
 /*
  * pop a set of directories
  */
-
 static int
 popdirs(FTS* fts)
 {
 	register FTSENT*f;
 	register char*	s;
 	register char*	e;
+#ifndef verify
 	register int	verify;
+#endif
 	struct stat	sb;
 	char		buf[PATH_MAX];
 
 	if (!(f = fts->curdir) || f->fts_level < 0)
 		return -1;
 	e = buf + sizeof(buf) - 4;
+#ifndef verify
 	verify = 0;
+#endif
 	while (fts->nd > 0)
 	{
 		for (s = buf; s < e && fts->nd > 0; fts->nd--)
 		{
 			if (fts->pwd)
 			{
+#ifndef verify
 				verify |= fts->pwd->symlink;
+#endif
 				fts->pwd = fts->pwd->pwd;
 			}
 			*s++ = '.';
@@ -742,6 +780,9 @@ fts_read(register FTS* fts)
 	int			i;
 	FTSENT*			t;
 	Notify_t*		p;
+#ifdef verify
+	struct stat		sb;
+#endif
 
 	for (;;) switch (fts->state)
 	{
@@ -941,14 +982,10 @@ fts_read(register FTS* fts)
 			 * make a new entry
 			 */
 
-#if _mem_d_namlen_dirent
-			i = d->d_namlen;
-#else
-			i = strlen(d->d_name);
-#endif
+			i = D_NAMLEN(d);
 			if (!(f = node(fts, fts->current, s, i)))
 				return 0;
-			TYPE(f, d->d_type);
+			TYPE(f, D_TYPE(d));
 
 			/*
 			 * check for space
@@ -991,16 +1028,7 @@ fts_read(register FTS* fts)
 				f->fts_info = FTS_DOT;
 			}
 			else if ((fts->nostat || SKIP(fts, f)) && (f->fts_info = FTS_NSOK) || info(fts, f, s, &f->statb, fts->flags))
-			{
-#if _mem_d_fileno_dirent || _mem_d_ino_dirent
-#if !_mem_d_fileno_dirent
-#define d_fileno	d_ino
-#endif
-				f->statb.st_ino = d->d_fileno;
-#else
-				f->statb.st_ino = 0;
-#endif
-			}
+				f->statb.st_ino = D_FILENO(d);
 			if (fts->comparf)
 				fts->root = search(f, fts->root, fts->comparf, 1);
 			else if (fts->children || f->fts_info == FTS_D || f->fts_info == FTS_SL)
@@ -1044,10 +1072,17 @@ fts_read(register FTS* fts)
 			if (fts->cd <= 0)
 			{
 				f = fts->current->fts_parent;
-				if (fts->cd < 0 || f != fts->curdir || !fts->dotdot ||
-			   	    !SAME(f->fts_statp, fts->dotdot->fts_statp) ||
-				    fts->pwd && fts->pwd->symlink ||
-				    (fts->cd = chdir("..")) < 0)
+				if (fts->cd < 0
+				    || f != fts->curdir
+				    || !fts->dotdot
+				    || !SAME(f->fts_statp, fts->dotdot->fts_statp)
+				    || fts->pwd && fts->pwd->symlink
+				    || (fts->cd = chdir("..")) < 0
+#ifdef verify
+				    || stat(".", &sb) < 0
+				    || !SAME(&sb, fts->dotdot->fts_statp)
+#endif
+				    )
 					fts->cd = setpdir(fts->home, fts->path, fts->base);
 				if (fts->pwd)
 					fts->pwd = fts->pwd->pwd;
@@ -1126,6 +1161,12 @@ fts_read(register FTS* fts)
 					f->fts_path = PATH(fts, fts->path, f->fts_level);
 					f->fts_pathlen = (fts->base - f->fts_path) + f->fts_namelen;
 					f->fts_accpath = ACCESS(fts, f);
+
+					/*
+					 * re-stat to update nlink/times
+					 */
+
+					stat(f->fts_accpath, f->fts_statp);
 					fts->link = f->fts_link;
 					f->fts_link = 0;
 					fts->state = FTS_popstack_return;

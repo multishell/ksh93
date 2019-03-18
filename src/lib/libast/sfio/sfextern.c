@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -33,11 +33,11 @@
 static Vtmutex_t	Sfmutex;
 static Vtonce_t		Sfonce = VTONCE_INITDATA;
 static void _sfoncef()
-{	vtmtxopen(_Sfmutex, VT_INIT);
-	vtmtxopen(&_Sfpool.mutex, VT_INIT);
-	vtmtxopen(sfstdin->mutex, VT_INIT);
-	vtmtxopen(sfstdout->mutex, VT_INIT);
-	vtmtxopen(sfstderr->mutex, VT_INIT);
+{	(void)vtmtxopen(_Sfmutex, VT_INIT);
+	(void)vtmtxopen(&_Sfpool.mutex, VT_INIT);
+	(void)vtmtxopen(sfstdin->mutex, VT_INIT);
+	(void)vtmtxopen(sfstdout->mutex, VT_INIT);
+	(void)vtmtxopen(sfstderr->mutex, VT_INIT);
 	_Sfdone = 1;
 }
 

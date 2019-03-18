@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -59,7 +59,6 @@ struct Optdisc_s;
 
 typedef struct Optpass_s
 {
-	struct Optdisc_s*	disc;
 	char*			opts;
 	char*			oopts;
 	char*			catalog;
@@ -81,19 +80,18 @@ typedef struct Optstr_s
 {
 	char*			argv[3];
 	char*			str;
-	int			colon;
 } Optstr_t;
 
 typedef struct Optstate_s
 {
 	Sfio_t*		mp;		/* opt_info.msg string stream	*/
+	Sfio_t*		vp;		/* translation string stream	*/
 	Sfio_t*		xp;		/* translation string stream	*/
 	Optpass_t	pass[8];	/* optjoin() list		*/
 	char*		argv[2];	/* initial argv copy		*/
 	char*		strv[3];	/* optstr() argv		*/
 	char*		str;		/* optstr() string		*/
 	Sfio_t*		strp;		/* optstr() stream		*/
-	int		colon;		/* optstr : state		*/
 	int		force;		/* force this style		*/
 	int		pindex;		/* prev index for backup	*/
 	int		poffset;	/* prev offset for backup	*/
@@ -109,7 +107,9 @@ typedef struct Optstate_s
 	Optcache_t*	cache;		/* OPT_cache cache		*/
 } Optstate_t;
 
-#define _OPT_PRIVATE_	Optstate_t* state;
+#define _OPT_PRIVATE_ \
+	char            pad[2*sizeof(void*)]; \
+	Optstate_t*	state;
 
 #include <error.h>
 

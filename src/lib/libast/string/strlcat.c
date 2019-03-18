@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -25,7 +25,19 @@
 *******************************************************************/
 #pragma prototyped
 
+#if defined(__STDPP__directive) && defined(__STDPP__hide)
+__STDPP__directive pragma pp:hide strlcat
+#else
+#define strlcat		______strlcat
+#endif
+
 #include <ast.h>
+
+#if defined(__STDPP__directive) && defined(__STDPP__hide)
+__STDPP__directive pragma pp:nohide strlcat
+#else
+#undef	strlcat
+#endif
 
 /*
  * append at t onto s limiting total size of s to n
@@ -33,7 +45,11 @@
  * min(n,strlen(s))+strlen(t) returned
  */
 
-size_t
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
+extern size_t
 strlcat(register char* s, register const char* t, register size_t n)
 {
 	const char*	o = t;

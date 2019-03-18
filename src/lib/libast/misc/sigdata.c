@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -23,7 +23,6 @@
 *                 Phong Vo <kpv@research.att.com>                  *
 *                                                                  *
 *******************************************************************/
-#pragma prototyped
 /*
  * Glenn Fowler
  * AT&T Research
@@ -39,3 +38,7 @@
 Sig_info_t	_sig_info_ = { (char**)sig_name, (char**)sig_text, SIG_MAX };
 
 __EXTERN__(Sig_info_t, _sig_info_);
+
+#ifdef NoF
+NoF(sigdata)
+#endif

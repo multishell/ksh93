@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -74,7 +74,7 @@
 #define COMLONG			(COMDATA-32)
 #define COMMENT(x,b,s,u)	comment(x,b,s,sizeof(s)-1,u)
 
-#define PUT(b,c)		(((b)->nxt<(b)->end)?(*(b)->nxt++=(c)):(-1))
+#define PUT(b,c)		(((b)->nxt<(b)->end)?(*(b)->nxt++=(c)):((c),(-1)))
 #define BUF(b)			((b)->buf)
 #define USE(b)			((b)->siz=(b)->nxt-(b)->buf,(b)->nxt=(b)->buf,(b)->siz)
 #define SIZ(b)			((b)->nxt-(b)->buf)
@@ -106,6 +106,7 @@ typedef struct
 
 typedef struct
 {
+	int		test;
 	int		type;
 	int		verbose;
 	int		ids;
@@ -271,7 +272,10 @@ copyright(Notice_t* notice, register Buffer_t* b)
 	time_t		clock;
 
 	copy(b, "Copyright (c) ", -1);
-	time(&clock);
+	if (notice->test)
+		clock = (time_t)1000212300;
+	else
+		time(&clock);
 	t = ctime(&clock) + 20;
 	if ((x = notice->item[SINCE].data) && strncmp(x, t, 4))
 	{
@@ -348,6 +352,7 @@ astlicense(char* p, int size, char* file, char* options, int cc1, int cc2, int c
 		s = options;
 		options = 0;
 	}
+	notice.test = 0;
 	notice.type = 0;
 	notice.verbose = 0;
 	notice.ids = 0;
@@ -468,6 +473,8 @@ astlicense(char* p, int size, char* file, char* options, int cc1, int cc2, int c
 							return 0;
 						else if (!strncmp(v, "open", 4))
 							notice.type = OPEN;
+						else if (!strncmp(v, "test", 4))
+							notice.test = 1;
 						else if (!strncmp(v, "usage", 5))
 						{
 							notice.type = USAGE;
@@ -493,8 +500,12 @@ astlicense(char* p, int size, char* file, char* options, int cc1, int cc2, int c
 			}
 			else
 			{
-				copy(&buf, file, -1);
-				copy(&buf, ": syntax error: assignment expected", -1);
+				if (file)
+				{
+					copy(&buf, file, -1);
+					copy(&buf, ": ", -1);
+				}
+				copy(&buf, "option error: assignment expected", -1);
 				PUT(&buf, 0);
 				return -1;
 			}
@@ -778,40 +789,68 @@ astlicense(char* p, int size, char* file, char* options, int cc1, int cc2, int c
 	if (v = notice.item[AUTHOR].data)
 	{
 		x = v + notice.item[AUTHOR].size;
-		k = notice.type != USAGE && (x - v) == 1 && (*v == '*' || *v == '-') ? -1 : 0;
+		q = (x - v) == 1 && (*v == '*' || *v == '-');
+		k = q && notice.type != USAGE ? -1 : 0;
 		for (;;)
 		{
-			while (v < x && (*v == ' ' || *v == '\t' || *v == '\r' || *v == '\n' || *v == ',' || *v == '+'))
-				v++;
-			if (v >= x)
-				break;
-			s = v;
-			while (v < x && *v != ',' && *v != '+' && *v++ != '>');
-			n = v - s;
-			q = n == 1 && (*s == '*' || *s == '-');
+			if (!q)
+			{
+				while (v < x && (*v == ' ' || *v == '\t' || *v == '\r' || *v == '\n' || *v == ',' || *v == '+'))
+					v++;
+				if (v >= x)
+					break;
+				s = v;
+				while (v < x && *v != ',' && *v != '+' && *v++ != '>');
+				n = v - s;
+			}
+			h = 0;
 			for (i = 0; i < notice.ids; i++)
 				if (q || n == notice.id[i].name.size && !strncmp(s, notice.id[i].name.data, n))
 				{
+					h = 1;
 					s = notice.id[i].value.data;
 					n = notice.id[i].value.size;
-					break;
+					if (notice.type == USAGE)
+					{
+						copy(&buf, "[-author?", -1);
+						expand(&notice, &buf, s, n);
+						PUT(&buf, ']');
+					}
+					else
+					{
+						if (k < 0)
+						{
+							COMMENT(&notice, &buf, "CONTRIBUTORS", 0);
+							comment(&notice, &buf, NiL, 0, 0);
+						}
+						k = 1;
+						expand(&notice, &tmp, s, n);
+						comment(&notice, &buf, BUF(&tmp), USE(&tmp), 0);
+					}
+					if (!q)
+						break;
 				}
-			if (notice.type == USAGE)
+			if (q)
+				break;
+			if (!h)
 			{
-				copy(&buf, "[-author?", -1);
-				expand(&notice, &buf, s, n);
-				PUT(&buf, ']');
-			}
-			else
-			{
-				if (k < 0)
+				if (notice.type == USAGE)
 				{
-					COMMENT(&notice, &buf, "CONTRIBUTORS", 0);
-					comment(&notice, &buf, NiL, 0, 0);
+					copy(&buf, "[-author?", -1);
+					expand(&notice, &buf, s, n);
+					PUT(&buf, ']');
 				}
-				k = 1;
-				expand(&notice, &tmp, s, n);
-				comment(&notice, &buf, BUF(&tmp), USE(&tmp), 0);
+				else
+				{
+					if (k < 0)
+					{
+						COMMENT(&notice, &buf, "CONTRIBUTORS", 0);
+						comment(&notice, &buf, NiL, 0, 0);
+					}
+					k = 1;
+					expand(&notice, &tmp, s, n);
+					comment(&notice, &buf, BUF(&tmp), USE(&tmp), 0);
+				}
 			}
 		}
 		if (k > 0)

@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -64,9 +64,12 @@
 #define DIRTYPE		'5'		/* directory			*/
 #define FIFOTYPE	'6'		/* FIFO special			*/
 #define CONTTYPE	'7'		/* reserved			*/
-#define SOKTYPE		'8'		/* socket -- reserved		*/
-#define VERTYPE		'V'		/* version -- reserved		*/
-#define EXTTYPE		'x'		/* extended header -- reserved	*/
+#define SOKTYPE		'8'		/* socket			*/
+#define EXTTYPE		'x'		/* extended header		*/
+#define GLBTYPE		'g'		/* global extended header	*/
+#define LLNKTYPE	'K'		/* long link path		*/
+#define LREGTYPE	'L'		/* long file path		*/
+#define VERTYPE		'V'		/* version			*/
 
 /*
  * bits used in mode field

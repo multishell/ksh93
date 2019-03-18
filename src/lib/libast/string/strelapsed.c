@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -30,6 +30,7 @@
  *
  * parse elapsed time in 1/n secs from s
  * compatible with fmtelapsed()
+ * also handles ps [day-][hour:]min:sec
  * if e!=0 then it is set to first unrecognized char
  */
 
@@ -43,17 +44,16 @@ strelapsed(register const char* s, char** e, int n)
 	register unsigned long	v;
 	unsigned long		t = 0;
 	int			f = 0;
+	int			p = 0;
 	int			m;
 	const char*		last;
 
-	while (isspace(*s)) s++;
-	if (*s == '%')
+	for (;;)
 	{
-		t = ~t;
-		last = s + 1;
-	}
-	else while (*(last = s))
-	{
+		while (isspace(*s) || *s == '_')
+			s++;
+		if (!*(last = s))
+			break;
 		v = 0;
 		while ((c = *s++) >= '0' && c <= '9')
 			v = v * 10 + c - '0';
@@ -61,6 +61,16 @@ strelapsed(register const char* s, char** e, int n)
 		if (c == '.')
 			for (m = n; (c = *s++) >= '0' && c <= '9';)
 				f += (m /= 10) * (c - '0');
+		if (c == '%')
+		{
+			t = ~t;
+			last = s;
+		}
+		if (s == last)
+			break;
+		if (!p)
+			while (isspace(c) || c == '_')
+				c = *s++;
 		switch (c)
 		{
 		case 'S':
@@ -76,29 +86,51 @@ strelapsed(register const char* s, char** e, int n)
 		case 'w':
 			v *= 7 * 24 * 60 * 60;
 			break;
+		case '-':
+			p = 1;
+			/*FALLTHROUGH*/
 		case 'd':
 			v *= 24 * 60 * 60;
 			break;
 		case 'h':
 			v *= 60 * 60;
 			break;
+		case ':':
+			p = 1;
+			v *= strchr(s, ':') ? (60 * 60) : 60;
+			break;
 		case 'm':
-			v *= 60;
+			if (*s == 'o')
+				v *= 4 * 7 * 24 * 60 * 60;
+			else
+				v *= 60;
 			break;
 		case 0:
 			s--;
 			/*FALLTHROUGH*/
 		case 's':
-			v += f;
-			f = 0;
+			if (*s == 'c')
+				v *= 20 * 12 * 4 * 7 * 24 * 60 * 60;
+			else
+			{
+				v += f;
+				f = 0;
+			}
 			break;
 		default:
-			if (isspace(c)) t += v + f;
+			if (p)
+			{
+				last = s - 1;
+				t += v + f;
+			}
 			goto done;
 		}
 		t += v;
+		while (isalpha(*s))
+			s++;
 	}
  done:
-	if (e) *e = (char*)last;
-	return(t);
+	if (e)
+		*e = (char*)last;
+	return t;
 }

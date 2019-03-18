@@ -1,7 +1,7 @@
 /*******************************************************************
 *                                                                  *
 *             This software is part of the ast package             *
-*                Copyright (c) 1985-2002 AT&T Corp.                *
+*                Copyright (c) 1985-2004 AT&T Corp.                *
 *        and it may only be used by you under license from         *
 *                       AT&T Corp. ("AT&T")                        *
 *         A copy of the Source Code Agreement is available         *
@@ -141,6 +141,25 @@ int		type;
 			dt->data->here = t;
 			return t ? _DTOBJ(t,lk) : NIL(Void_t*);
 		}
+	}
+
+	/* allow apps to delete an object "actually" in the dictionary */
+	if(dt->meth->type == DT_BAG && (type&(DT_DELETE|DT_DETACH)) )
+	{	if(!dtsearch(dt,obj) )
+			return NIL(Void_t*);
+
+		s = dt->data->htab + HINDEX(dt->data->ntab,dt->data->here->hash);
+		r = NIL(Dtlink_t*);
+		for(p = NIL(Dtlink_t*), t = *s; t; p = t, t = t->right)
+		{	if(_DTOBJ(t,lk) == obj) /* delete this specific object */
+				goto do_delete;
+			if(t == dt->data->here)
+				r = p;
+		}
+
+		/* delete some matching object */
+		p = r; t = dt->data->here;
+		goto do_delete;
 	}
 
 	if(type&(DT_MATCH|DT_SEARCH|DT_INSERT|DT_ATTACH) )
@@ -288,7 +307,9 @@ int		type;
 		}
 	}
 	else /*if(type&(DT_DELETE|DT_DETACH))*/
-	{	if(!t)
+	{	/* take an element out of the dictionary */
+	do_delete:
+		if(!t)
 			return NIL(Void_t*);
 		else if(p)
 			p->right = t->right;

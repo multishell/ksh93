@@ -336,18 +336,20 @@ unset bam
 print 'print ${var[0]} ${var[1]}' > $tmp/script
 chmod +x $tmp/script
 [[ $($SHELL -c "var=(foo bar);export var;$tmp/script") == foo ]] || err_exit 'export array not exporting just first element'
+
 unset foo
-set -o allexport
+set --allexport
 foo=one
 foo[1]=two
 foo[0]=three
-[[ $foo == three ]] || err_exit 'export all not working with arrays'
+[[ $foo == three ]] || err_exit '--allexport not working with arrays'
+set --noallexport
+unset foo
+
 cat > $tmp/script <<- \!
 	typeset -A foo
 	print foo${foo[abc]}
 !
-# 04-05-24 bug fix
-unset foo
 [[ $($SHELL -c "typeset -A foo;$tmp/script")  == foo ]] 2> /dev/null || err_exit 'empty associative arrays not being cleared correctly before scripts'
 [[ $($SHELL -c "typeset -A foo;foo[abc]=abc;$tmp/script") == foo ]] 2> /dev/null || err_exit 'associative arrays not being cleared correctly before scripts'
 unset foo
@@ -476,5 +478,24 @@ FILTER=(typeset scope)
 FILTER[0].scope=include
 FILTER[1].scope=exclude
 [[ ${#FILTER[@]} == 2 ]] ||  err_exit "FILTER array should have two elements not ${#FILTER[@]}"
+
+unset x
+function x.get
+{
+	print sub=${.sh.subscript}
+}
+x[2]=
+z=$(: ${x[1]} )
+[[ $z == sub=1 ]] || err_exit 'get function not invoked for index array'
+
+unset x
+typeset -A x
+function x.get
+{
+	print sub=${.sh.subscript}
+}
+x[2]=
+z=$(: ${x[1]} )
+[[ $z == sub=1 ]] || err_exit 'get function not invoked for associative array'
 
 exit $((Errors))

@@ -1635,7 +1635,7 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 		}
 		if(nv_isattr(np,NV_BINARY) && !(flags&NV_RAW))
 			tofree = 0;
-		if(nv_isattr(np,NV_LJUST|NV_RJUST)!=(NV_LJUST|NV_RJUST))
+		if(nv_isattr(np,NV_LJUST|NV_RJUST) && nv_isattr(np,NV_LJUST|NV_RJUST)!=(NV_LJUST|NV_RJUST))
 			tofree = 0;
        	 	if (sp)
 		{
@@ -2768,10 +2768,15 @@ char *sh_getenv(const char *name)
 @*/ 
 {
 	register Namval_t *np;
-	if(sh.var_tree && (np = nv_search(name,sh.var_tree,0)) && nv_isattr(np,NV_EXPORT))
+	if(!sh.var_tree)
+	{
+#if 0
+		if(name[0] == 'P' && name[1] == 'A' && name[2] == 'T' && name[3] == 'H' && name[4] == 0 || name[0] == 'L' && ((name[1] == 'C' || name[1] == 'D') && name[2] == '_' || name[1] == 'A' && name[1] == 'N') || name[0] == 'V' && name[1] == 'P' && name[2] == 'A' && name[3] == 'T' && name[4] == 'H' && name[5] == 0 || name[0] == '_' && name[1] == 'R' && name[2] == 'L' && name[3] == 'D' || name[0] == '_' && name[1] == 'A' && name[2] == 'S' && name[3] == 'T' && name[4] == '_')
+#endif
+			return(oldgetenv(name));
+	}
+	else if((np = nv_search(name,sh.var_tree,0)) && nv_isattr(np,NV_EXPORT))
 		return(nv_getval(np));
-	if(sh_isstate(SH_INIT) || name[0] == 'P' && name[1] == 'A' && name[2] == 'T' && name[3] == 'H' && name[4] == 0)
-		return(oldgetenv(name));
 	return(0);
 }
 

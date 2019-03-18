@@ -38,7 +38,12 @@ __STDPP__directive pragma pp:nohide getenv
  * UWIN: no _ast_getenv macro map to maintain ast54 compatibility
  */
 
-Intercepts_t	intercepts = { 0 };
+Intercepts_t	intercepts
+#if _BLD_3d
+		;
+#else
+		= { 0 };
+#endif
 
 #if _UWIN && !defined(getenv)
 

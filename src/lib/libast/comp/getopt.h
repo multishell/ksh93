@@ -24,11 +24,10 @@
  * gnu getopt interface
  */
 
+#ifndef _GETOPT_H
 #ifdef	_AST_STD_I
 #define _GETOPT_H		-1
-#endif
-
-#ifndef _GETOPT_H
+#else
 #define _GETOPT_H		1
 
 #include <ast_getopt.h>
@@ -48,4 +47,5 @@ struct option
 extern int	getopt_long(int, char* const*, const char*, const struct option*, int*);
 extern int	getopt_long_only(int, char* const*, const char*, const struct option*, int*);
 
+#endif
 #endif

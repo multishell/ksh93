@@ -36,11 +36,7 @@ extern int	optind;
 extern int	optopt;
 extern char*	optarg;
 
-#ifndef NULL	/* in case <stdlib.h> or <stdio.h> got here first */
-
 extern int	getopt(int, char* const*, const char*);
 extern int	getsubopt(char**, char* const*, char**);
-
-#endif
 
 #endif

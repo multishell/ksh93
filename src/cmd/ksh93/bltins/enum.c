@@ -27,7 +27,7 @@ USAGE_LICENSE
 "[+DESCRIPTION?\benum\b is a declaration command that creates an enumeration "
     "type \atypename\a that can only store any one of the values in the indexed "
     "array variable \atypename\a.]"
-"[+?If the list of \avalue\as is ommitted, then \atypename\a must name an "
+"[+?If the list of \avalue\as is omitted, then \atypename\a must name an "
     "indexed array variable with at least two elements.]" 
 "[i:ignorecase?The values are case insensitive.]"
 "\n"

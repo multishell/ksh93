@@ -431,6 +431,12 @@ char *nv_setdisc(register Namval_t* np,register const char *event,Namval_t *acti
 	register struct vardisc *vp = (struct vardisc*)np->nvfun;
 	register int type;
 	char *empty = "";
+	while(vp)
+	{
+		if(vp->fun.disc && (vp->fun.disc->setdisc || vp->fun.disc->putval == assign))
+			break;
+		vp = (struct vardisc*)vp->fun.next;
+	}
 	if(vp && !vp->fun.disc)
 		vp = 0;
 	if(np == (Namval_t*)fp)

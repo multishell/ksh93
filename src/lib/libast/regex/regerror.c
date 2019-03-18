@@ -45,7 +45,7 @@ static const char*	reg_error[] =
 	/* REG_BADBR	*/	"invalid {...} digits",
 	/* REG_ERANGE	*/	"invalid [...] range endpoint",
 	/* REG_ESPACE	*/	"out of space",
-	/* REG_BADRPT	*/	"unary op not preceeded by re",
+	/* REG_BADRPT	*/	"unary op not preceded by re",
 	/* REG_ENULL	*/	"empty subexpr in pattern",
 	/* REG_ECOUNT	*/	"re component count overflow",
 	/* REG_BADESC	*/	"invalid \\char escape",

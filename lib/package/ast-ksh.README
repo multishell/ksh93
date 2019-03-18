@@ -92,7 +92,15 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-10-02-02  --- Release ksh93t+  ---
+10-03-05  --- Release ksh93t+  ---
+10-03-05  A varibale unset memory leak has been fixed and tests/leaks.sh
+	  has been added to verify the fix.
+10-03-04  Documentation, comment, and disgnostic spelling typos corrected.
+10-02-14  Fix sh_getenv() initialization to cooperate with the 3d fs.
+10-02-12  A bug in which the get discipline function was not invoked for
+	  associative array subscripts for unset array elements has been fixed.
+10-02-12  A bug which could occur if the last line of a script was an eval
+	  that executed multiple commands has been fixed.
 10-02-02  A buffer overflow in read and another in binary type base64
 	  encoding were fixed.
 10-01-20  A bug in the evaluation of arithmetic expression in which the
@@ -2291,6 +2299,16 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+10-03-08 features/tvlib: fix utimensat probe to include all macros/structs
+10-03-07 features/lib: change stream_peek to test pipes only
+10-03-07 string/strelapsed.c: fix next char return overrun
+10-03-06 tm/tvtouch.c: use runtime fallback if utimensat() fails with ENOSYS
+10-03-05 path/pathtemp.c: add pfx /seed for regression testing
+10-03-04 vmalloc/vmwalk.c: add user supplied handle arg
+10-03-04 path/pathtemp.c: properly handle mktemp()-style *+(X) templates
+10-03-03 include/ast_getopt.h: remove NULL guard - _AST_GETOPT_H now handles it
+10-02-24 comp/getopt.h: fix ast_std.h interactions
+10-02-24 vmalloc/malloc.c: empty { VMALLOC_OPTION VMDEBUG ... } => no debug!
 10-02-02 string/base64.c: fix corner case output buffer overflow
 10-02-02 features/fs: sys/mnttab.h requires stdio.h on some systems!!
 10-02-01 misc/optget.c: uppercase --html heading -- doh
@@ -3904,6 +3922,9 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
+10-03-07 tail.c: sfsync(sfstdout) after all -f done, fix -f partial line
+10-03-05 mktemp.c: add --regress=seed for testing
+10-03-05 vmstate.c: add
 10-01-26 tail.c: -f sleep(1) only if no progress from last round of checks
 10-01-20 fts_fix.[ch]: use <fts_fix.h> instead of <fts.h> (see fts_fix.c)
 10-01-20 cp.c: free(state) if called from old shell

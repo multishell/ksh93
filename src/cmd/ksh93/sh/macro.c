@@ -653,8 +653,14 @@ static void copyto(register Mac_t *mp,int endch, int newquote)
 				int offset=0,oldpat = mp->pattern;
 				int oldarith = mp->arith, oldsub=mp->subcopy;
 				sfwrite(stkp,first,++c);
-				if((mp->assign&1) && first[c-2]=='.')
-					offset = stktell(stkp);
+				if(mp->assign&1)
+				{
+					if(first[c-2]=='.')
+						offset = stktell(stkp);
+					if(isastchar(*cp) && cp[1]==']')
+						errormsg(SH_DICT,ERROR_exit(1),
+e_badsubscript,*cp);
+				}
 				first = fcseek(c);
 				mp->pattern = 4;
 				mp->arith = 0;
@@ -1239,6 +1245,13 @@ retry1:
 				return(1);
 			}
 		}
+		if(np && (flag&NV_NOADD) && nv_isnull(np))
+		{
+			if(nv_isattr(np,NV_NOFREE))
+				nv_offattr(np,NV_NOFREE);
+			else
+				np = 0;
+		}
 		ap = np?nv_arrayptr(np):0;
 		if(type)
 		{
@@ -1465,6 +1478,7 @@ retry1:
 				int quoted = mp->quoted;
 				int arith = mp->arith;
 				int zeros = mp->zeros;
+				int assign = mp->assign;
 				if(newops)
 				{
 					type = fcget();
@@ -1479,6 +1493,7 @@ retry1:
 					mp->pattern = 1+(c=='/');
 					mp->split = 0;
 					mp->quoted = 0;
+					mp->assign &= ~1;
 					mp->arith = mp->zeros = 0;
 					newquote = 0;
 				}
@@ -1492,6 +1507,7 @@ retry1:
 				mp->quoted = quoted;
 				mp->arith = arith;
 				mp->zeros = zeros;
+				mp->assign = assign;
 				/* add null byte */
 				sfputc(stkp,0);
 				stkseek(stkp,stktell(stkp)-1);

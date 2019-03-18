@@ -92,7 +92,70 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-09-06-30  --- Release ksh93t+  ---
+09-10-16  --- Release ksh93t+  ---
+09-10-16  A bug where notification to libast that the environment has changed
+          has been fixed.
+09-10-12  A bug in which a function loaded in a subshell could leave side
+	  effects in the parent shell has been fixed.
+09-10-12  A bug in converting a printf %d operand to a number when the operand
+	  contains multiple subscripts for the same variable has been fixed.
+09-10-09  A bug in the handling of the escape character \ in directory prefixes
+	  in command completion has been fixed.
+09-10-09  $PATH processing has been changed to delay dir stat() and .paths
+	  lookup until the directory is needed in the path search.
+09-09-28  Call the ast setlocale() intercept on unset too.
+09-09-24  A bug in which LANG=foo; LC_ALL=foo; unset LC_ALL; did not revert
+	  LC_CTYPE etc. to the LANG value has been fixed.
+09-09-17  A bug in which unsetting SVLVL could cause a script invoked by
+	  name without #! to core dump has been fixed.
+09-09-16  A bug in which a pipeline in a here-document could hang when the
+	  pipefail option was on has been fixed. 
+09-09-09  A bug in the processing of line joining in here documents which
+	  occurred when a buffer began with <escape><new-line> has been fixed.
+09-09-09  A leading ; with commands in a brace group or parenthesis group
+	  no longer causes an error.  It now is used for the "showme" option.
+09-09-09  A bug in which a subshell containing a background process could
+	  block until the background process completed has been fixed.
+09-09-04  A bug in handing ${var[sub]}, where var is a nameref has been fixed.
+09-09-03  A bug which caused an index array to have the wrong number of elements
+	  when it was converted from a compound variable by adding an another
+	  element has been fixed.
+09-09-03  Specifying export for a compound variable now generates an error.
+09-09-02  $"..." localizations strings are no longer recognized inside `...`.
+09-09-01  A bug in the for loop optimizer in the handling of type static
+	  variables has been fixed.
+09-09-01  An error message is not displayed when * and @ are used as subscripts.
+09-09-01  Several bugs in the processing for types that included an associative
+	  array of another type has been fixed.
+09-09-01  A bug in the tracing of [[ a < b ]] and [[ a > b ]] has been fixed.
+09-08-26  The .sh.file variable was not being set for a script that was run
+	  by name and didn't start with #! and this has been fixed.
+09-08-25  A bug in which a function called to deeply from command substitution
+	  did not display an error message has been fixed.
+09-08-24  When processing profiles, ksh93 now violates the POSIX standard and
+	  treats &> as a redirection operator similar to bash.
+09-08-23  A bug in the handling of the trap on SIGPIPE that could lead to am
+	  memory fault has been fixed.
+09-08-21  A bug in the handling of the comma operator in arithmetic expressions
+	  that could cause a core dump on some systems has been fixed.
+09-08-20  A bug in which a compound variable containing an array of a type
+	  that doesn't have any elements now expands correctly.
+09-08-19  A bug which disabled function tracing inside a function after
+	  a call to another function has been fixed.
+09-08-19  A bug in which initializing a compound variable instance to another
+	  compound variable by name has been fixed.
+09-08-18  A bug in which compound variable instances could be lost after
+	  an instance that invoked a type method discipline has been fixed.
+09-08-18  A bug in which a discipline function for a type applied to an
+	  array instance when invoked in a function ignored the subscript
+	  has been fixed.
+09-08-18  A scoping error with variables in arithmetic expression with
+	  type variables when reference with a name reference has been fixed.
+09-08-10  Several memory leaks were fixed primarily related to subshells.
+09-08-06  A bug in which setting the trap on CHLD to ignore could cause
+	  a script to hang has been fixed. 
+09-07-08  A bug in the processing of name reference assignments when it
+	  contained pattern expansions with quoting has been fixed.
 09-06-22  The default width for typeset -X has been changed so that there
 	  should be no loss of precision when converting to a string.
 09-06-19  A bug in the printing of array elements for binary variables with
@@ -2169,7 +2232,21 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
-09-06-30 port/astconf.c: strict PATH_RESOLVE is "physical" (not "metaphysical")
+09-10-05 _sfopen.c: add but ignore 'F' flags for stdio compatibility
+09-09-28 fts.h,ftwalk.h,fts.c: promote { namelen pathlen level } to (s)size_t
+09-09-28 locales: add AST_LC_LANG for $LANG
+09-09-28 setlocale.c: fix logic for dynamic { LANG LC_ALL LC_* } changes
+09-09-17 include/sfio.h,sfio/sfwalk.c: add sfwalk()
+09-09-09 sfio/sfputr.c: add SIGPIPE hang fix
+09-08-24 sfio/sfreserve.c: fix SF_UNBOUND logic with pushed streams
+09-08-18 include/ast_std.h,ast.h: add ast.mb_sync to sync mbchar() after error
+09-08-17 comp/setlocale.c: add AST_LC_utf8 and { utf8_mbtowc() utf8_mblen() }
+09-08-11 comp/setlocale.c: treat "en"/"en_US" AST_LC_MESSAGES as "C"/"POSIX"
+09-08-10 vmalloc/vmhdr.h: add user-defined _AST_PAGESIZE and computed VMHEAPINCR
+09-08-09 comp/conf.tab: add NPROCESSORS_MAX
+09-07-29 astlicense.c: fix first name=value logic error
+09-07-22 string/fmtip6.c: don't drop trailing 0 in 44::1:0:0
+09-06-30 port/astconf.c: standard PATH_RESOLVE is "physical" (not "metaphysical")
 09-06-19 vmalloc: sync with kpv
 09-06-19 include/shcmd.h: add sh_context(p) cast
 09-06-11 misc/magic.tab: differentiate pc 386 32/64 bit dll/exe/obj
@@ -3736,6 +3813,14 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
+09-09-09 fds.c: add --unit=fd
+09-08-25 tail.c: initialize Tail_t.fifo=0 !!
+09-08-15 tail.c: fix fifo logic
+09-08-11 wc.c: add setlocale(LC_CTYPE,"C") cleanup, add utf8 optimzations
+09-08-10 uniq.c: replace -c 1..9999 sfsprintf() with inline conversion
+09-08-01 join.c: fix empty field null pointer deref
+09-07-23 pathchk.c: add -P,--path and -a,--all
+09-07-02 chgrp.c,chmod.c,cksum.c: fts_flags() default only if not --recursive
 09-06-19 cmd.h,cmdinit.c: add ERROR_CALLBACK for ERROR_NOTIFY main() callback
 09-06-19 mktemp.c: --unsafe now checks and prints path but does create
 09-06-19 tee.c: add ERROR_CALLBACK for tee_cleanup() sfio discipline pop
@@ -3930,7 +4015,7 @@ All recorded changes follow.
 00-10-31 mkdir: handle races by checking EEXIST
 00-09-20 cp: copy argv to stack before modifying in place
 00-05-18 add setlocale(LC_ALL,"")
-00-04-30 join: drop wierd opt_info.argv reference
+00-04-30 join: drop weird opt_info.argv reference
 00-03-17 expr: add == operator -- duh
 	 cp,ln,mv: delay pathcanon() on destination to verify `cp a b/.'
 	 getconf: use astgetconf for proper message control
@@ -4013,6 +4098,7 @@ All recorded changes follow.
 
 :::::::: libsum ::::::::
 
+09-09-28 sumlib.c: use simple (faster) method name match function
 08-06-05 sum-lmd.c: align context to largest int
 08-05-01 sumlib.c: add some -lmd verification checks
 08-02-11 sum-lmd.c,features/sum: add wrapper for solaris -lmd

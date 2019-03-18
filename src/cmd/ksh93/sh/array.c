@@ -678,14 +678,12 @@ static struct index_array *array_grow(Namval_t *np, register struct index_array 
 			mp = nv_search("0", ap->header.table,NV_ADD);
 			if(mp && nv_isnull(mp))
 			{
-#if 0
 				Namfun_t *fp;
 				ap->val[0].np = mp;
 				array_setbit(ap->bits,0,ARRAY_CHILD);
 				for(fp=np->nvfun; fp && !fp->disc->readf; fp=fp->next);
-				if(fp)
+				if(fp && fp->disc && fp->disc->readf)
 					(*fp->disc->readf)(mp,(Sfio_t*)0,0,fp);
-#endif
 				i++;
 			}
 		}
@@ -1091,9 +1089,15 @@ char *nv_endsubscript(Namval_t *np, register char *cp, int mode)
 	}
 	if(mode && np)
 	{
+		Namarr_t *ap = nv_arrayptr(np);
+		int scan = 0;
+		if(ap)
+			scan = ap->nelem&ARRAY_SCAN;
 		if((mode&NV_ASSIGN) && (cp[1]=='=' || cp[1]=='+'))
 			mode |= NV_ADD;
 		nv_putsub(np, sp, ((mode&NV_ADD)?ARRAY_ADD:0)|(cp[1]&&(mode&NV_ADD)?ARRAY_FILL:mode&ARRAY_FILL));
+		if(scan)
+			ap->nelem |= scan;
 	}
 	if(quoted)
 		stakseek(count);

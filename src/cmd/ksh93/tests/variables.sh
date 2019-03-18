@@ -577,8 +577,10 @@ function x.set
 }
 x[0]=0 x[1]=1 x[2]=2 x[3]=3
 [[ ${x[@]} == '12 8 5 3' ]] || err_exit 'set discipline for indexed array not working correctly'
+float seconds
 ((SECONDS=3*4))
-(( SECONDS < 12 || SECONDS > 12.1 )) &&  err_exit "SECONDS is $SECONDS and should be close to 12"
+seconds=SECONDS
+(( seconds < 12 || seconds > 12.1 )) &&  err_exit "SECONDS is $seconds and should be close to 12"
 unset a
 function a.set
 {
@@ -612,15 +614,37 @@ do	nameref r=$v
 	else	err_exit "unset $v; : \$$v failed"
 	fi
 done
+
+x=x
 for v in LC_ALL LC_CTYPE LC_MESSAGES LC_COLLATE LC_NUMERIC
 do	nameref r=$v
 	unset $v
 	[[ $r ]] && err_exit "unset $v failed -- expected '', got '$r'"
 	d=$($SHELL -c "$v=$x" 2>&1)
 	[[ $d ]] || err_exit "$v=$x failed -- expected locale diagnostic"
-	( r=$x; [[ ! $r ]] ) 2>/dev/null || err_exit "$v=$x failed -- expected ''"
-	( r=C; r=$x; [[ $r == C ]] ) 2>/dev/null || err_exit "$v=C; $v=$x failed -- expected 'C'"
+	{ g=$( r=$x; print -- $r ); } 2>/dev/null
+	[[ $g == '' ]] || err_exit "$v=$x failed -- expected '', got '$g'"
+	{ g=$( r=C; r=$x; print -- $r ); } 2>/dev/null
+	[[ $g == 'C' ]] || err_exit "$v=C; $v=$x failed -- expected 'C', got '$g'"
 done
 PATH=$path
+
+cd $tmp
+
+print print -n zzz > zzz
+chmod +x zzz
+exp='aaazzz'
+got=$($SHELL -c 'unset SHLVL; print -n aaa; ./zzz' 2>&1) >/dev/null 2>&1
+[[ $got == "$exp" ]] || err_exit "unset SHLVL causes script failure -- expected '$exp', got '$got'"
+
+mkdir glean
+for cmd in date ok
+do	exp="$cmd ok"
+	rm -f $cmd
+	print print $exp > glean/$cmd
+	chmod +x glean/$cmd
+	got=$(CDPATH=:.. $SHELL -c "PATH=:/bin:/usr/bin; date > /dev/null; cd glean && ./$cmd" 2>&1)
+	[[ $got == "$exp" ]] || err_exit "cd with CDPATH after PATH change failed -- expected '$exp', got '$got'"
+done
 
 exit $((Errors))

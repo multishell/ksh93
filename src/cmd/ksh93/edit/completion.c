@@ -426,11 +426,11 @@ int ed_expand(Edit_t *ep, char outbuff[],int *cur,int *eol,int mode, int count)
 					*out = ' ';
 				*++out = 0;
 			}
-			else if(out[-1]=='/' && (cp=fmtx(begin))!=begin)
+			else if((cp=fmtx(begin))!=begin)
 			{
 				out = strcopy(begin,cp);
 				if(out[-1] =='"' || out[-1]=='\'')
-					  *--out = 0;;
+					  *--out = 0;
 			}
 			if(*begin==0)
 				ed_ringbell();

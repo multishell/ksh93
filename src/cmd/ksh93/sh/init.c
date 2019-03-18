@@ -170,6 +170,7 @@ static int		nbltins;
 static void		env_init(Shell_t*);
 static Init_t		*nv_init(Shell_t*);
 static Dt_t		*inittree(Shell_t*,const struct shtable2*);
+static int		shlvl;
 
 #ifdef _WINIX
 #   define EXE	"?(.exe)"
@@ -354,13 +355,17 @@ static void put_cdpath(register Namval_t* np,const char *val,int flags,Namfun_t 
     }
 #endif
 
-    /* Trap for LC_ALL, LC_TYPE, LC_MESSAGES, LC_COLLATE and LANG */
+    /* Trap for LC_ALL, LC_CTYPE, LC_MESSAGES, LC_COLLATE and LANG */
     static void put_lang(Namval_t* np,const char *val,int flags,Namfun_t *fp)
     {
 	Shell_t *shp = nv_shell(np);
 	int type;
 	char *lc_all = nv_getval(LCALLNOD);
 	char *name = nv_name(np);
+	if((shp->test&1) && !val && !nv_getval(np))
+		return;
+	if(shp->test&2)
+		nv_putv(np, val, flags, fp);
 	if(name==(LCALLNOD)->nvname)
 		type = LC_ALL;
 	else if(name==(LCTYPENOD)->nvname)
@@ -371,22 +376,30 @@ static void put_cdpath(register Namval_t* np,const char *val,int flags,Namfun_t 
 		type = LC_COLLATE;
 	else if(name==(LCNUMNOD)->nvname)
 		type = LC_NUMERIC;
-	else if(name==(LANGNOD)->nvname && (!lc_all || *lc_all==0))
-		type = LC_ALL;
+#ifdef LC_LANG
+	else if(name==(LANGNOD)->nvname)
+		type = LC_LANG;
+#else
+#define LC_LANG		LC_ALL
+	else if(name==(LANGNOD)->nvname && (!lc_all || !*lc_all))
+		type = LC_LANG;
+#endif
 	else
 		type= -1;
 	if(sh_isstate(SH_INIT) && type>=0 && type!=LC_ALL && lc_all && *lc_all)
 		type= -1;
-	if(type>=0 || type==LC_ALL)
+	if(type>=0 || type==LC_ALL || type==LC_LANG)
 	{
-		if(!setlocale(type,val?val:""))
+		if(!setlocale(type,val?val:"-") && val)
 		{
 			if(!sh_isstate(SH_INIT) || shp->login_sh==0)
 				errormsg(SH_DICT,0,e_badlocale,val);
 			return;
 		}
 	}
-	if(CC_NATIVE==CC_ASCII && (type==LC_ALL || type==LC_CTYPE))
+	if(!(shp->test&2))
+		nv_putv(np, val, flags, fp);
+	if(CC_NATIVE==CC_ASCII && (type==LC_ALL || type==LC_LANG || type==LC_CTYPE))
 	{
 		if(sh_lexstates[ST_BEGIN]!=sh_lexrstates[ST_BEGIN])
 			free((void*)sh_lexstates[ST_BEGIN]);
@@ -437,7 +450,6 @@ static void put_cdpath(register Namval_t* np,const char *val,int flags,Namfun_t 
 	if(type==LC_ALL || type==LC_MESSAGES)
 		error_info.translate = msg_translate;
 #endif
-	nv_putv(np, val, flags, fp);
     }
 #endif /* _hdr_locale */
 
@@ -445,10 +457,18 @@ static void put_cdpath(register Namval_t* np,const char *val,int flags,Namfun_t 
 static void put_ifs(register Namval_t* np,const char *val,int flags,Namfun_t *fp)
 {
 	register struct ifs *ip = (struct ifs*)fp;
+	Shell_t		*shp;
 	ip->ifsnp = 0;
+	if(!val)
+	{
+		fp = nv_stack(np, NIL(Namfun_t*));
+		if(fp && !fp->nofree)
+			free((void*)fp);
+	}
 	if(val != np->nvalue.cp)
 		nv_putv(np, val, flags, fp);
-	
+	if(!val && !(flags&NV_CLONE) && (fp=np->nvfun) && !fp->disc && (shp=(Shell_t*)(fp->last)))
+		nv_stack(np,&((Init_t*)shp->init_context)->IFS_init.hdr);
 }
 
 /*
@@ -522,7 +542,7 @@ static void put_seconds(register Namval_t* np,const char *val,int flags,Namfun_t
 		fp = nv_stack(np, NIL(Namfun_t*));
 		if(fp && !fp->nofree)
 			free((void*)fp);
-		nv_unset(np);
+		nv_putv(np, val, flags, fp);
 		return;
 	}
 	if(!np->nvalue.dp)
@@ -1374,7 +1394,14 @@ int sh_reinit(char *argv[])
 	sh_offstate(SH_FORKED);
 	shp->fn_depth = shp->dot_depth = 0;
 	sh_sigreset(0);
+	if(!(SHLVL->nvalue.ip))
+	{
+		shlvl = 0;
+		SHLVL->nvalue.ip = &shlvl;
+		nv_onattr(SHLVL,NV_INTEGER|NV_EXPORT|NV_NOFREE);
+	}
 	*SHLVL->nvalue.ip +=1;
+	shp->st.filename = strdup(shp->lastarg);
 	return(1);
 }
 
@@ -1502,7 +1529,6 @@ static void stat_init(Shell_t *shp)
  */
 static Init_t *nv_init(Shell_t *shp)
 {
-	static int shlvl=0;
 	Namval_t *np;
 	register Init_t *ip;
 	double d=0;

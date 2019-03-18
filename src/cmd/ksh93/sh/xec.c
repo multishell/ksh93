@@ -352,7 +352,12 @@ static void put_level(Namval_t* np,const char *val,int flags,Namfun_t *fp)
 	int16_t level, oldlevel = (int16_t)nv_getnum(np);
 	nv_putv(np,val,flags,fp);
 	if(!val)
+	{
+		fp = nv_stack(np, NIL(Namfun_t*));
+		if(fp && !fp->nofree)
+			free((void*)fp);
 		return;
+	}
 	level = nv_getnum(np);
 	if(level<0 || level > lp->maxlevel)
 	{
@@ -605,12 +610,14 @@ static void free_list(struct openlist *olist)
  */
 static int set_instance(Namval_t *nq, Namval_t *node, struct Namref *nr)
 {
-	char		*cp = nv_name(nq);
+	char		*sp=0,*cp = nv_name(nq);
 	Namarr_t	*ap;
 	memset(nr,0,sizeof(*nr));
 	nr->np = nq;
 	nr->root = sh.var_tree;
 	nr->table = sh.last_table;
+	if((ap=nv_arrayptr(nq)) && (sp = nv_getsub(nq)))
+		sp = strdup(sp);
 	if(sh.var_tree!=sh.var_base && !nv_open(cp,nr->root,NV_VARNAME|NV_NOREF|NV_NOSCOPE|NV_NOADD|NV_NOFAIL))
 		nr->root = sh.var_base;
 	nv_putval(SH_NAMENOD, cp, NV_NOFREE);
@@ -619,9 +626,9 @@ static int set_instance(Namval_t *nq, Namval_t *node, struct Namref *nr)
 	L_ARGNOD->nvflag = NV_REF|NV_NOFREE;
 	L_ARGNOD->nvfun = 0;
 	L_ARGNOD->nvenv = 0;
-	if((ap=nv_arrayptr(nq)) && (cp = nv_getsub(nq)) && (cp = strdup(cp)))
+	if(sp)
 	{
-		nv_putval(SH_SUBSCRNOD,nr->sub=cp,NV_NOFREE);
+		nv_putval(SH_SUBSCRNOD,nr->sub=sp,NV_NOFREE);
 		return(ap->nelem&ARRAY_SCAN);
 	}
 	return(0);
@@ -759,6 +766,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			{
 				if(argn==0 || (np && nv_isattr(np,BLT_SPC)))
 				{
+					Namval_t *tp=0;
 					if(argn)
 					{
 						if(checkopt(com,'A'))
@@ -784,14 +792,17 @@ int sh_exec(register const Shnode_t *t, int flags)
 #endif
 					{
 						if(np!=SYSTYPESET)
+						{
 							shp->typeinit = np;
+							tp = nv_type(np);
+						}
 						if(checkopt(com,'C'))
 							flgs |= NV_COMVAR;
 						if(checkopt(com,'S'))
 							flgs |= NV_STATIC;
 						if(checkopt(com,'n'))
 							flgs |= NV_NOREF;
-						else if(checkopt(com,'L') || checkopt(com,'R') || checkopt(com,'Z'))
+						else if(!shp->typeinit && (checkopt(com,'L') || checkopt(com,'R') || checkopt(com,'Z')))
 							flgs |= NV_UNJUST;
 #if SHOPT_TYPEDEF
 						else if(argn>=3 && checkopt(com,'T'))
@@ -814,7 +825,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					if(OPTIMIZE)
 						flgs |= NV_TAGGED;
 #endif
-					nv_setlist(argp,flgs);
+					nv_setlist(argp,flgs,tp);
 					if(np==shp->typeinit)
 						shp->typeinit = 0;
 					shp->envlist = argp;
@@ -1154,7 +1165,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			int pipes[2];
 			if(shp->subshell)
 			{
-				if(shp->subshare || (type&FAMP))
+				if(shp->subshare)
 					sh_subtmpfile(1);
 				else
 					sh_subfork();
@@ -1375,12 +1386,8 @@ int sh_exec(register const Shnode_t *t, int flags)
 			{
 				was_interactive = sh_isstate(SH_INTERACTIVE);
 				sh_offstate(SH_INTERACTIVE);
-				if(!execflg)
-				{
-					sh_iosave(shp,0,shp->topfd,(char*)0);
-					if(simple)
-						shp->pipepid = 1;
-				}
+				sh_iosave(shp,0,shp->topfd,(char*)0);
+				shp->pipepid = simple;
 				sh_iorenumber(shp,shp->inpipe[0],0);
 				/*
 				 * if read end of pipe is a simple command
@@ -1426,6 +1433,11 @@ int sh_exec(register const Shnode_t *t, int flags)
 				}
 				shp->pipepid = 0;
 				shp->st.ioset = 0;
+				if(simple && was_errexit)
+				{
+					echeck = 1;
+					sh_onstate(SH_ERREXIT);
+				}
 			}
 			if(jmpval>SH_JMPIO)
 				siglongjmp(*shp->jmplist,jmpval);
@@ -1724,7 +1736,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 				shp->offsets[0] = -1;
 				shp->offsets[1] = 0;
 				if(tt->com.comset)
-					nv_setlist(tt->com.comset,NV_IDENT|NV_ASSIGN);
+					nv_setlist(tt->com.comset,NV_IDENT|NV_ASSIGN,0);
 			}
 #endif /*SHOPT_FILESCAN */
 			shp->st.loopcnt++;
@@ -2469,7 +2481,8 @@ pid_t _sh_fork(register pid_t parent,int flags,int *jobid)
 #endif	/* SHOPT_ACCT */
 	/* Reset remaining signals to parent */
 	/* except for those `lost' by trap   */
-	sh_sigreset(2);
+	if(!(flags&FSHOWME))
+		sh_sigreset(2);
 	shp->subshell = 0;
 	if((flags&FAMP) && shp->coutpipe>1)
 		sh_close(shp->coutpipe);
@@ -2545,6 +2558,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	struct checkpt		buff;
 	Namval_t		*nspace = shp->namespace;
 	Dt_t			*last_root = shp->last_root;
+	Shopt_t			options = shp->options;
 	if(shp->fn_depth==0)
 		shp->glob_options =  shp->options;
 	else
@@ -2616,7 +2630,10 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	if(jmpval == 0)
 	{
 		if(shp->fn_depth++ > MAXDEPTH)
+		{
+			shp->toomany = 1;
 			siglongjmp(*shp->jmplist,SH_JMPERRFN);
+		}
 		else if(fun)
 			r= (*fun)(arg);
 		else
@@ -2649,7 +2666,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	shp->trapnote=0;
 	if(nsig)
 		stakset(savstak,0);
-	shp->options = shp->glob_options;
+	shp->options = options;
 	shp->last_root = last_root;
 	if(trap)
 	{
@@ -3221,7 +3238,7 @@ static pid_t sh_ntfork(Shell_t *shp,const Shnode_t *t,char *argv[],int *jobid,in
 	{
 		sh_unscope(shp);
 		if(jmpval==SH_JMPSCRIPT)
-			nv_setlist(t->com.comset,NV_EXPORT|NV_IDENT|NV_ASSIGN);
+			nv_setlist(t->com.comset,NV_EXPORT|NV_IDENT|NV_ASSIGN,0);
 	}
 	if(t->com.comio)
 		sh_iorestore(shp,buff.topfd,jmpval);

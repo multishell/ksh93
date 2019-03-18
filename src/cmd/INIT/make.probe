@@ -2,7 +2,7 @@
 # Glenn Fowler
 # AT&T Research
 #
-# @(#)make.probe (AT&T Research) 2008-10-16
+# @(#)make.probe (AT&T Research) 2009-09-22
 #
 # C probe for make
 #
@@ -11,6 +11,7 @@
 
 cc_dll_def=-D_BLD_DLL
 
+probe_ar_arflags="-Xany"
 probe_arflags="-xar"
 probe_ccs="strip size nm ld ar" # longest to shortest
 probe_debug="-g"
@@ -32,13 +33,14 @@ probe_libdir="shlib lib"
 probe_nmflags="'' -p -B"
 probe_optimize="-O"
 probe_pic="-Kpic -KPIC -fpic -fPIC -pic -PIC +z +Z"
+probe_no_protect="'-fno-stack-protector -fno-stack-protector-all' -GS-"
 probe_readonly="-R -Krodata -xMerge -Wa,-r"
 probe_shared="'' -G -b -c -shared -Wl,dll"
+probe_shared_name="-Wl,-soname= -h"
 probe_shared_nostart="-nostartfiles"
 probe_shared_registry='"-update_registry $probe_shared_registry_file"'
 probe_shared_registry_file='registry.ld'
 probe_shared_registry_path="\$(LIBDIR)/$probe_shared_registry_file"
-probe_no_protect="'-fno-stack-protector -fno-stack-protector-all' -GS-"
 probe_strict="'-ansi -pedantic' '-ansi -strict' -strict -ansi"
 probe_stripflags="'-f -s' -f -s"
 probe_unresolved="'-expect_unresolved \"*\"'"
@@ -107,6 +109,7 @@ warn_enum="1 2 3 4 5"
 
 chmod -w *.$src
 
+ar_arflags=
 arflags=
 cc_dll=
 cc_pic=
@@ -156,6 +159,7 @@ repository=
 require=
 runpath=
 shared=
+shared_name=
 shared_registry=
 shellmagic=
 soversion=
@@ -977,7 +981,19 @@ esac
 
 rm -f shared.$obj
 if	$cc -c shared.$src
-then	eval set x $probe_arflags
+then	eval set x $probe_ar_arflags
+	while	:
+	do	shift
+		case $# in
+		0)	break ;;
+		esac
+		rm -f libxxx.$lib
+		if	$ar $1 r libxxx.$lib shared.$obj && $ar $1 t libxxx.$lib 2>&1 | grep shared.$obj >/dev/null
+		then	ar_arflags=$1
+			break
+		fi
+	done
+	eval set x $probe_arflags
 	while	:
 	do	shift
 		case $# in
@@ -1020,6 +1036,23 @@ case $shared in
 		fi
 		;;
 	esac
+	;;
+esac
+case $shared in
+?*)	if	$cc -c $cc_dll $cc_pic shared.$src
+	then	eval set x $probe_shared_name
+		while	:
+		do	shift
+			case $# in
+			0)	break ;;
+			esac
+			rm -f xxx$dll
+			if	$dld $shared ${1}libfoo.1.2 -o xxx$dll shared.$obj 2>e && test -r xxx$dll
+			then	shared_name=$1
+				break
+			fi
+		done
+	fi
 	;;
 esac
 case " $cc_dll " in
@@ -1955,6 +1988,7 @@ CC_HOSTTYPE=$hosttype
 CC_ALTPP_FLAGS=$ppopt
 CC_ALTPP_ENV=$ppenv
 CC_AR=$ar
+CC_AR_ARFLAGS=$ar_arflags
 CC_ARFLAGS=$arflags
 CC_DEBUG=$debug
 CC_DIALECT=$dialect
@@ -2003,6 +2037,7 @@ CC_REQUIRE=$require
 CC_RUNPATH=$runpath
 CC_SHARED=$shared
 CC_SHARED_LD=$dld
+CC_SHARED_NAME=$shared_name
 CC_SHARED_REGISTRY=$shared_registry
 CC_SHARED_REGISTRY_PATH=$probe_shared_registry_path
 CC_SHELLMAGIC=$shellmagic
@@ -2055,6 +2090,7 @@ echo CC.HOSTTYPE = $CC_HOSTTYPE
 echo CC.ALTPP.FLAGS = $CC_ALTPP_FLAGS
 echo CC.ALTPP.ENV = $CC_ALTPP_ENV
 echo CC.AR = $CC_AR
+echo CC.AR.ARFLAGS = $CC_AR_ARFLAGS
 echo CC.ARFLAGS = $CC_ARFLAGS
 echo CC.DEBUG = $CC_DEBUG
 echo CC.DIALECT = $CC_DIALECT
@@ -2113,6 +2149,7 @@ done
 echo CC.RUNPATH = $CC_RUNPATH
 echo CC.SHARED = $CC_SHARED
 echo CC.SHARED.LD = $CC_SHARED_LD
+echo CC.SHARED.NAME = $CC_SHARED_NAME
 echo CC.SHARED.REGISTRY = $CC_SHARED_REGISTRY
 echo CC.SHARED.REGISTRY.PATH = $CC_SHARED_REGISTRY_PATH
 echo CC.SHELLMAGIC = $CC_SHELLMAGIC

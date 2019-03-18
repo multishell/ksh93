@@ -51,8 +51,8 @@
 #define TEST_EF		3
 #define TEST_NT		10
 #define TEST_OT		12
-#define TEST_SLT	15
-#define TEST_SGT	16
+#define TEST_SLT	16
+#define TEST_SGT	17
 #define TEST_END	8
 #define TEST_REP	20
 

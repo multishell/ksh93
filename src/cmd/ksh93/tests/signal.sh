@@ -33,10 +33,34 @@ trap "cd /; rm -rf $tmp" EXIT
 
 cd $tmp || err_exit "cd $tmp failed"
 
+(
+	set --pipefail
+	{
+		$SHELL 2> out2 <<- \EOF
+			g=false
+			trap 'print -u2 PIPED; $g && exit 0;g=true' PIPE
+			while :
+			do 	print hello
+			done
+		EOF
+	} | head > /dev/null
+	(( $? == 0)) ||   err_exit "SIGPIPE with wrong error code $?"
+	[[ $(<out2) == $'PIPED\nPIPED' ]] || err_exit 'SIGPIPE output on standard error is not correct'
+) &
+cop=$!
+{ sleep 4; kill $cop; } 2>/dev/null &
+spy=$!
+if	wait $cop 2>/dev/null
+then	kill $spy 2>/dev/null
+else	err_exit "pipe with --pipefail PIPE trap hangs"
+fi
+wait
+rm -f out2
+
 [[ $( trap 'print -n got_child' SIGCHLD
 	sleep 2 &
 	for	((i=0; i < 4; i++))
-	do 	sleep .9
+	do 	sleep .75
 		print -n $i
 	done) == 01got_child23 ]] || err_exit 'SIGCHLD not working'
 
@@ -262,7 +286,7 @@ yes=$(whence -p yes)
 do { $SHELL <<- EOF
 		foo() { return 0; }
 		trap foo EXIT
-		{ sleep 2; kill -$exp \$\$; sleep 1; kill -0 \$\$ && kill -KILL \$\$; } &
+		{ sleep 2; kill -$exp \$\$; sleep 3; kill -0 \$\$ && kill -KILL \$\$; } &
 		$yes | while read yes; do
 		        (/bin/date; sleep .1)
 		done > /dev/null

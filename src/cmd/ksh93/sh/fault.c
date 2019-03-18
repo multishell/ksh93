@@ -325,7 +325,8 @@ void	sh_sigreset(register int mode)
 			}
 			else if(sig && mode>1)
 			{
-				signal(sig,SIG_IGN);
+				if(sig!=SIGCHLD)
+					signal(sig,SIG_IGN);
 				flag &= ~SH_SIGFAULT;
 				flag |= SH_SIGOFF;
 			}
@@ -413,9 +414,12 @@ void	sh_chktrap(void)
 			sh.sigflag[sig] &= ~SH_SIGTRAP;
 			if(trap=sh.st.trapcom[sig])
 			{
-				sh.oldexit = SH_EXITSIG|sig;
-				sh_trap(trap,0);
-			}
+				Sfio_t *fp;
+				if(sig==SIGPIPE && (fp=sfpool((Sfio_t*)0,sh.outpool,SF_WRITE)) && sferror(fp))
+					sfclose(fp);
+ 				sh.oldexit = SH_EXITSIG|sig;
+ 				sh_trap(trap,0);
+ 			}
 		}
 	}
 }

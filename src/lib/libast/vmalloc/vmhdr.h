@@ -157,15 +157,23 @@ extern void		_vmmessage _ARG_((const char*, long, const char*, long));
 #endif /*DEBUG*/
 
 #define VMPAGESIZE	8192
+
 #if _AST_PAGESIZE > VMPAGESIZE
 #undef	VMPAGESIZE
 #define VMPAGESIZE	_AST_PAGESIZE
 #endif
-#if _lib_getpagesize
+
+#if _lib_getpagesize && !defined(_AST_PAGESIZE)
 #define GETPAGESIZE(x)	((x) ? (x) : \
 			 (((x)=getpagesize()) < VMPAGESIZE ? ((x)=VMPAGESIZE) : (x)) )
 #else
 #define GETPAGESIZE(x)	((x) = VMPAGESIZE)
+#endif
+
+#ifdef	_AST_PAGESIZE
+#define VMHEAPINCR	(_Vmpagesize*1)
+#else
+#define VMHEAPINCR	(_Vmpagesize*4)
 #endif
 
 /* Blocks are allocated such that their sizes are 0%(BITS+1)

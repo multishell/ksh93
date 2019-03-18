@@ -23,7 +23,7 @@
 
 /*
  * AT&T Research and SCO
- * ast i18n message translation
+ * ast l10n message translation
  */
 
 #include "lclib.h"

@@ -382,6 +382,23 @@ closure 0 || err_exit -u2 'for loop function optimization bug2'
 dir=$tmp/dir
 mkdir $dir
 cd $dir || { err_exit "cd $dir failed"; exit 1; }
+
+(
+	function a {
+		print a
+	}
+	function b {
+		print 1
+		a
+		print 2
+	} > /dev/null
+	typeset -ft a b
+	PS4=X
+	b 
+) > file 2>&1
+[[ $(<file) == *'Xprint 2'* ]] ||  err_exit 'function trace disabled by function call'
+rm -f file
+
 print 'false' > try
 chmod +x try
 cat > tst <<- EOF
@@ -1028,4 +1045,27 @@ foo
 	foobar
 ++++
 ) == foo ]] > /dev/null  || err_exit 'functions compiled with shcomp not working'
+# test for functions in shell having side effects.
+unset -f foo foobar bar
+cd "$tmp"
+FPATH=$PWD
+PATH=$FPATH:$PATH
+cat > foo <<- \EOF
+	function bar
+	{
+		print foobar
+	}
+	function foo
+	{
+		bar
+	}
+EOF
+chmod +x foo
+: $(foo)
+[[ $(typeset +f) == *foo* ]] &&  err_exit 'function in subshell leaving side effect of function foo'
+unset -f foo bar
+:  $(foo)
+[[ $(typeset +f) == *foo* ]] && err_exit 'function in subshell leaving side effects of function foo after reload'
+[[ $(typeset +f) == *bar* ]] && err_exit 'function in subshell leaving side effects of function bar after reload'
+
 exit $((Errors))

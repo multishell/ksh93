@@ -557,7 +557,7 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 					}
 					nv_setarray(np,nv_associative);
 				}
-				else if(comvar && !nv_rename(np,flag|NV_COMVAR))
+				else if(comvar && !nv_isvtree(np) && !nv_rename(np,flag|NV_COMVAR))
 					nv_setvtree(np);
 			}
 			if(flag&NV_MOVE)
@@ -566,7 +566,7 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 				nv_close(np);
 				continue;
 			}
-			if(tp->tp)
+			if(tp->tp && nv_type(np)!=tp->tp)
 			{
 				nv_settype(np,tp->tp,tp->aflag=='-'?0:NV_APPEND);
 				flag = (np->nvflag&NV_NOCHANGE);
@@ -575,9 +575,11 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 			flag &= ~NV_ASSIGN;
 			if(last=strchr(name,'='))
 				*last = 0;
+			if (shp->typeinit)
+				continue;
 			if (tp->aflag == '-')
 			{
-				if((flag&NV_EXPORT) && strchr(name,'.'))
+				if((flag&NV_EXPORT) && (strchr(name,'.') || nv_isvtree(np)))
 					errormsg(SH_DICT,ERROR_exit(1),e_badexport,name);
 #if SHOPT_BSH
 				if(flag&NV_EXPORT)

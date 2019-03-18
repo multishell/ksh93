@@ -303,4 +303,77 @@ typeset -T Foo_t=(
 )
 Foo_t foo
 [[ ${foo.len} == 5 ]] || err_exit "discipline function len not working"
+
+typeset -T benchmark_t=(
+	integer num_iterations
+)
+function do_benchmarks
+{
+	nameref tst=b
+	integer num_iterations
+	(( num_iterations= int(tst.num_iterations * 1.0) ))
+	printf "%d\n" num_iterations
+}
+benchmark_t b=(num_iterations=5)
+[[  $(do_benchmarks) == 5 ]] || err_exit 'scoping of nameref of type variables in arithmetic expressions not working'
+
+function cat_content
+{
+	cat <<- EOF
+	(
+		foo_t -a foolist=(
+			( val=3 )
+			( val=4 )
+			( val=5 )
+		)
+	)
+	EOF
+	return 0
+}
+typeset -T foo_t=(
+	integer val=-1
+	function print
+	{
+		print -- ${_.val}
+	}
+)
+function do_something
+{
+	nameref li=$1 # "li" may be an index or associative array
+	li[2].print
+}
+cat_content | read -C x
+[[ $(do_something x.foolist) == 5  ]] || err_exit 'subscripts not honored for arrays of type with disciplines'
+
+typeset -T benchcmd_t=(
+	float x=1
+	float y=2
+)
+unset x
+compound x=(
+	float o
+	benchcmd_t -a m
+	integer h
+)
+expected=$'(\n\ttypeset -l -i h=0\n\tbenchcmd_t -a m\n\ttypeset -l -E o=0\n)'
+[[ $x == "$expected" ]] || err_exit 'compound variable with array of types with no elements not working'
+
+expected=$'Std_file_t db.file[/etc/profile]=(action=preserve;typeset -A sum=([8242e663d6f7bb4c5427a0e58e2925f3]=1);)'
+{
+  got=$($SHELL <<- \EOF 
+	MAGIC='stdinstall (at&t research) 2009-08-25'
+	typeset -T Std_file_t=(
+		typeset action
+		typeset -A sum
+	)
+	typeset -T Std_t=(
+		typeset magic=$MAGIC
+		Std_file_t -A file
+	)
+	Std_t db=(magic='stdinstall (at&t research) 2009-08-25';Std_file_t -A file=( [/./home/gsf/.env.sh]=(action=preserve;typeset -A sum=([9b67ab407d01a52b3e73e3945b9a3ee0]=1);)[/etc/profile]=(action=preserve;typeset -A sum=([8242e663d6f7bb4c5427a0e58e2925f3]=1);)[/home/gsf/.profile]=(action=preserve;typeset -A sum=([3ce23137335219672bf2865d003a098e]=1);));)
+	typeset -p db.file[/etc/profile]
+	EOF)
+} 2> /dev/null
+[[ $got == "$expected" ]] ||  err_exit 'types with arrays of types as members fails'
+
 exit $Errors

@@ -504,4 +504,29 @@ typeset -l y y_ascii
 y_ascii=$y 
 (( y == y_ascii )) || err_exit "no match,\n\t$(printf "%a\n" y)\n!=\n\t$(printf "%a\n" y_ascii)"
 
+( $SHELL  <<- \EOF
+	p=5
+	t[p]=6
+	while (( t[p] != 0 )) ; do
+		((
+		p+=1 , 
+		t[p]+=2 , 
+		p+=3 , 
+		t[p]+=5 , 
+		p+=1 , 
+		t[p]+=2 , 
+		p+=1 , 
+		t[p]+=1 , 
+		p-=6  ,
+		t[p]-=1 
+		))
+	:
+	done
+EOF) 2> /dev/null ||  err_exit 'error with comma expression'
+
+N=(89551 89557)
+i=0 j=1
+[[ $(printf "%d" N[j]-N[i]) == 6 ]] || err_exit 'printf %d N[i]-N[j] failed'
+[[ $((N[j]-N[i])) == 6 ]] || err_exit  '$((N[j]-N[i])) incorrect'
+
 exit $((Errors))

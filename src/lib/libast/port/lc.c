@@ -125,6 +125,7 @@ lcindex(int category, int min)
 	case LC_COLLATE:	return AST_LC_COLLATE;
 	case LC_CTYPE:		return AST_LC_CTYPE;
 	case LC_IDENTIFICATION:	return AST_LC_IDENTIFICATION;
+	case LC_LANG:		return AST_LC_LANG;
 	case LC_MEASUREMENT:	return AST_LC_MEASUREMENT;
 	case LC_MESSAGES:	return AST_LC_MESSAGES;
 	case LC_MONETARY:	return AST_LC_MONETARY;
@@ -703,6 +704,8 @@ lcmake(const char* name)
 	lc->language = lp ? lp : &lc_languages[0];
 	lc->territory = tp ? tp : &lc_territories[0];
 	lc->charset = cp ? cp : &lc_charsets[0];  
+	if (!strcmp(lc->charset->code, "utf8"))
+		lc->flags |= LC_utf8;
 	lc->attributes = al;
 	for (i = 0; i < elementsof(lc->info); i++)
 		lc->info[i].lc = lc;

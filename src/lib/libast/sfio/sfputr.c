@@ -46,7 +46,8 @@ int		rc;	/* record separator.	*/
 	SFLOCK(f,0);
 
 	for(w = 0; (*s || rc >= 0); )
-	{	SFWPEEK(f,ps,p);
+	{	if(SFWPEEK(f,ps,p) < 0)
+			break;
 
 		if(p == 0 || (f->flags&SF_WHOLE) )
 		{	n = strlen(s);

@@ -48,6 +48,7 @@ typedef ssize_t		(*Sfread_f)_ARG_((Sfio_t*, Void_t*, size_t, Sfdisc_t*));
 typedef ssize_t		(*Sfwrite_f)_ARG_((Sfio_t*, const Void_t*, size_t, Sfdisc_t*));
 typedef Sfoff_t		(*Sfseek_f)_ARG_((Sfio_t*, Sfoff_t, int, Sfdisc_t*));
 typedef int		(*Sfexcept_f)_ARG_((Sfio_t*, int, Void_t*, Sfdisc_t*));
+typedef int		(*Sfwalk_f)_ARG_((Sfio_t*, Void_t*));
 
 /* discipline structure */
 struct _sfdisc_s
@@ -232,6 +233,7 @@ extern Sfio_t*		sfpopen _ARG_((Sfio_t*, const char*, const char*));
 extern Sfio_t*		sfstack _ARG_((Sfio_t*, Sfio_t*));
 extern Sfio_t*		sfswap _ARG_((Sfio_t*, Sfio_t*));
 extern Sfio_t*		sftmp _ARG_((size_t));
+extern int		sfwalk _ARG_((Sfwalk_f, Void_t*, int));
 extern int		sfpurge _ARG_((Sfio_t*));
 extern int		sfpoll _ARG_((Sfio_t**, int, int));
 extern Void_t*		sfreserve _ARG_((Sfio_t*, ssize_t, int));

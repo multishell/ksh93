@@ -154,6 +154,7 @@ extern char*		strerror(int);
 #define AST_LC_MEASUREMENT	12
 #define AST_LC_PAPER		13
 #define AST_LC_COUNT		14
+#define AST_LC_LANG		255
 
 #define AST_LC_find		(1L<<28)
 #define AST_LC_debug		(1L<<29)
@@ -202,6 +203,9 @@ extern char*		strerror(int);
 #ifndef LC_PAPER
 #define LC_PAPER		(-AST_LC_PAPER)
 #endif
+#ifndef LC_LANG
+#define LC_LANG			(-AST_LC_LANG)
+#endif
 
 #undef	extern
 
@@ -242,8 +246,9 @@ typedef struct
 	int		(*mb_conv)(char*, wchar_t);
 
 	uint32_t	env_serial;
+	uint32_t	mb_sync;
 
-	char		pad[944];
+	char		pad[940];
 
 } _Ast_info_t;
 

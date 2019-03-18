@@ -141,7 +141,10 @@ fmtip6(unsigned char* addr, int bits)
 			*s++ = ':';
 			*s++ = ':';
 			if ((i += r[m]) >= n)
+			{
+				z = 1;
 				break;
+			}
 			z = 0;
 		}
 		else if (i && !(i & 1))
@@ -163,6 +166,8 @@ fmtip6(unsigned char* addr, int bits)
 			*s++ = dig[k];
 		}
 	}
+	if (!z && *(s - 1) == ':')
+		*s++ = '0';
 	if (bits > 0 && bits <= 128)
 		s = dec(s, "/", bits);
 	*s = 0;

@@ -1,3 +1,15 @@
+09-10-21 iffe.sh,Makefile: test -e is not in ksh88!
+09-10-06 iffe.sh: handle cc -E #error with 0 exit status (sgi)
+09-10-06 package.sh: stub in ar intercept checks -- not used yet
+09-10-06 ar.ibm.risc: add ar intercept because some aix require -Xfoo first!!
+09-09-24 regress.sh: fix UMASK logic to create test support files before umask
+09-08-28 release.c: change docs to mention stdin if no file operands
+09-08-24 package.sh: fix isascii() bug that failed on od(1) trailing space
+09-08-20 make.probe: add CC.SHARED.NAME
+09-08-20 regress.sh: add { JOB CONTINUE EXITED KILL FIFO }
+09-08-11 package.sh: filter lines containing : for package results
+09-07-31 make.probe: add CC.AR.ARFLAGS (for aix ar -xany)
+09-07-31 package.sh,cc.*: fix -dumpmachine to handle 32/64/* bit options
 09-06-24 package.sh: fix admin.db output formatting
 09-05-05 package.sh: export dll hackery environment vars
 09-05-05 package.sh: handle non-identifier hostnames

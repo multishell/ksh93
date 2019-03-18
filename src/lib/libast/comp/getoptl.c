@@ -24,6 +24,12 @@
 #include <ast.h>
 #include <ast_getopt.h>
 
+#if _BLD_ast && defined(__EXPORT__)
+#define EXTERN		__EXPORT__
+#else
+#define EXTERN		extern
+#endif
+
 #undef	_BLD_ast	/* enable ast imports since we're user static */
 
 #include <error.h>
@@ -138,13 +144,13 @@ golly(int argc, char* const* argv, const char* optstring, const struct option* l
 	return c;
 }
 
-extern int
+EXTERN int
 getopt_long(int argc, char* const* argv, const char* optstring, const struct option* longopts, int* longindex)
 {
 	return golly(argc, argv, optstring, longopts, longindex, 2);
 }
 
-extern int
+EXTERN int
 getopt_long_only(int argc, char* const* argv, const char* optstring, const struct option* longopts, int* longindex)
 {
 	return golly(argc, argv, optstring, longopts, longindex, 1);

@@ -41,13 +41,6 @@ struct Ctype_s
 
 static Ctype_t*		ctypes;
 
-#define CTYPES		12
-#if _lib_wctype
-#define WTYPES		8
-#else
-#define WTYPES		0
-#endif
-
 /*
  * this stuff gets around posix failure to define isblank,
  * and the fact that ctype functions are macros
@@ -119,6 +112,9 @@ static Ctype_t ctype[] =
 	{ SZ("upper"), Isupper },
 	{ SZ("word"),  Isword  },
 	{ SZ("xdigit"),Isxdigit},
+
+#define CTYPES		13
+
 #if _lib_wctype
 	{ 0, 0,        Is_wc_1 },
 	{ 0, 0,        Is_wc_2 },
@@ -128,6 +124,13 @@ static Ctype_t ctype[] =
 	{ 0, 0,        Is_wc_6 },
 	{ 0, 0,        Is_wc_7 },
 	{ 0, 0,        Is_wc_8 },
+
+#define WTYPES		8
+
+#else
+
+#define WTYPES		0
+
 #endif
 };
 

@@ -115,10 +115,17 @@ extern Sig_info_t	sig_info;
 
 #undef	extern
 
+#if _lib_sigflag && _npt_sigflag
+extern int		sigflag(int, int, int);
+#endif
+
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		__EXPORT__
 #endif
 
+#if !_lib_sigflag
+extern int		sigflag(int, int, int);
+#endif
 extern int		sigcritical(int);
 extern int		sigunblock(int);
 

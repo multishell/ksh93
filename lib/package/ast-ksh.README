@@ -92,7 +92,12 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-09-12-04  --- Release ksh93t+  ---
+09-12-11  --- Release ksh93t+  ---
+09-12-11  A bug where the subscript of an unset variable was not evaluated has
+	  been fixed.
+09-12-09  A bug where shcomp dumped core on certain syntax errors has been fixed.
+09-12-07  A bug where a parent shell environment var reset in a subshell removed
+	  the value in subsequent children of the parent shell has been fixed.
 09-12-04  A bug in which in some cases a trap in a function executed in
 	  a subshell could trigger twice has been fixed.
 09-12-03  A bug in which SHLVL exported with some attributes could cause
@@ -2264,6 +2269,13 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+09-12-11 regex/regcomp.c: posix semantics for [z-a]
+09-12-11 regex/regcomp.c: fix BRE/ERE ^^ logic
+09-12-11 regex/regcomp.c: fix regcomb() for REG_LEFT|REG_RIGHT
+09-12-11 regex/regcomp.c: bm complete=0 if REX_END
+09-12-11 comp/sigflag.c: add with npt check in features/sig.sh
+09-12-11 tm/tminit.c: fix _tzset_environ logic
+09-12-09 tm/tmlocale.c: include "ast_nl_types.h" to pull nl_langinfo in!
 09-12-04 features/options: add "opt map-libc" check
 09-12-03 tm/tmxdate.c: fix 'next month final day' for dec -> jan
 09-11-21 misc/magic.tab: add gimp XCF
@@ -3853,6 +3865,7 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
+09-12-10 join.c: <wctype.h> for iswspace()!
 09-12-04 cmd.h: fix CMD_DYNAMIC logic
 09-12-04 cut.c: handle -d mb
 09-12-03 mkdir.c: add --verbose

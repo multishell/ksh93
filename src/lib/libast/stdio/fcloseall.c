@@ -21,54 +21,37 @@
 ***********************************************************************/
 #pragma prototyped
 
-/*
- * gnu stdio extensions
- */
-
 #include "stdhdr.h"
+
+#define MAXLOOP		3
 
 int
 fcloseall(void)
 {
-	return sfsync(NiL) < 0 ? -1 : 0;
-}
+	Sfpool_t*	p;
+	Sfpool_t*	next;
+	int		n;
+	int		nclose;
+	int		count;
+	int		loop;
 
-Sfio_t*
-fmemopen(void* buf, size_t size, const char* mode)
-{
-	return sfnew(NiL, buf, size, -1, SF_STRING|_sftype(mode, NiL, NiL));
-}
+	STDIO_INT(0, "fcloseall", int, (void), ())
 
-ssize_t
-__getdelim(char** pbuf, size_t* psize, int del, Sfio_t* sp)
-{
-	char*	s;
-	size_t	n;
-	size_t	m;
-
-	if (!(s = sfgetr(sp, del, 1)))
-		return -1;
-	n = sfsize(sp);
-	m = n + 1;
-	if (!*pbuf || m > *psize)
-	{
-		m = roundof(m, 1024);
-		if (!(*pbuf = newof(*pbuf, char, m, 0)))
-			return -1;
-		*psize = m;
+	for(loop = 0; loop < MAXLOOP; ++loop)
+	{	nclose = count = 0;
+		for(p = &_Sfpool; p; p = next)
+		{	/* find the next legitimate pool */
+			for(next = p->next; next; next = next->next)
+				if(next->n_sf > 0)
+					break;
+			for(n = 0; n < ((p == &_Sfpool) ? p->n_sf : 1); ++n)
+			{	count += 1;
+				if(sfclose(p->sf[n]) >= 0)
+					nclose += 1;
+			}
+		}
+		if(nclose == count)
+			break;
 	}
-	memcpy(*pbuf, s, n);
-	return n;
-}
-
-ssize_t
-getdelim(char** pbuf, size_t* psize, int del, Sfio_t* sp)
-{
-	return __getdelim(pbuf, psize, del, sp);
-}
-
-ssize_t
-getline(char** pbuf, size_t* psize, Sfio_t* sp)
-{
-	return __getdelim(pbuf, psize, '\n', sp);
+	return 0; /* always return 0 per GNU */
 }

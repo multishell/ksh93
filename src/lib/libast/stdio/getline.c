@@ -27,15 +27,10 @@
 
 #include "stdhdr.h"
 
-int
-fflush(Sfio_t* f)
+ssize_t
+getline(char** sp, size_t* np, Sfio_t* f)
 {
-	if (!f)
-		return fcloseall();
+	STDIO_INT(f, "getline", ssize_t, (char**, size_t*, Sfio_t*), (sp, np, f))
 
-	STDIO_INT(f, "fflush", int, (Sfio_t*), (f))
-
-	if (f->extent > 0)
-		sfseek(f, (Sfoff_t)0, SEEK_CUR|SF_PUBLIC);
-	return (sfsync(f) < 0 || sfpurge(f) < 0) ? -1 : 0;
+	return getdelim(sp, np, '\n', f);
 }

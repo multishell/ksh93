@@ -21,21 +21,12 @@
 ***********************************************************************/
 #pragma prototyped
 
-#ifndef _USE_GNU
-#define _USE_GNU
-#endif
-
 #include "stdhdr.h"
 
-int
-fflush(Sfio_t* f)
+Sfio_t*
+fmemopen(void* buf, size_t size, const char* mode)
 {
-	if (!f)
-		return fcloseall();
+	STDIO_PTR(0, "fmemopen", Sfio_t*, (void*, size_t, const char*), (buf, size, mode))
 
-	STDIO_INT(f, "fflush", int, (Sfio_t*), (f))
-
-	if (f->extent > 0)
-		sfseek(f, (Sfoff_t)0, SEEK_CUR|SF_PUBLIC);
-	return (sfsync(f) < 0 || sfpurge(f) < 0) ? -1 : 0;
+	return sfnew(NiL, buf, size, -1, SF_STRING|_sftype(mode, NiL, NiL));
 }

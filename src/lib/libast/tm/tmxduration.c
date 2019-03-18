@@ -21,21 +21,61 @@
 ***********************************************************************/
 #pragma prototyped
 
-#ifndef _USE_GNU
-#define _USE_GNU
-#endif
+#include <tmx.h>
+#include <ctype.h>
 
-#include "stdhdr.h"
+/*
+ * parse duration expression in s and return Time_t value
+ * if non-null, e points to the first unused char in s
+ * returns 0 with *e==s on error
+ */
 
-int
-fflush(Sfio_t* f)
+Time_t
+tmxduration(const char* s, char** e)
 {
-	if (!f)
-		return fcloseall();
+	double		d;
+	Time_t		ns;
+	Time_t		ts;
+	Time_t		now;
+	char*		last;
+	char*		t;
+	char*		x;
+	Sfio_t*		f;
+	int		i;
 
-	STDIO_INT(f, "fflush", int, (Sfio_t*), (f))
-
-	if (f->extent > 0)
-		sfseek(f, (Sfoff_t)0, SEEK_CUR|SF_PUBLIC);
-	return (sfsync(f) < 0 || sfpurge(f) < 0) ? -1 : 0;
+	now = TMX_NOW;
+	while (isspace(*s))
+		s++;
+	if (*s == 'P' || *s == 'p')
+		ns = tmxdate(s, &last, now) - now;
+	else
+	{
+		ns = strtod(s, &last) * TMX_RESOLUTION;
+		if (*last && (f = sfstropen()))
+		{
+			sfprintf(f, "exact %s", s);
+			t = sfstruse(f);
+			ts = tmxdate(t, &x, now);
+			if ((i = x - t - 6) > (last - s))
+			{
+				last = (char*)s + i;
+				ns = ts - now;
+			}
+			else
+			{
+				sfprintf(f, "p%s", s);
+				t = sfstruse(f);
+				ts = tmxdate(t, &x, now);
+				if ((i = x - t - 1) > (last - s))
+				{
+					last = (char*)s + i;
+					ns = ts - now;
+				}
+			}
+			sfstrclose(f);
+		}
+	}
+	if (e)
+		*e = last;
+	return ns;
 }

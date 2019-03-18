@@ -169,7 +169,7 @@ int	b_hist(int argc,char *argv[], void *extra)
 		range[0] = index2;
 	if(flag==0)
 		/* set default termination range */
-		range[1] = (lflag?hist_max(hp)-1:range[0]);
+		range[1] = ((lflag && !edit)?hist_max(hp)-1:range[0]);
 	if(range[1]>=(flag=(hist_max(hp) - !lflag)))
 		range[1] = flag;
 	/* check for valid ranges */

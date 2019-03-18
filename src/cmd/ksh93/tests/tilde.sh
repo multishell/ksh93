@@ -83,5 +83,10 @@ then	err_exit x=~:~ not $HOME:$HOME
 fi
 HOME=/
 [[ ~ == / ]] || err_exit '~ should be /'
+trap 'rm -rf /tmp/kshtilde$$' EXIT
 [[ ~/foo == /foo ]] || err_exit '~/foo should be /foo when ~==/'
+print $'print ~+\n[[ $1 ]] && $0' > /tmp/kshtilde$$
+chmod +x /tmp/kshtilde$$
+nl=$'\n'
+[[ $(/tmp/kshtilde$$ foo) == "$PWD$nl$PWD" ]] 2> /dev/null  || err_exit 'tilde fails inside a script run by name'
 exit $((Errors))

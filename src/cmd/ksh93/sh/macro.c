@@ -350,7 +350,16 @@ void sh_machere(Shell_t *shp,Sfio_t *infile, Sfio_t *outfile, char *string)
 				int	offset2;
 				sfputc(stkp,c);
 				if(n==S_LBRA)
+				{
+					c = fcget();
+					fcseek(-1);
+					if(sh_lexstates[ST_NORM][c]==S_BREAK)
+					{
+						comsubst(mp,(Shnode_t*)0,2);
+						break;
+					}
 					sh_lexskip(lp,RBRACE,1,ST_BRACE);
+				}
 				else if(n==S_ALP)
 				{
 					while(fcgetc(c),isaname(c))
@@ -1218,8 +1227,8 @@ retry1:
 					dolmax =1;
 					if(array_assoc(ap))
 						arrmax = strdup(v);
-					else
-						dolmax = (int)sh_arith(v);
+					else if((dolmax = (int)sh_arith(v))<0)
+						dolmax += array_maxindex(np);
 					if(type==M_SUBNAME)
 						bysub = 1;
 				}
@@ -1238,11 +1247,31 @@ retry1:
 		}
 		else
 			fcseek(-1);
+		if(type<=1 && np && nv_isvtree(np) && mp->pattern==1 && !mp->split)
+		{
+			int peek=1,cc=fcget();
+			if(type && cc=='}')
+			{
+				cc = fcget();
+				peek = 2;
+			}
+			if(mp->quote && cc=='"')
+			{
+				cc = fcget();
+				peek++;
+			}
+			fcseek(-peek);
+			if(cc==0)
+				mp->assign = 1;
+		}
 		if((type==M_VNAME||type==M_SUBNAME)  && mp->shp->argaddr && strcmp(nv_name(np),id))
 			mp->shp->argaddr = 0;
 		c = (type>M_BRACE && isastchar(mode));
 		if(np && (type==M_TREE || !c || !ap))
 		{
+			char *savptr;
+			c = *((unsigned char*)stkptr(stkp,offset-1));
+			savptr = stkfreeze(stkp,0);
 			if(type==M_VNAME || (type==M_SUBNAME && ap))
 			{
 				type = M_BRACE;
@@ -1256,18 +1285,10 @@ retry1:
 				Namval_t *nq = nv_type(np);
 				type = M_BRACE;
 				if(nq)
-				{
-					char *cp = nv_name(nq);
-					if(v=strrchr(cp,'.'))
-						v++;
-					else
-						v = cp;
-				}
+					nv_typename(nq,mp->shp->strbuf);
 				else
-				{
 					nv_attribute(np,mp->shp->strbuf,"typeset",1);
-					v = sfstruse(mp->shp->strbuf);
-				}
+				v = sfstruse(mp->shp->strbuf);
 			}
 #endif /* SHOPT_TYPEDEF */
 #if  SHOPT_FILESCAN
@@ -1280,9 +1301,13 @@ retry1:
 			{
 				v = nv_getval(np);
 				/* special case --- ignore leading zeros */  
-				if( (mp->arith||mp->let) && (np->nvfun || nv_isattr(np,(NV_LJUST|NV_RJUST|NV_ZFILL))) && (offset==0 || !isalnum(*((unsigned char*)stkptr(stkp,offset-1)))))
+				if( (mp->arith||mp->let) && (np->nvfun || nv_isattr(np,(NV_LJUST|NV_RJUST|NV_ZFILL))) && (offset==0 || !isalnum(c)))
 					mp->zeros = 1;
 			}
+			if(savptr==stakptr(0))
+				stkseek(stkp,offset);
+			else
+				stkset(stkp,savptr,offset);
 		}
 		else
 		{
@@ -1828,7 +1853,8 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 	char			lastc, *savptr = stkfreeze(stkp,0);
 	int			was_history = sh_isstate(SH_HISTORY);
 	int			was_verbose = sh_isstate(SH_VERBOSE);
-	int			newlines,bufsize;
+	int			was_interactive = sh_isstate(SH_INTERACTIVE);
+	int			newlines,bufsize,nextnewlines;
 	Namval_t		*np;
 	mp->shp->argaddr = 0;
 	savemac = *mp;
@@ -1918,6 +1944,7 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 				goto out_offset;
 			}
 			sp = sfnew(NIL(Sfio_t*),(char*)malloc(IOBSIZE+1),IOBSIZE,fd,SF_READ|SF_MALLOC);
+			type = 3;
 		}
 		else
 			sp = sh_subshell(t,sh_isstate(SH_ERREXIT),type);
@@ -1945,6 +1972,7 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 	bufsize = sfvalue(sp);
 	/* read command substitution output and put on stack or here-doc */
 	sfpool(sp, NIL(Sfio_t*), SF_WRITE);
+	sh_offstate(SH_INTERACTIVE);
 	while((str=(char*)sfreserve(sp,SF_UNBOUND,0)) && (c = sfvalue(sp))>0)
 	{
 #if SHOPT_CRNL
@@ -1969,30 +1997,31 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 		}
 		if(c)
 			*dp++ = *str++;
-		*dp = 0;
 		str = buff;
 		c = dp-str;
 #endif /* SHOPT_CRNL */
+		/* delay appending trailing new-lines */
+		for(nextnewlines=0; c-->0 && str[c]=='\n'; nextnewlines++);
+		if(c < 0)
+		{
+			newlines += nextnewlines;
+			continue;
+		}
 		if(newlines >0)
 		{
 			if(mp->sp)
 				sfnputc(mp->sp,'\n',newlines);
 			else if(!mp->quote && mp->split && mp->shp->ifstable['\n'])
 				endfield(mp,0);
-			else	while(newlines--)
-					sfputc(stkp,'\n');
-			newlines = 0;
+			else
+				sfnputc(stkp,'\n',newlines);
 		}
 		else if(lastc)
 		{
 			mac_copy(mp,&lastc,1);
 			lastc = 0;
 		}
-		if(c <= 0)
-			continue;
-		/* delay appending trailing new-lines */
-		while(c-->=0 && str[c]=='\n')
-			newlines++;
+		newlines = nextnewlines;
 		if(++c < bufsize)
 			str[c] = 0;
 		else
@@ -2003,14 +2032,19 @@ static void comsubst(Mac_t *mp,register Shnode_t* t, int type)
 		}
 		mac_copy(mp,str,c);
 	}
+	if(was_interactive)
+		sh_onstate(SH_INTERACTIVE);
+	if(mp->shp->spid)
+		job_wait(mp->shp->spid);
 	if(--newlines>0 && mp->shp->ifstable['\n']==S_DELIM)
 	{
 		if(mp->sp)
 			sfnputc(mp->sp,'\n',newlines);
-		else if(!mp->quote && mp->split && mp->shp->ifstable['\n'])
-			endfield(mp,0);
-		else	while(newlines--)
-				sfputc(stkp,'\n');
+		else if(!mp->quote && mp->split)
+			while(newlines--)
+				endfield(mp,1);
+		else
+			sfnputc(stkp,'\n',newlines);
 	}
 	if(lastc)
 		mac_copy(mp,&lastc,1);
@@ -2354,6 +2388,7 @@ static void tilde_expand2(Shell_t *shp, register int offset)
 	{
 		beenhere = 1;
 		sh_addbuiltin(shtilde,sh_btilde,0);
+		nv_onattr(np,NV_EXPORT);
 	}
 	av[0] = ".sh.tilde";
 	av[1] = &ptr[offset];

@@ -395,7 +395,6 @@ b_tail(int argc, char** argv, void* context)
 			}
 			/*FALLTHROUGH*/
 		case 'n':
-		case 'N':
 			flags |= COUNT;
 			if (s = opt_info.arg)
 				number = num(s, &s, &flags, n);

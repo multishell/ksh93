@@ -34,5 +34,5 @@ int*	sign;		/* to return sign */
 	int		len;
 	static char	buf[SF_MAXDIGITS];
 
-	return _sfcvt((Sfdouble_t)dval,buf,sizeof(buf),n_digit,decpt,sign,&len,0);
+	return _sfcvt(&dval,buf,sizeof(buf),n_digit,decpt,sign,&len,0);
 }

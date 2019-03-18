@@ -63,6 +63,13 @@ USAGE_LICENSE
 "[A?Associative array.  Each \aname\a will converted to an associate "
         "array of type \b\f?\f\b.  If a variable already exists, the current "
         "value will become subscript \b0\b.]"
+"[h]:[string?Used within a type definition to provide a help string  "
+        "for variable \aname\a.  Otherwise, it is ignored.]"
+"[S?Used with a type definition to indicate that the variable is shared by "
+        "each instance of the type.  When used inside a function defined "
+        "with the \bfunction\b reserved word, the specified variables "
+        "will have function static scope.  Otherwise, the variable is "
+        "unset prior to processing the assignment list.]"
 #if 0
 "[p?Causes the output to be in a form of \b\f?\f\b commands that can be "
         "used as input to the shell to recreate the current type of "
@@ -171,7 +178,7 @@ static Sfdouble_t get_nenum(register Namval_t* np, Namfun_t *fp)
 	return(nv_getn(np,fp));
 }
 
-static const Namdisc_t Enum_disc        = {  0, put_enum, get_enum, get_nenum, 0,0,clone_enum };
+const Namdisc_t ENUM_disc        = {  0, put_enum, get_enum, get_nenum, 0,0,clone_enum };
 
 #ifdef STANDALONE
 static int enum_create(int argc, char** argv, void* context)
@@ -250,7 +257,7 @@ int b_enum(int argc, char** argv, void* context)
 		}
 		while(nv_nextsub(np));
 		ep->hdr.dsize = sizeof(struct Enum)+sz;
-		ep->hdr.disc = &Enum_disc;
+		ep->hdr.disc = &ENUM_disc;
 		ep->hdr.type = tp;
 		nv_onattr(tp, NV_RDONLY);
 		nv_disc(tp, &ep->hdr,NV_FIRST);

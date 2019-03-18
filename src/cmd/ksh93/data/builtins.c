@@ -66,6 +66,7 @@ const struct shtable3 shtab_builtins[] =
 	"let",		NV_BLTIN|BLT_ENV,		bltin(let),
 	"export",	NV_BLTIN|BLT_ENV|BLT_SPC|BLT_DCL,bltin(readonly),
 	".",		NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(dot_cmd),
+	"return",	NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(return),
 #if SHOPT_BASH
 	"local",	NV_BLTIN|BLT_ENV|BLT_SPC|BLT_DCL,bltin(typeset),
 #endif
@@ -75,12 +76,11 @@ const struct shtable3 shtab_builtins[] =
 	"alias",	NV_BLTIN|BLT_SPC|BLT_DCL,	bltin(alias),
 	"hash",		NV_BLTIN|BLT_SPC|BLT_DCL,	bltin(alias),
 	"enum",		NV_BLTIN|BLT_ENV|BLT_SPC|BLT_DCL,bltin(enum),
-	"exit",		NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(return),
 	"eval",		NV_BLTIN|BLT_ENV|BLT_SPC|BLT_EXIT,bltin(eval),
+	"exit",		NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(return),
 	"fc",		NV_BLTIN|BLT_ENV|BLT_EXIT,	bltin(hist),
 	"hist",		NV_BLTIN|BLT_ENV|BLT_EXIT,	bltin(hist),
 	"readonly",	NV_BLTIN|BLT_ENV|BLT_SPC|BLT_DCL,bltin(readonly),
-	"return",	NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(return),
 	"shift",	NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(shift),
 	"trap",		NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(trap),
 	"unalias",	NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(unalias),
@@ -157,7 +157,7 @@ const char sh_set[] =
 "}"
 "[f?Pathname expansion is disabled.]"
 "[h?Obsolete.  Causes each command whose name has the syntax of an "
-	"alias to become a tracked aliase when it is first encountered.]"
+	"alias to become a tracked alias when it is first encountered.]"
 "[k?This is obsolete.  All arguments of the form \aname\a\b=\b\avalue\a "
 	"are removed and placed in the variable assignment list for "
 	"the command.  Ordinarily, variable assignments must precede "
@@ -660,7 +660,7 @@ USAGE_LICENSE
   "Text between two \\b (backspace) characters indicates "
   "that the text should be emboldened when displayed. "
   "Text between two \\a (bell) characters indicates that the text should "
-  "be emphasised or italicized when displayed. "
+  "be emphasized or italicized when displayed. "
   "Text between two \\v (vertical tab) characters indicates "
   "that the text should displayed in a fixed width font. "
   "Text between two \\f (formfeed) characters will be replaced by the "
@@ -865,7 +865,7 @@ USAGE_LICENSE
 "\n[job ...]\n"
 "\n"
 "[+EXIT STATUS?]{"
-	"[+0?If all jobs are sucessfully disowned.]"
+	"[+0?If all jobs are successfully disowned.]"
 	"[+>0?If one more \ajob\as does not exist.]"
 "}"
 
@@ -912,7 +912,7 @@ USAGE_LICENSE
 ;
 
 const char sh_opthist[]	= 
-"[-1c?@(#)$Id: hist (AT&T Research) 2000-04-02 $\n]"
+"[-1cn?@(#)$Id: hist (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?\f?\f - process command history list]"
 "[+DESCRIPTION?\b\f?\f\b lists, edits, or re-executes, commands  "
@@ -1065,7 +1065,7 @@ USAGE_LICENSE
 "[+NAME?print - write arguments to standard output]"
 "[+DESCRIPTION?By default, \bprint\b writes each \astring\a operand to "
 	"standard output and appends a newline character.]"  
-"[+?Unless, the \b-r\b or \b-f\b option is specifed, each \b\\\b "
+"[+?Unless, the \b-r\b or \b-f\b option is specified, each \b\\\b "
 	"character in each \astring\a operand is processed specially as "
 	"follows:]{"
 		"[+\\a?Alert character.]"
@@ -1242,7 +1242,7 @@ USAGE_LICENSE
 "[+?If there are more variables than fields, the remaining variables are "
 	"set to empty strings.  If there are fewer variables than fields, "
 	"the leftover fields and their intervening separators are assigned "
-	"to the last variable.  If no \avar\a is specifed then the variable "
+	"to the last variable.  If no \avar\a is specified then the variable "
 	"\bREPLY\b is used.]"
 "[+?When \avar\a has the binary attribute and \b-n\b or \b-N\b is specified, "
 	"the bytes that are read are stored directly into \bvar\b.]"
@@ -1480,7 +1480,7 @@ USAGE_LICENSE
 "[+NAME?sleep - suspend execution for an interval]"
 "[+DESCRIPTION?\bsleep\b suspends execution for at least the time specified "
 	"by \aseconds\a or until a \bSIGALRM\b signal is received.  "
-	"\aseconds\a can be specifed as a floating point number but the "
+	"\aseconds\a can be specified as a floating point number but the "
 	"actual granularity depends on the underlying system, normally "
 	"around 1 millisecond.]"
 "\n"
@@ -1548,7 +1548,7 @@ USAGE_LICENSE
 ;
 
 const char sh_opttypeset[] =
-"+[-1c?\n@(#)$Id: typeset (AT&T Research) 2008-06-09 $\n]"
+"+[-1c?\n@(#)$Id: typeset (AT&T Research) 2008-08-04 $\n]"
 USAGE_LICENSE
 "[+NAME?\f?\f - declare or display variables with attributes]"
 "[+DESCRIPTION?Without the \b-f\b option, \b\f?\f\b sets, unsets, "
@@ -1599,8 +1599,12 @@ USAGE_LICENSE
 	"from 2 to 64.]"
 "[l?Convert uppercase character to lowercase.  Unsets \b-u\b attribute.  When "
 	"used with \b-i\b, \b-E\b, or \b-F\b indicates long variant.]"
+"[m?Move.  The value is the name of a variable whose value will be "
+	"moved to \aname\a.  The orignal variable will be unset.  Cannot be "
+	"used with any other options.]"
 "[n?Name reference.  The value is the name of a variable that \aname\a "
-	"references.  \aname\a cannot contain a \b.\b.]"
+	"references.  \aname\a cannot contain a \b.\b.  Cannot be use with "
+	"any other options.]"
 "[p?Causes the output to be in a format that can be used as input to the "
 	"shell to recreate the attributes for variables.]"
 "[r?Enables readonly.  Once enabled it cannot be disabled.  See "
@@ -1619,7 +1623,8 @@ USAGE_LICENSE
 	"array.  If a variable already exists, the current value will "
 	"become index \b0\b.]"
 "[C?Compound variable.  Each \aname\a will be a compound variable.  If "
-	"the variable already exists, it will first be unset.]"
+	"\avalue\a names a compound variable it will be copied to \aname\a. "
+	"Otherwise if the variable already exists, it will first be unset.]"
 "[E]#?[n:=10?Floating point number represented in scientific notation. "
 	"\an\a specifies the number of significant figures when the "
 	"value is expanded.]"
@@ -1823,7 +1828,7 @@ USAGE_LICENSE
 	"on the complete search order that the shell uses.  If \aname\a "  
 	"is not found, then no output is produced.]"
 "[+?If \b-v\b is specified, the output will also contain information "
-	"that indicates how the given \aname\a would be interpretted by "
+	"that indicates how the given \aname\a would be interpreted by "
 	"the shell in the current execution environment.]" 
 "[a?Displays all uses for each \aname\a rather than the first.]"
 "[f?Do not check for functions.]"
@@ -1840,7 +1845,6 @@ USAGE_LICENSE
 	"[+?Function]"
 	"[+?Tracked alias]"
 	"[+?Program]"
-	"[+?Not found]"
 "}"
 "\n"
 "\nname  ...\n"

@@ -80,7 +80,7 @@
 #line 1 "/home/gsf/src/cmd/proto/proto.c"
  
 
-#line 147
+#line 148
 # ifndef __STDC__
 # ifndef creat
 # define creat		_huh_creat
@@ -4647,7 +4647,7 @@ pppread __PARAM__((char* iob), (iob)) __OTORP__(char* iob;){
 
 
 
-#line 265 "/home/gsf/src/cmd/proto/proto.c"
+#line 266 "/home/gsf/src/cmd/proto/proto.c"
 
 
 

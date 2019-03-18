@@ -294,6 +294,8 @@ bad
 if	[[ $val != false ]]
 then	err_exit 'set -e not inherited for posix functions'
 fi
+trap - ERR
+
 function myexport 
 {
 	nameref var=$1
@@ -310,34 +312,40 @@ function myexport
 	
 }
 export dgk=base
-if	[[ $(myexport dgk fun) != fun ]]
-then	err_exit 'export inside function not working'
+val=$(myexport dgk fun)
+if	[[ $val != fun ]]
+then	err_exit "export inside function not working -- expected 'fun', got '$val'"
 fi
-val=$(export | grep "^dgk=")
-if	[[ ${val#dgk=} != base ]]
-then	err_exit 'export not restored after function call'
+val=$(export | sed -e '/^dgk=/!d' -e 's/^dgk=//')
+if	[[ $val != base ]]
+then	err_exit "export not restored after function call -- expected 'base', got '$val'"
 fi
-if	[[ $(myexport dgk fun fun2) != fun2 ]]
-then	err_exit 'export inside function not working with recursive function'
+val=$(myexport dgk fun fun2)
+if	[[ $val != fun2 ]]
+then	err_exit "export inside function not working with recursive function -- expected 'fun2', got '$val'"
 fi
-val=$(export | grep "^dgk=")
-if	[[ ${val#dgk=} != base ]]
-then	err_exit 'export not restored after recursive function call'
+val=$(export | sed -e '/^dgk=/!d' -e 's/^dgk=//')
+if	[[ $val != base ]]
+then	err_exit "export not restored after recursive function call -- expected 'base', got '$val'"
 fi
-if	[[ $(dgk=try3 myexport dgk) != try3 ]]
-then	err_exit 'name=value not added to export list with function call'
+val=$(dgk=try3 myexport dgk)
+if	[[ $val != try3 ]]
+then	err_exit "name=value not added to export list with function call -- expected 'try3', got '$val'"
 fi
-val=$(export | grep "^dgk=")
-if	[[ ${val#dgk=} != base ]]
-then	err_exit 'export not restored name=value function call'
+val=$(export | sed -e '/^dgk=/!d' -e 's/^dgk=//')
+if	[[ $val != base ]]
+then	err_exit "export not restored name=value function call -- expected 'base', got '$val'"
 fi
 unset zzz
-if	[[ $(myexport zzz fun) != fun ]]
-then	err_exit 'export inside function not working for zzz'
+val=$(myexport zzz fun)
+if	[[ $val != fun ]]
+then	err_exit "export inside function not working -- expected 'fun', got '$val'"
 fi
-if	[[ $(export | grep "zzz=") ]]
-then	err_exit 'zzz exported after function call'
+val=$(export | sed -e '/^zzz=/!d' -e 's/^zzz=//')
+if	[[ $val ]]
+then	err_exit "unset varaible exported after function call -- expected '', got '$val'"
 fi
+
 unset zzz
 typeset -u zzz
 function foo
@@ -957,4 +965,17 @@ function _Dbg_debug_trap_handler
 trap '_Dbg_debug_trap_handler' DEBUG
 .  $tmp  foo bar
 trap '' DEBUG
+             
+caller() {
+  integer .level=.sh.level .max=.sh.level-1
+  while((--.level>=0))
+  do
+      ((.sh.level = .level))
+      print -r -- "${.sh.lineno}"
+  done
+}
+bar() { caller;}
+set -- $(bar)
+[[ $1 == $2 ]] && err_exit ".sh.inline optimization bug"
+( $SHELL  -c ' function foo { typeset x=$1;print $1;};z=();z=($(foo bar)) ') 2> /dev/null ||  err_exit 'using a function to set an array in a command sub  fails'
 exit $((Errors))

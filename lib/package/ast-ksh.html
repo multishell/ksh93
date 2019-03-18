@@ -193,11 +193,103 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-08-07-25  --- Release ksh93t  ---
+08-10-31  --- Release ksh93t  ---
+08-10-31  Variable scoping/initialization bugs that could dump core were fixed.
+08-10-24  The lexer now accepts all RE characters for patterns prefixed
+	  with a ksh ~(...) option expression.
+08-10-24  For ${var/pat/sub} &nbsp; in sub expands to the text matched by pat.
+08-10-18  A bug in array scoping that could dump core has been fixed.
+08-10-10  read -n and -N fixed to count characters in multibyte locales.
+08-10-10  A bug that mishandled _.array&#0091;&#0093; type references has been fixed.
+08-10-09  ${.sh.version} now contains a catenation of the following (after
+	  'Version') denoting compile time features:
+		A	SHOPT_AUDIT
+		B	SHOPT_BASH
+		L	SHOPT_ACCT
+		M	SHOPT_MULTIBYTE
+08-10-09  A bug that caused subshell command substitution with redirection
+	  to hang has been fixed.
+08-10-08  Output errors, other than to stderr, now result in a diagnostic.
+08-10-08  ksh93 now supports types that contain arrays of other types as
+	  members.  Earlier versions core dumped in this case.
+08-10-05  A bug which caused the shell to emit a syntax error for an arithmetic
+	  statement of the form (( var.name&#0091;sub&#0093; = value)) has been fixed.
+08-10-01  A bug that caused subshell command substitution to hang has
+	  been fixed.
+08-09-29  When the -p export option of typeset is used with other options,
+	  only those variables matching the specified options are displayed.
+08-09-29  When the shell reads the environment and finds variables that are
+	  not valid shell assignments, it now passes these on to subsequent
+	  commands rather than deleting them.
+08-09-29  A bug in the display of compound variables containing an indexed
+	  array of compound variables has been fixed.
+08-09-29  A bug in the display of compound variables containing an associative
+	  array with a subscript containing a . in the name has been fixed.
+08-09-26  A core dump in the subshell environment restore has been fixed.
+08-09-24  $(...) has been fixed to properly set the exit status in $?.
+08-09-23  $(&lt;...) with IFS=$'n' has been fixed to retain all but the last
+	  of multiple trailing newlines.
+08-09-23  The -p option to typeset when used with other attributes, restricts
+	  the output to variables with the specified attributes.
+08-09-22  A bug that sometimes lost the exit status of a job has been fixed.
+08-09-21  A bug that retained trailing command substitution newlines in
+	  cases where the command caused the shell to fork has been fixed.
+08-09-19  type, whence -v, and command -v were fixed to comply with POSIX
+	  by writing 'not found' diagnostics to the standard error.
+08-09-18  test and &#0091;...&#0093; were fixed to comply with POSIX in the case
+	  of test '(' binop ')' where binop is a valid binary test operator.
+08-09-16  If a method discipline named create is specified when defining a
+	  type, this function will be called when an instance is created.
+08-09-15  The variable _ is now set as a reference to the compound variable
+	  when defining a compound variable or a type.
+08-09-10  The shell now prints an error message when the type name specified
+	  for an indexed array subscript is not an enumeration type.
+08-09-10  A bug in which a subshell that spawned a background process could
+	  loose output that was produced after the foreground completed
+	  has been fixed.
+08-09-10  A timing bug on some systems that could cause coprocesses started by a
+	  subshell to not clean up and prevent other coprocesses has been fixed.
+08-09-09  The typeset -m option is now able to rename array elements from
+	  the same array.
+08-09-09  The exit status of 2 from the DEBUG trap causes the next command
+	  to be skipped.  An exit value of 255 from a DEBUG trap called from
+	  a function causes the function to return. 
+08-09-08  A bug in which a coprocess created in a subshell that did not
+	  complete when the subshell terminated could prevent a coprocess
+	  from being created in the parent shell has been fixed.
+08-09-05  An assignment of the form name1=name2 where name1 and name2
+	  are both compound variables causes name1 to get a copy of name2.
+	  name1+=name2 causes name2 sub-variables to be appended to name1.
+08-09-05  A bug in which unsetting a compound variable did not unset all
+	  the sub-variables has been fixed.
+08-09-01  A bug in the subshell cleanup code that could cause SIGSEGV has
+	  been fixed.
+06-08-26  The SHLVL variable which is an environment variable used by bash
+          and zsh that gets incremented when the shell starts.
+08-08-25  For an indexed array, a negative subscript now refers to offsets
+	  from the end so that -1 refers to the last element.
+08-08-24  An alignment error for shorts on 64 bit architectures has been fixed.
+08-08-22  If oldvar is a compound variable, typeset -C newvar=oldvar creates 
+	  newvar as a copy of oldvar.
+08-08-19  The ALRM signal no longer cause the sleep builtin to terminate.
+08-08-13  When used in an arithmetic expression, the .sh.version variable  
+	  now produces a number that will be increasing for each release.
+08-08-11  A bug in which type instantiation with a compound assignment in
+	  a dot script in which the type is defined has been fixed. 
+08-08-07  The -m option has been added to typeset to move or rename a
+	  variable.  Not documented yet.
+08-08-06  A bug in read when used in a loop when a prompt was specified
+	  when reading from a terminal has been fixed.
+08-08-01  A bug with the pipefail option in which a nested pipeline could
+	  cause an asynchronous command to block has been fixed.
+08-08-01  A for loop optimizer bug that treats .sh.lineno as an invariant
+	  has been fixed.
+08-07-30  A bug in which expanding compound variable that had a get discipline
+	  from with a here document could cause a syntax error has been fixed.
 08-07-18  A bug in which a nameref caused a local variable to be created
 	  rather than binding to an existing variable in the global scope
 	  has been fixed.
-08-07-17  A bug which occured when a nameref was created from within a
+08-07-17  A bug which occurred when a nameref was created from within a
 	  function that was  part of a pipeline has been fixed.
 08-07-14  The compile option SHOPT_STATS was added. With this option the
 	  compound variable .sh.stats keeps usage statistics that could help
@@ -212,7 +304,7 @@ All recorded changes follow.
 	  edit line is redrawn in place. 
 08-07-01  A bug in the handling of shared variables when inside an embedded
 	  type has been fixed.
-08-06-29  A bug in multiline edit mode which occured when the prompt length
+08-06-29  A bug in multiline edit mode which occurred when the prompt length
 	  was three characters or less has been fixed.
 08-06-23  A bug in which the SIGCLD was not be triggered when background
 	  jobs completed has been fixed.
@@ -319,9 +411,9 @@ All recorded changes follow.
 08-03-27  A bug in which the terminal group was not given back to the parent
 	  shell when the last part of a pipeline was handled by the parent shell
 	  and the other parts of the pipeline complete has been fixed. 
-	  The symtom was that the pipeline became uninterruptable.
+	  The symptom was that the pipeline became uninterruptable.
 08-03-25  A bug in restricted mode introduced in ksh93s that caused scripts
-	  that did not use #! to executed in restriected mode has been fixed.
+	  that did not use #! to executed in restricted mode has been fixed.
 08-03-25  A bug in which the pipefail option did not work for a pipeline
 	  within a pipeline has been fixed.
 08-03-24  A bug in which OPTIND was not set correctly in subshells has
@@ -363,7 +455,7 @@ All recorded changes follow.
 	  has bee fixed.
 08-02-07  A bug in which test \( ! -e \) produced an error has been fixed.
 08-02-14  The typeset -a option can now optionally be followed by the name
-	  of an enumerication type which allows subscripts to be enumerations.
+	  of an enumeration type which allows subscripts to be enumerations.
 08-02-14  The enum builtin which creates enumeration types has been added.
 08-02-12  The backoff logic when there are no more processes has been fixed.
 08-02-07  The -X option has been added to typeset.  The -X option creates
@@ -373,7 +465,7 @@ All recorded changes follow.
 	  variables.  Also the -h and -S options have been added to
 	  typeset that are only applicable when defining a type.
 08-01-31  The prefix expansion operator @ has been added.  ${@name}
-	  expandes to the type of name or yields the attributes.
+	  expands to the type of name or yields the attributes.
 07-11-15  A bug in the macro expander for multibyte characters in which
 	  part of the character contains a file pattern byte has been fixed. 
 07-10-03  A bug in which : was not allowed as part of an alias name has been
@@ -418,7 +510,7 @@ All recorded changes follow.
 	  assignments was treated as a noop has been fixed.
 08-01-17  A bug in which discipline functions invoked from withing a
 	  compound assignment could fail has been fixed.
-08-01-16  Incomplete arithmetic assigments, for example ((x += )), now
+08-01-16  Incomplete arithmetic assignments, for example ((x += )), now
 	  generate an error message.
 08-01-16  A bug in which a set discipline defined for a variable before
 	  an array assignment could cause a core dump has been fixed. 
@@ -491,7 +583,7 @@ All recorded changes follow.
 	  any word, each : will be considered a path delimiter.
 07-09-06  A bug in which subprocess cleanup could corrupt the malloc() heap
           has been fixed.
-07-08-26  A bug in which a name reference to an associatve array instance
+07-08-26  A bug in which a name reference to an associative array instance
 	  could cause the subscript to be evaluated as an arithmetic expression
 	  has been fixed.
 07-08-22  A bug in which the value of an array instance was of a compound
@@ -512,7 +604,7 @@ All recorded changes follow.
 	  an exit status of 127 when pipefail was enabled has been fixed.
 07-07-09  The SHOPT_AUDIT compile option has been added for keyboard logging.
 07-06-25  In vi insert mode, ksh no longer emits a backspace character
-	  before the carraige return when the newline is entered. 
+	  before the carriage return when the newline is entered. 
 07-06-25  A bug in which pipefail would cause a command to return 0
 	  when the pipeline was the last command and the failure happened
 	  on a component other than the last has been fixed.
@@ -1157,7 +1249,7 @@ All recorded changes follow.
 
 02-06-17  --- Release ksh93n-  ---
 02-06-17  A bug in which user defined macros could cause a core dump in
-	  with MULTIBYE mode has been fixed.
+	  with MULTIBYTE mode has been fixed.
 02-06-17  A bug in which printf format specifiers of the form %2$s were causing
 	  a core dump has been fixed.
 02-06-17  A bug in which setting stty to noecho mode did not prevent the
@@ -1864,7 +1956,7 @@ All recorded changes follow.
 	  positioned for the last command of a script has been fixed.
 95-04-31  A bug in the edit modes which allowed walking back in
 	  the history file for more than HISTSIZE commands has
-	  beed fixed.
+	  been fixed.
 95-04-31  A bug which could cause a core dump if variable TMPDIR was
 	  changed between two command substitutions has been fixed.
 95-04-31. A bug which prevented a trap on EXIT from being cleared
@@ -1997,6 +2089,20 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+08-11-04 regex/regcomp.c: fix locale &#0091;!-...&#0093; and &#0091;^-...&#0093; re-initialization
+08-11-04 stdio: add flockfile.c ftrylockfile.c funlockfile.c
+08-10-24 port/astconf.c: handle multiple/trailing '/' in universe initialization
+08-09-10 misc/magic.c: handle old vcodex() indices
+08-09-10 sfio/sfvprintf.c: drop SF_WCWIDTH, use %Lc or %Ls instead
+08-09-05 Makefile: ibm.risc joins the :NOOPTIMIZE: crowd
+08-09-04 regex/regnexec.c: fix nested delimiter match beyond end of subject
+08-08-20 misc/fts.c: fix st_nlink stat() optimization logic
+08-08-19 sfio/sfpkrd.c: workaround macosx recv(PEEK) data consumption on non-socket
+08-08-19 strn?tol?d: handle long double with smaller exponent range than double
+08-08-18 sfio/sfcvt.c: eliminate excessive multiplies and integral overprecision
+08-08-11 tm/tmxfmt.c: handle %10N and %010N
+08-08-06 include/shcmd.h: add 'int invariant;' for builtin invarinat arg count
+08-08-05 features/ndbm: favor sleepycat ndbm compatibility
 08-07-21 include/glob.h,misc/glob.c: GLOB_STARSTAR only forces lstat on chdir
 08-07-17 sfio: sync with kpv
 08-07-17 misc/optget.c: call astwinsize() each time terminal width required
@@ -3508,6 +3614,8 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+08-10-15 rm.c: handle 'rm -f x x' =&gt; exit 0
+08-09-08 stty.c: #ifdef guard TAB&#0091;012&#0093; -- freebsd: damn the posix, full speed ahead
 08-06-17 shcmd.h: move to libast
 08-04-24 uniq.c: add optget() 'n' option for -1 =&gt; -f1
 08-04-24 getconf.c: clarify diffs between "name - value" and "name = value"
@@ -3831,7 +3939,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>July 26, 2008</TD>
+<TD align=right>November 04, 2008</TD>
 </TR>
 </TABLE>
 <P>

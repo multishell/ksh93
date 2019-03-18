@@ -210,4 +210,20 @@ printf $'cat   <<# \\!!!\n\thello\n\t\tworld\n!!!' > $f
 [[ $($SHELL "$f") == $'hello\n\tworld' ]] || err_exit "<<# not working for quoted here documents" 
 printf $'w=world;cat   <<# !!!\n\thello\n\t\t$w\n!!!' > $f
 [[ $($SHELL "$f") == $'hello\n\tworld' ]] || err_exit "<<# not working for non-quoted here documents" 
+[[ $( $SHELL  <<- \++++
+	S=( typeset a )
+	function S.a.get
+	{
+	     .sh.value=$__a
+	}
+	__a=1234
+	cat <<-EOF
+	${S.a}
+	EOF
+++++
+) == 1234 ]]  2> /dev/null || err_exit 'here document with get discipline failed'
+[[ $($SHELL -c 'g(){ print ok;}; cat <<- EOF
+	${ g;}
+	EOF
+	' 2> /dev/null) == ok ]] || err_exit '${ command;} not working in heredoc'
 exit $((Errors))

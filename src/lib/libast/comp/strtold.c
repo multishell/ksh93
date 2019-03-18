@@ -31,13 +31,20 @@
  */
 
 #define _AST_STD_H	1
-#define strtold		______strtold
 
 #include <ast_common.h>
+
+#if _ast_fltmax_double
+#define strtold		______strtold
+#endif
+
 #include <ast_lib.h>
 #include <ast_sys.h>
 
+#if _ast_fltmax_double
 #undef	strtold
+#endif
+
 #undef	_AST_STD_H
 
 #include "sfstrtof.h"

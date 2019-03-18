@@ -2,7 +2,7 @@
 # Glenn Fowler
 # AT&T Research
 #
-# @(#)make.probe (AT&T Research) 2008-02-28
+# @(#)make.probe (AT&T Research) 2008-10-16
 #
 # C probe for make
 #
@@ -38,6 +38,7 @@ probe_shared_nostart="-nostartfiles"
 probe_shared_registry='"-update_registry $probe_shared_registry_file"'
 probe_shared_registry_file='registry.ld'
 probe_shared_registry_path="\$(LIBDIR)/$probe_shared_registry_file"
+probe_no_protect="'-fno-stack-protector -fno-stack-protector-all' -GS-"
 probe_strict="'-ansi -pedantic' '-ansi -strict' -strict -ansi"
 probe_stripflags="'-f -s' -f -s"
 probe_unresolved="'-expect_unresolved \"*\"'"
@@ -141,6 +142,7 @@ libpp=
 makeoptions=
 nmedit=
 nmflags=
+no_protect=
 optimize=
 plusplus=
 prefix_archive=lib
@@ -692,7 +694,7 @@ case $cc_dll:$cc_pic:$so:$dynamic:$static in
 			[012])	continue ;;
 			esac
 			;;
-		*archive*not*stripped*)
+		*archive*not*stripped*|*data*dynamic*not*stripped*)
 			$executable xxx$dll || continue
 			;;
 		*)	continue
@@ -1150,6 +1152,26 @@ case $stdlib in
 			esac
 		fi
 	done
+	case $hosted in
+	1)	case " $stdlib " in
+		*" /usr/lib "*)
+			;;
+		*)	case " $stdlib " in
+			*" /usr/local/lib "*)
+				;;
+			*)	stdlib="$stdlib /usr/local/lib"
+				;;
+			esac
+			stdlib="$stdlib /usr/lib"
+			;;
+		esac
+		case " $stdlib " in
+		*" /lib "*)
+			;;
+		*)	stdlib="$stdlib /lib"
+			;;
+		esac
+	esac
 	;;
 *)	keepstdlib=0
 	case $dir in
@@ -1430,6 +1452,19 @@ then	e=`wc -c < e`
 		esac
 	done
 
+	eval set x $probe_no_protect
+	while	:
+	do	shift
+		case $# in
+		0)	break ;;
+		esac
+		rm -f warn.$obj
+		$cc $1 -c warn.$src 2>e && test -f warn.$obj || continue
+		case `wc -c < e` in
+		$e)	no_protect=$1; break ;;
+		esac
+	done
+
 	eval set x $probe_optimize
 	while	:
 	do	shift
@@ -1484,7 +1519,7 @@ fi
 
 while	:
 do	case $hosted in
-	?*)	rm -f readonly.$exe
+	1)	rm -f readonly.$exe
 		eval set x '""' $probe_readonly
 		while	:
 		do	shift
@@ -1657,7 +1692,7 @@ sgi.mips4)	dll_variants='sgi.mips2:o32:-mips2 sgi.mips3:n32:-mips3' ;;
 esac
 
 case $hosted in
-'')	ccnative=`echo $cc | sed -e 's,.*/,,'`
+"")	ccnative=`echo $cc | sed -e 's,.*/,,'`
 	ccs=$ccnative
 	for c in cc gcc
 	do	case " $ccs " in
@@ -1960,6 +1995,7 @@ CC_MAKE_OPTIONS=$makeoptions
 CC_NM=$nm
 CC_NMEDIT=$nmedit
 CC_NMFLAGS=$nmflags
+CC_NOPROTECT=$no_protect
 CC_OPTIMIZE=$optimize
 CC_READONLY=$readonly
 CC_REPOSITORY=$repository
@@ -2064,6 +2100,7 @@ case $CC_NMEDIT in
 esac
 echo CC.NMEDIT ="$CC_NMEDIT"
 echo CC.NMFLAGS = $CC_NMFLAGS
+echo CC.NOPROTECT = $CC_NOPROTECT
 echo CC.OPTIMIZE = $CC_OPTIMIZE
 echo CC.PICBIG = $CC_PICBIG
 echo CC.PICSMALL = $CC_PICSMALL

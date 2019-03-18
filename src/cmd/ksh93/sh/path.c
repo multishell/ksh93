@@ -584,8 +584,13 @@ static void funload(Shell_t *shp,int fno, const char *name)
 		do
 		{
 			if((np = dtsearch(shp->fun_tree,rp->np)) && is_afunction(np))
+			{
+				if(np->nvalue.rp)
+					np->nvalue.rp->fdict = 0;
 				nv_delete(np,shp->fun_tree,NV_NOFREE);
+			}
 			dtinsert(shp->fun_tree,rp->np);
+			rp->fdict = shp->fun_tree;
 		}
 		while((rp=dtnext(shp->fpathdict,rp)) && strcmp(pname,rp->fname)==0);
 		return;
@@ -988,7 +993,7 @@ pid_t path_spawn(const char *opath,register char **argv, char **envp, Pathcomp_t
 		}
 		v = stakfreeze(1);
 		r = 1;
-		xp = envp + 2;
+		xp = envp + 1;
 		while (s = *xp++)
 		{
 			if (strneq(s, v, n) && s[n] == '=')
@@ -1071,6 +1076,7 @@ retry:
 					return(pid);
 			}
 			while(_sh_fork(pid,0,(int*)0) < 0);
+			((struct checkpt*)shp->jmplist)->mode = SH_JMPEXIT;
 #else
 			return(-1);
 #endif
@@ -1188,14 +1194,15 @@ static void exscript(Shell_t *shp,register char *path,register char *argv[],char
 		 *  The following code is just for compatibility
 		 */
 		if((n=open(path,O_RDONLY,0)) < 0)
-			errormsg(SH_DICT,ERROR_system(1),e_open,path);
+			errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
 		if(savet)
 			*argv++ = savet;
 	openok:
 		shp->infd = n;
 	}
 #else
-	shp->infd = sh_chkopen(path);
+	if((shp->infd = sh_open(path,O_RDONLY,0)) < 0)
+		errormsg(SH_DICT,ERROR_system(ERROR_NOEXEC),e_exec,path);
 #endif
 	shp->infd = sh_iomovefd(shp->infd);
 #if SHOPT_ACCT
@@ -1233,7 +1240,7 @@ static void exscript(Shell_t *shp,register char *path,register char *argv[],char
 	SHACCT = getenv("SHACCT");
     }
     /*
-    * suspend accounting unitl turned on by sh_accbegin()
+    * suspend accounting until turned on by sh_accbegin()
     */
     void sh_accsusp(void)
     {
@@ -1634,7 +1641,9 @@ Pathcomp_t *path_unsetfpath(Pathcomp_t *first)
 		for(rp=(struct Ufunction*)dtfirst(shp->fpathdict);rp;rp=rpnext)
 		{
 			rpnext = (struct Ufunction*)dtnext(shp->fpathdict,rp);
-			nv_delete(rp->np,shp->fun_tree,NV_NOFREE);
+			if(rp->fdict)
+				nv_delete(rp->np,rp->fdict,NV_NOFREE);
+			rp->fdict = 0;
 		}
 	}
 	while(pp)

@@ -264,6 +264,9 @@ int    b_typeset(int argc,register char *argv[],void *extra)
 			case 'b':
 				flag |= NV_BINARY;
 				break;
+			case 'm':
+				flag |= NV_MOVE;
+				break;
 			case 'n':
 				flag &= ~NV_VARNAME;
 				flag |= (NV_REF|NV_IDENT);
@@ -353,6 +356,10 @@ endargs:
 		error_info.errors++;
 	if((flag&NV_BINARY) && (flag&(NV_LJUST|NV_UTOL|NV_LTOU)))
 		error_info.errors++;
+	if((flag&NV_MOVE) && (flag&~(NV_MOVE|NV_VARNAME|NV_ASSIGN)))
+		error_info.errors++;
+	if((flag&NV_REF) && (flag&~(NV_REF|NV_IDENT|NV_ASSIGN)))
+		error_info.errors++;
 	if(troot==tdata.sh->fun_tree && ((isfloat || flag&~(NV_FUNCT|NV_TAGGED|NV_EXPORT|NV_LTOU))))
 		error_info.errors++;
 	if(error_info.errors)
@@ -368,7 +375,7 @@ endargs:
 		else if(!tdata.sh->typeinit)
 			flag |= NV_STATIC|NV_IDENT;
 	}
-	if(tdata.sh->fn_depth)
+	if(tdata.sh->fn_depth && !tdata.pflag)
 		flag |= NV_NOSCOPE;
 	if(flag&NV_TYPE)
 	{
@@ -421,11 +428,14 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 {
 	register char *name;
 	char *last = 0;
-	int nvflags=(flag&(NV_ARRAY|NV_NOARRAY|NV_VARNAME|NV_IDENT|NV_ASSIGN|NV_STATIC));
+	int nvflags=(flag&(NV_ARRAY|NV_NOARRAY|NV_VARNAME|NV_IDENT|NV_ASSIGN|NV_STATIC|NV_MOVE));
 	int r=0, ref=0, comvar=(flag&NV_COMVAR),iarray=(flag&NV_IARRAY);
 	Shell_t *shp =tp->sh;
 	if(!shp->prefix)
-		nvflags |= NV_NOSCOPE;
+	{
+		if(!tp->pflag)
+			nvflags |= NV_NOSCOPE;
+	}
 	else if(*shp->prefix==0)
 		shp->prefix = 0;
 	flag &= ~(NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT|NV_STATIC|NV_COMVAR|NV_IARRAY);
@@ -495,7 +505,7 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 				path_alias(np,path_absolute(nv_name(np),NIL(Pathcomp_t*)));
 				continue;
 			}
-			np = nv_open(name,troot,nvflags);
+			np = nv_open(name,troot,nvflags|NV_ARRAY);
 			if(tp->pflag)
 			{
 				nv_attribute(np,sfstdout,tp->prefix,1);
@@ -534,12 +544,14 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 					}
 					nv_setarray(np,nv_associative);
 				}
-				else if(comvar)
-				{
-					if(!nv_isnull(np) && !nv_isvtree(np))
-						nv_unset(np);
+				else if(comvar && !nv_rename(np,flag|NV_COMVAR))
 					nv_setvtree(np);
-				}
+			}
+			if(flag&NV_MOVE)
+			{
+				nv_rename(np, flag);
+				nv_close(np);
+				continue;
 			}
 			if(tp->tp)
 			{
@@ -640,8 +652,8 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 	}
 	else if(!tp->sh->envlist)
 	{
-		if(tp->pflag)
-			tp->aflag = 0;
+		if(shp->prefix)
+			errormsg(SH_DICT,2, "%s: compound assignment requires sub-variable name",shp->prefix);
 		if(tp->aflag)
 		{
 			if(troot==shp->fun_tree)
@@ -1003,7 +1015,12 @@ static int print_namval(Sfio_t *file,register Namval_t *np,register int flag, st
 		return(0);
 	}
 	if(tp->prefix)
-		sfputr(file,tp->prefix,' ');
+	{
+		if(*tp->prefix=='t')
+			nv_attribute(np,tp->outfile,tp->prefix,tp->aflag);
+		else
+			sfputr(file,tp->prefix,' ');
+	}
 	if(is_afunction(np))
 	{
 		Sfio_t *iop=0;
@@ -1021,7 +1038,7 @@ static int print_namval(Sfio_t *file,register Namval_t *np,register int flag, st
 			flag = '\n';
 		if(flag)
 		{
-			if(np->nvalue.ip && np->nvalue.rp->hoffset>=0)
+			if(tp->pflag && np->nvalue.ip && np->nvalue.rp->hoffset>=0)
 				sfprintf(file," #line %d %s\n",np->nvalue.rp->lineno,fname?sh_fmtq(fname):"");
 			else
 				sfputc(file, '\n');

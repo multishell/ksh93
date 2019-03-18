@@ -69,6 +69,7 @@ struct sh_scoped
 	char		**dolv;
 	char		*cmdname;
 	char		*filename;
+	char		*funname;
 	int		lineno;
 	Dt_t		*save_tree;	/* var_tree for calling function */
 	struct sh_scoped *self;		/* pointer to copy of this scope*/
@@ -120,6 +121,7 @@ struct limits
 	Dt_t		*var_base;	/* global level variables */ \
 	Namval_t	*namespace;	/* current active namespace*/ \
 	Namval_t	*last_table;	/* last table used in last nv_open  */ \
+	Namval_t	*prev_table;	/* previous table used in nv_open  */ \
 	Sfio_t		*outpool;	/* ouput stream pool */ \
 	long		timeout;	/* read timeout */ \
 	short		curenv;		/* current subshell number */ \
@@ -146,6 +148,7 @@ struct limits
 	pid_t		pid;		/* process id of shell */ \
 	pid_t		bckpid;		/* background process id */ \
 	pid_t		cpid; \
+	pid_t		spid; 		/* subshell process id */ \
 	int32_t		ppid;		/* parent process id of shell */ \
 	int		topfd; \
 	int		sigmax;		/* maximum number of signals */ \
@@ -172,11 +175,13 @@ struct limits
 	struct argnod	*envlist; \
 	struct dolnod	*arglist; \
 	int		fn_depth; \
+	int		fn_reset; \
 	int		dot_depth; \
 	int		hist_depth; \
 	int		xargmin; \
 	int		xargmax; \
 	int		xargexit; \
+	int		nenv; \
 	mode_t		mask; \
 	long		nforks; \
 	Env_t		*env; \
@@ -210,7 +215,9 @@ struct limits
 	Sfio_t		*strbuf; \
 	Sfio_t		*strbuf2; \
 	Dt_t		*last_root; \
+	Dt_t		*prev_root; \
 	Dt_t		*fpathdict; \
+	Dt_t		*typedict; \
 	char		ifstable[256]; \
 	unsigned char	sigruntime[2]; \
 	unsigned long	test; \
@@ -366,8 +373,9 @@ extern Dt_t		*sh_subaliastree(int);
 extern void             sh_scope(Shell_t*, struct argnod*, int);
 extern Namval_t		*sh_scoped(Shell_t*, Namval_t*);
 extern Dt_t		*sh_subfuntree(int);
+extern void		sh_subjobcheck(pid_t);
 extern int		sh_subsavefd(int);
-extern void		sh_subtmpfile(void);
+extern void		sh_subtmpfile(int);
 extern char 		*sh_substitute(const char*,const char*,char*);
 extern const char	*_sh_translate(const char*);
 extern int		sh_trace(char*[],int);

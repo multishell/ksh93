@@ -48,6 +48,17 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="INIT changes">INIT changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+08-10-16 make.probe '-fno-stack-protector -fno-stack-protector-all' to cop out!!
+08-09-30 rt.sh: fix ksh93 regression test signal count
+08-09-26 regress.sh: ignore SIGPIPE for SET pipe-input
+08-09-24 package.sh: package only test foo =&gt; make --recurse=only recurse tests foo
+08-09-20 make.probe: handle another /usr/bin/file shared lib description
+08-09-20 regress.sh: add --pipefail for SET pipe-input ...
+08-09-17 Makefile: add gdbm1.c for &lt;gdbm-ndbm.h&gt;
+08-09-10 make.probe: add CC.NOPROTECT
+08-08-08 mktest.sh: add --width=width
+08-08-05 dbm.req: favor sleepycat ndbm compatibility
+08-08-04 C+probe: fix stdlib initialization logic
 08-06-24 package.sh: fix $INSTALLROOT/bin/cc intercept time stamp file typo
 08-06-20 TEST.mk: make the localyunit before *.rt =&gt; *.tst -- doh
 08-06-20 mktest.sh: prepend $PWD onto PATH for local units -- doh^2
@@ -852,7 +863,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>July 26, 2008</TD>
+<TD align=right>November 04, 2008</TD>
 </TR>
 </TABLE>
 <P>

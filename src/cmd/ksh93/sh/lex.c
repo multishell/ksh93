@@ -219,7 +219,6 @@ static void lex_advance(Sfio_t *iop, const char *buff, register int size, void *
  */
 static int lexfill(Lex_t *lp)
 {
-	Shell_t *shp = lp->sh;
 	register int c;
 	Lex_t savelex;
 	struct argnod *ap;
@@ -481,7 +480,8 @@ int sh_lex(Lex_t* lp)
 				/* implicit RPAREN for =~ test operator */
 				if(inlevel+1==lp->lexd.level)
 				{
-					fcseek(-1);
+					if(lp->lex.intest)
+						fcseek(-1);
 					c = RPAREN;
 					goto do_pop;
 				}
@@ -655,7 +655,11 @@ int sh_lex(Lex_t* lp)
 					continue;
 				fcgetc(n);
 				if(n>0)
+				{
+					if(c=='~' && n==LPAREN && lp->lex.incase)
+						lp->lex.incase = TEST_RE;
 					fcseek(-1);
+				}
 				if(n==LPAREN)
 					goto epat;
 				wordflags = ARG_MAC;
@@ -998,6 +1002,11 @@ int sh_lex(Lex_t* lp)
 			do_pop:
 				if(lp->lexd.level <= inlevel)
 					break;
+				if(lp->lexd.level==inlevel+1 && lp->lex.incase>=TEST_RE && !lp->lex.intest)
+				{
+					fcseek(-1);
+					goto breakloop;
+				}
 				n = endchar(lp);
 				if(c==RBRACT  && !(n==RBRACT || n==RPAREN))
 					continue;
@@ -1478,7 +1487,7 @@ static int comsub(register Lex_t *lp, int endtok)
 				fcseek(-1);
 			if(c==RBRACE && lp->lex.incase)
 				lp->lex.incase=0;
-			switch(sh_lex(lp))
+			switch(c=sh_lex(lp))
 			{
 			    case LBRACE:
 				if(endtok==LBRACE && !lp->lex.incase)
@@ -1488,6 +1497,7 @@ static int comsub(register Lex_t *lp, int endtok)
 				}
 				break;
 			    case RBRACE:
+			    rbrace:
 				if(endtok==LBRACE && --count<=0)
 					goto done;
 				lp->comsub = (count==1);
@@ -1518,6 +1528,13 @@ static int comsub(register Lex_t *lp, int endtok)
 				lp->lex.reservok = 0;
 				messages |= lp->lexd.message;
 				break;
+			    case ';':
+				fcgetc(c);
+				if(c==RBRACE && endtok==LBRACE)
+					goto rbrace;
+				if(c>0)
+					fcseek(-1);
+				/* fall through*/
 			    default:
 				lp->lex.reservok = 1;
 			}

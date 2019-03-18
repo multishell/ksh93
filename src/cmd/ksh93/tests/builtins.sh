@@ -298,12 +298,6 @@ print $'line1\nline2' | behead
 if	[[ $left != line2 ]]
 then	err_exit  "read reading ahead on a pipe"
 fi
-read -n1 y <<!
-abc
-!
-if      [[ $y != a ]]
-then    err_exit  'read -n1 not working'
-fi
 print -n $'{ read -r line;print $line;}\nhello' > /tmp/ksh$$
 chmod 755 /tmp/ksh$$
 trap 'rm -rf /tmp/ksh$$' EXIT
@@ -370,12 +364,12 @@ do	arg=$1 val=$2 code=$3
 		err=$(printf "$fmt" "$arg" 2>&1 >/dev/null)
 		printf "$fmt" "$arg" >/dev/null 2>&1
 		ret=$?
-		[[ $out == $val ]] || err_exit "printf $fmt $arg failed -- got $out, expected $val"
+		[[ $out == $val ]] || err_exit "printf $fmt $arg failed -- expected $val, got $out"
 		if	(( $code ))
-		then	[[ $err ]] || err_exit "printf $fmt $arg failed -- error message expected"
-		else	[[ $err ]] && err_exit "$err: printf $fmt $arg failed -- error message not expected"
+		then	[[ $err ]] || err_exit "printf $fmt $arg failed, error message expected"
+		else	[[ $err ]] && err_exit "$err: printf $fmt $arg failed, error message not expected -- got '$err'"
 		fi
-		(( $ret == $code )) || err_exit "printf $fmt $arg failed -- got exit code $ret, expected $code"
+		(( $ret == $code )) || err_exit "printf $fmt $arg failed -- expected exit code $code, got $ret"
 	done
 done
 ((n=0))
@@ -391,7 +385,7 @@ do	set -- ${ARGV[$i]}
 	do	:
 	done
 	if	[[ $OPTIND != ${ARGC[$i]} ]]
-	then	err_exit "\$OPTIND after getopts loop incorrect -- got $OPTIND, expected ${ARGC[$i]}"
+	then	err_exit "\$OPTIND after getopts loop incorrect -- expected ${ARGC[$i]}, got $OPTIND"
 	fi
 done
 options=ab:c
@@ -404,40 +398,6 @@ do	case $opt in
 	*)	err_exit "getopts $options failed -- got flag $opt" ;;
 	esac
 done
-unset a
-{ read -N3 a; read -N1 b;}  <<!
-abcdefg
-!
-[[ $a == abc ]] || err_exit 'read -N3 here-document not working'
-[[ $b == d ]] || err_exit 'read -N1 here-document not working'
-read -n3 a <<!
-abcdefg
-!
-[[ $a == abc ]] || err_exit 'read -n3 here-document not working'
-(print -n a;sleep 1; print -n bcde) | { read -N3 a; read -N1 b;}
-[[ $a == abc ]] || err_exit 'read -N3 from pipe not working'
-[[ $b == d ]] || err_exit 'read -N1 from pipe not working'
-(print -n a;sleep 1; print -n bcde) |read -n3 a
-[[ $a == a ]] || err_exit 'read -n3 from pipe not working'
-rm -f /tmp/fifo$$
-if	mkfifo /tmp/fifo$$ 2> /dev/null
-then	(print -n a; sleep 1;print -n bcde)  > /tmp/fifo$$ &
-	{
-	read -u5 -n3  -t2 a  || err_exit 'read -n3 from fifo timedout'
-	read -u5 -n1 -t2 b || err_exit 'read -n1 from fifo timedout'
-	} 5< /tmp/fifo$$
-	[[ $a == a ]] || err_exit 'read -n3 from fifo not working'
-	rm -f /tmp/fifo$$
-	mkfifo /tmp/fifo$$ 2> /dev/null
-	(print -n a; sleep 1;print -n bcde)  > /tmp/fifo$$ &
-	{
-	read -u5 -N3 -t2 a || err_exit 'read -N3 from fifo timed out'
-	read -u5 -N1 -t2 b || err_exit 'read -N1 from fifo timedout'
-	} 5< /tmp/fifo$$
-	[[ $a == abc ]] || err_exit 'read -N3 from fifo not working'
-	[[ $b == d ]] || err_exit 'read -N1 from fifo not working'
-fi
-rm -f /tmp/fifo$$
 function longline
 {
 	integer i
@@ -496,4 +456,14 @@ print $'\nprint -r -- "${.sh.file} ${LINENO} ${.sh.lineno}"' > $tmpfile
 [[ $( . "$tmpfile") == "$tmpfile 2 1" ]] || err_exit 'dot command not working'
 print -r -- "'xxx" > $tmpfile
 [[ $($SHELL -c ". $tmpfile"$'\n print ok' 2> /dev/null) == ok ]] || err_exit 'syntax error in dot command affects next command'
+
+float sec=$SECONDS del=4
+exec 3>&2 2>/dev/null
+$SHELL -c "( sleep 1; kill -ALRM \$\$ ) & sleep $del" 2> /dev/null
+exitval=$?
+(( sec = SECONDS - sec ))
+exec 2>&3-
+(( exitval )) && err_exit "sleep doesn't exit 0 with ALRM interupt"
+(( sec > (del - 1) )) || err_exit "ALRM signal causes sleep to terminate prematurely -- expected 3 sec, got $sec"
+
 exit $((Errors))

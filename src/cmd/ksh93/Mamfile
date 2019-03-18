@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-06-22
+info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-10-28
 setv INSTALLROOT ../../..
 setv PACKAGE_ast_INCLUDE ${INSTALLROOT}/include/ast
 setv PACKAGE_ast_LIB ${INSTALLROOT}/lib
@@ -847,6 +847,7 @@ done expand.o generated
 make fault.o
 make sh/fault.c
 prev ${PACKAGE_ast_INCLUDE}/vmalloc.h implicit
+prev include/builtins.h implicit
 prev include/path.h implicit
 prev include/jobs.h implicit
 prev include/variables.h implicit
@@ -858,7 +859,7 @@ prev include/defs.h implicit
 done sh/fault.c
 meta fault.o %.c>%.o sh/fault.c fault
 prev sh/fault.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_KIA -DSHOPT_ESH -DSHOPT_VSH -D_PACKAGE_ast -DSHOPT_SUID_EXEC -DSHOPT_BRACEPAT -D_BLD_shell -DSHOPT_MULTIBYTE -DSHOPT_PFSH -DSHOPT_DYNAMIC -DKSHELL -DSHOPT_STATS -DSHOPT_HISTEXPAND -DERROR_CONTEXT_T=Error_context_t -c sh/fault.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_KIA -DSHOPT_ESH -DSHOPT_VSH -DSHOPT_TYPEDEF -D_PACKAGE_ast -D_BLD_shell -DSHOPT_DYNAMIC -DSHOPT_MULTIBYTE -DSHOPT_PFSH -DSHOPT_SUID_EXEC -DSHOPT_BRACEPAT -DKSHELL -DSHOPT_STATS -DSHOPT_HISTEXPAND -DERROR_CONTEXT_T=Error_context_t -c sh/fault.c
 done fault.o generated
 make fcin.o
 make sh/fcin.c
@@ -906,13 +907,14 @@ prev include/name.h implicit
 prev include/fault.h implicit
 prev include/path.h implicit
 prev include/variables.h implicit
+prev ${PACKAGE_ast_INCLUDE}/tmx.h implicit
 prev ${PACKAGE_ast_INCLUDE}/ccode.h implicit
 prev ${PACKAGE_ast_INCLUDE}/stak.h implicit
 prev include/defs.h implicit
 done sh/init.c
 meta init.o %.c>%.o sh/init.c init
 prev sh/init.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_STATS -DSHOPT_PFSH -DSHOPT_NAMESPACE -DSHOPT_MULTIBYTE -D_PACKAGE_ast -DSHOPT_DYNAMIC -D_BLD_shell -DSHOPT_KIA -DKSHELL -DSHOPT_HISTEXPAND -DSHOPT_ESH -DSHOPT_VSH -DERROR_CONTEXT_T=Error_context_t -DSHOPT_SUID_EXEC -DSHOPT_BRACEPAT -c sh/init.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -DSHOPT_STATS -DSHOPT_NAMESPACE -DSHOPT_PFSH -DSHOPT_MULTIBYTE -D_PACKAGE_ast -DSHOPT_DYNAMIC -D_BLD_shell -DSHOPT_KIA -DKSHELL -DSHOPT_HISTEXPAND -DSHOPT_ESH -DSHOPT_VSH -DERROR_CONTEXT_T=Error_context_t -DSHOPT_SUID_EXEC -DSHOPT_BRACEPAT -c sh/init.c
 done init.o generated
 make io.o
 make sh/io.c
@@ -1227,7 +1229,7 @@ prev ${PACKAGE_ast_INCLUDE}/ast_standards.h implicit
 done data/strdata.c
 meta strdata.o %.c>%.o data/strdata.c strdata
 prev data/strdata.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -D_PACKAGE_ast -DSHOPT_MULTIBYTE -DSHOPT_PFSH  -c data/strdata.c
+exec - ${CC} ${mam_cc_FLAGS} ${-debug-symbols?1?${mam_cc_DEBUG} -D_BLD_DEBUG?${CCFLAGS.FORCE}?} -I. -Iinclude -I${PACKAGE_ast_INCLUDE} -D_PACKAGE_ast -DSHOPT_MULTIBYTE -DSHOPT_PFSH  -c data/strdata.c
 done strdata.o generated
 make testops.o
 make data/testops.c

@@ -32,6 +32,7 @@
 #include        <ctype.h>
 #include        <ccode.h>
 #include        <pwd.h>
+#include        <tmx.h>
 #include        "variables.h"
 #include        "path.h"
 #include        "fault.h"
@@ -46,17 +47,44 @@
 #include	"lexstates.h"
 #include	"version.h"
 
+char e_version[]	= "\n@(#)$Id: Version "
+#if SHOPT_AUDIT
+#define ATTRS		1
+			"A"
+#endif
+#if SHOPT_BASH
+#define ATTRS		1
+			"B"
+#endif
+#if SHOPT_ACCT
+#define ATTRS		1
+			"L"
+#endif
 #if SHOPT_MULTIBYTE
-    char e_version[]	= "\n@(#)$Id: Version M "SH_RELEASE" $\0\n";
-#else
-    char e_version[]	= "\n@(#)$Id: Version "SH_RELEASE" $\0\n";
-#endif /* SHOPT_MULTIBYTE */
+#define ATTRS		1
+			"M"
+#endif
+#if SHOPT_PFSH && _hdr_exec_attr
+#define ATTRS		1
+			"P"
+#endif
+#if ATTRS
+			" "
+#endif
+			SH_RELEASE " $\0\n";
 
 #if SHOPT_BASH
     extern void bash_init(Shell_t*,int);
 #endif
 
 #define RANDMASK	0x7fff
+
+#ifndef ARG_MAX
+#   define ARG_MAX	(1*1024*1024)
+#endif
+#ifndef CHILD_MAX
+#   define CHILD_MAX	(1*1024)
+#endif
 #ifndef CLK_TCK
 #   define CLK_TCK	60
 #endif /* CLK_TCK */
@@ -118,6 +146,7 @@ typedef struct _init_
 	struct rand	RAND_init;
 	Namfun_t	LINENO_init;
 	Namfun_t	L_ARG_init;
+	Namfun_t	SH_VERSION_init;
 	struct match	SH_MATCH_init;
 #ifdef _hdr_locale
 	Namfun_t	LC_TYPE_init;
@@ -129,6 +158,7 @@ typedef struct _init_
 #endif /* _hdr_locale */
 } Init_t;
 
+static int		nbltins;
 static void		env_init(Shell_t*);
 static Init_t		*nv_init(Shell_t*);
 static Dt_t		*inittree(Shell_t*,const struct shtable2*);
@@ -333,7 +363,7 @@ static void put_cdpath(register Namval_t* np,const char *val,int flags,Namfun_t 
 		type= -1;
 	if(sh_isstate(SH_INIT) && type>=0 && type!=LC_ALL && lc_all && *lc_all)
 		type= -1;
-	if(type>=0)
+	if(type>=0 || type==LC_ALL)
 	{
 		if(!setlocale(type,val?val:""))
 		{
@@ -693,7 +723,30 @@ static char* get_match(register Namval_t* np, Namfun_t *fp)
 	return(mp->rval);
 }
 
-static const Namdisc_t SH_MATCH_disc  = {  sizeof(struct match), 0, get_match };
+static const Namdisc_t SH_MATCH_disc  = { sizeof(struct match), 0, get_match };
+
+static char* get_version(register Namval_t* np, Namfun_t *fp)
+{
+	return(nv_getv(np,fp));
+}
+
+static Sfdouble_t nget_version(register Namval_t* np, Namfun_t *fp)
+{
+	register const char	*cp = e_version + strlen(e_version)-10;
+	register int		c;
+	Sflong_t		t = 0;
+	NOT_USED(fp);
+
+	while (c = *cp++)
+		if (c >= '0' && c <= '9')
+		{
+			t *= 10;
+			t += c - '0';
+		}
+	return((Sfdouble_t)t);
+}
+
+static const Namdisc_t SH_VERSION_disc	= {  0, 0, get_version, nget_version };
 
 #if SHOPT_FS_3D
     /*
@@ -998,6 +1051,7 @@ Shell_t *sh_init(register int argc,register char *argv[], Shinit_f userinit)
 			shp->login_sh = 2;
 	}
 	env_init(shp);
+	*SHLVL->nvalue.ip +=1;
 #if SHOPT_SPAWN
 	{
 		/*
@@ -1196,10 +1250,19 @@ int sh_reinit(char *argv[])
 	Shell_t	*shp = &sh;
 	Shopt_t opt;
 	Namval_t *np,*npnext;
+	Dt_t	*dp;
 	for(np=dtfirst(shp->fun_tree);np;np=npnext)
 	{
+		if((dp=shp->fun_tree)->walk)
+			dp = dp->walk;
 		npnext = (Namval_t*)dtnext(shp->fun_tree,np);
-		nv_delete(np,shp->fun_tree,NV_NOFREE);
+		if(np>= shp->bltin_cmds && np < &shp->bltin_cmds[nbltins])
+			continue;
+		if(is_abuiltin(np) && nv_isattr(np,NV_EXPORT))
+			continue;
+		if(*np->nvname=='/')
+			continue;
+		nv_delete(np,dp,NV_NOFREE);
 	}
 	dtclose(shp->alias_tree);
 	shp->alias_tree = inittree(shp,shtab_aliases);
@@ -1242,6 +1305,7 @@ int sh_reinit(char *argv[])
 	sh_offstate(SH_FORKED);
 	shp->fn_depth = shp->dot_depth = 0;
 	sh_sigreset(0);
+	*SHLVL->nvalue.ip +=1;
 	return(1);
 }
 
@@ -1369,6 +1433,7 @@ static void stat_init(Shell_t *shp)
  */
 static Init_t *nv_init(Shell_t *shp)
 {
+	static int shlvl=0;
 	Namval_t *np;
 	register Init_t *ip;
 	double d=0;
@@ -1379,6 +1444,7 @@ static Init_t *nv_init(Shell_t *shp)
 	shp->nvfun.nofree = 1;
 	ip->sh = shp;
 	shp->var_base = shp->var_tree = inittree(shp,shtab_variables);
+	SHLVL->nvalue.ip = &shlvl;
 	ip->IFS_init.hdr.disc = &IFS_disc;
 	ip->IFS_init.hdr.nofree = 1;
 	ip->PATH_init.disc = &RESTRICTED_disc;
@@ -1407,6 +1473,8 @@ static Init_t *nv_init(Shell_t *shp)
 	ip->RAND_init.hdr.nofree = 1;
 	ip->SH_MATCH_init.hdr.disc = &SH_MATCH_disc;
 	ip->SH_MATCH_init.hdr.nofree = 1;
+	ip->SH_VERSION_init.disc = &SH_VERSION_disc;
+	ip->SH_VERSION_init.nofree = 1;
 	ip->LINENO_init.disc = &LINENO_disc;
 	ip->LINENO_init.nofree = 1;
 	ip->L_ARG_init.disc = &L_ARG_disc;
@@ -1446,6 +1514,7 @@ static Init_t *nv_init(Shell_t *shp)
 	nv_putsub(SH_MATCHNOD,(char*)0,10);
 	nv_onattr(SH_MATCHNOD,NV_RDONLY);
 	nv_stack(SH_MATCHNOD, &ip->SH_MATCH_init.hdr);
+	nv_stack(SH_VERSIONNOD, &ip->SH_VERSION_init);
 #ifdef _hdr_locale
 	nv_stack(LCTYPENOD, &ip->LC_TYPE_init);
 	nv_stack(LCALLNOD, &ip->LC_ALL_init);
@@ -1471,7 +1540,7 @@ static Init_t *nv_init(Shell_t *shp)
 	nv_putval(np,".sh.global",NV_RDONLY|NV_NOFREE);
 	nv_stack(np, &NSPACE_init);
 #endif /* SHOPT_NAMESPACE */
-	np = nv_mount(DOTSHNOD, "type", dtopen(&_Nvdisc,Dtoset));
+	np = nv_mount(DOTSHNOD, "type", shp->typedict=dtopen(&_Nvdisc,Dtoset));
 	nv_adddisc(DOTSHNOD, shdiscnames, (Namval_t**)0);
 	SH_LINENO->nvalue.ip = &shp->st.lineno;
 	VERSIONNOD->nvalue.nrp = newof(0,struct Namref,1,0);
@@ -1503,7 +1572,10 @@ static Dt_t *inittree(Shell_t *shp,const struct shtable2 *name_vals)
 		shp->bltin_nnodes = n;
 	}
 	else if(name_vals==(const struct shtable2*)shtab_builtins)
+	{
 		shp->bltin_cmds = np;
+		nbltins = n;
+	}
 	base_treep = treep = dtopen(&_Nvdisc,Dtoset);
 	treep->user = (void*)shp;
 	for(tp=name_vals;*tp->sh_name;tp++,np++)
@@ -1564,6 +1636,11 @@ static void env_init(Shell_t *shp)
 				nv_onattr(np,NV_IMPORT);
 				np->nvenv = cp;
 				nv_close(np);
+			}
+			else  /* swap with fron */
+			{
+				ep[-1] = environ[shp->nenv];
+				environ[shp->nenv++] = cp;
 			}
 		}
 		while(cp=next)

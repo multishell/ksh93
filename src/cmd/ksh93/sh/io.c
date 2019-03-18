@@ -79,10 +79,16 @@ static int	(*fdnotify)(int,int);
 #      define htonl(x)	(x)
 #   endif
 #   if _pipe_socketpair
+#      ifndef SHUT_RD
+#         define SHUT_RD         0
+#      endif
+#      ifndef SHUT_WR
+#         define SHUT_WR         1
+#      endif
 #      if _socketpair_shutdown_mode
-#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[0],1)<0||fchmod((v)[0],S_IRUSR)<0||shutdown((v)[1],0)<0||fchmod((v)[1],S_IWUSR)<0)?(-1):0)
+#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[1],SHUT_RD)<0||fchmod((v)[1],S_IWUSR)<0||shutdown((v)[0],SHUT_WR)<0||fchmod((v)[0],S_IRUSR)<0)?(-1):0)
 #      else
-#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[0],1)<0||shutdown((v)[1],0)<0)?(-1):0)
+#         define pipe(v) ((socketpair(AF_UNIX,SOCK_STREAM,0,v)<0||shutdown((v)[1],SHUT_RD)<0||shutdown((v)[0],SHUT_WR)<0)?(-1):0)
 #      endif
 #   endif
 
@@ -412,6 +418,48 @@ void sh_ioinit(Shell_t *shp)
 }
 
 /*
+ *  Handle output stream exceptions
+ */
+static int outexcept(register Sfio_t *iop,int type,void *data,Sfdisc_t *handle)
+{
+	static int	active = 0;
+
+	NOT_USED(handle);
+	if(type==SF_DPOP || type==SF_FINAL)
+		free((void*)handle);
+	else if(type==SF_WRITE && (*(ssize_t*)data)<0 && sffileno(iop)!=2)
+		switch (errno)
+		{
+		case EINTR:
+		case EPIPE:
+#ifdef ECONNRESET
+		case ECONNRESET:
+#endif
+#ifdef ESHUTDOWN
+		case ESHUTDOWN:
+#endif
+			break;
+		default:
+			if(!active)
+			{
+				int mode = ((struct checkpt*)sh.jmplist)->mode;
+				int save = errno;
+				active = 1;
+				((struct checkpt*)sh.jmplist)->mode = 0;
+				sfpurge(iop);
+				sfpool(iop,NIL(Sfio_t*),SF_WRITE);
+				errno = save;
+				errormsg(SH_DICT,ERROR_system(1),e_badwrite,sffileno(iop));
+				active = 0;
+				((struct checkpt*)sh.jmplist)->mode = mode;
+				sh_exit(1);
+			}
+			return(-1);
+		}
+	return(0);
+}
+
+/*
  * create or initialize a stream corresponding to descriptor <fd>
  * a buffer with room for a sentinal is allocated for a read stream.
  * A discipline is inserted when read stream is a tty or a pipe
@@ -424,6 +472,7 @@ Sfio_t *sh_iostream(Shell_t *shp, register int fd)
 	register int status = sh_iocheckfd(shp,fd);
 	register int flags = SF_WRITE;
 	char *bp;
+	Sfdisc_t *dp;
 #if SHOPT_FASTPIPE
 	if(fd>=shp->lim.open_max)
 		return(shp->sftable[fd]);
@@ -457,31 +506,31 @@ Sfio_t *sh_iostream(Shell_t *shp, register int fd)
 		sfsetbuf(iop, bp, IOBSIZE);
 	else if(!(iop=sfnew((fd<=2?iop:0),bp,IOBSIZE,fd,flags)))
 		return(NIL(Sfio_t*));
+	dp = newof(0,Sfdisc_t,1,0);
 	if(status&IOREAD)
 	{
-		Sfdisc_t *dp;
 		sfset(iop,SF_MALLOC,1);
 		if(!(status&IOWRITE))
 			sfset(iop,SF_IOCHECK,1);
+		dp->exceptf = slowexcept;
+		if(status&IOTTY)
+			dp->readf = slowread;
+		else if(status&IONOSEEK)
 		{
-			dp = newof(0,Sfdisc_t,1,0);
-			dp->exceptf = slowexcept;
-			if(status&IOTTY)
-				dp->readf = slowread;
-			else if(status&IONOSEEK)
-			{
-				dp->readf = piperead;
-				sfset(iop, SF_IOINTR,1);
-			}
-			else
-				dp->readf = 0;
-			dp->seekf = 0;
-			dp->writef = 0;
-			sfdisc(iop,dp);
+			dp->readf = piperead;
+			sfset(iop, SF_IOINTR,1);
 		}
+		else
+			dp->readf = 0;
+		dp->seekf = 0;
+		dp->writef = 0;
 	}
 	else
+	{
+		dp->exceptf = outexcept;
 		sfpool(iop,shp->outpool,SF_WRITE);
+	}
+	sfdisc(iop,dp);
 	shp->sftable[fd] = iop;
 	return(iop);
 }
@@ -587,6 +636,8 @@ int sh_close(register int fd)
 	return(r);
 }
 
+#ifdef O_SERVICE
+
 static int
 onintr(struct addrinfo* addr, void* handle)
 {
@@ -602,6 +653,8 @@ onintr(struct addrinfo* addr, void* handle)
 		sh_chktrap();
 	return 0;
 }
+
+#endif
 
 /*
  * Mimic open(2) with checks for pseudo /dev/ files.
@@ -898,7 +951,7 @@ int	sh_redirect(Shell_t *shp,struct ionod *iop, int flag)
 	{
 		iof=iop->iofile;
 		fn = (iof&IOUFD);
-		if(fn==1 && flag==2 && shp->subshell)
+		if(fn==1 && shp->subshell && (flag==2 || (sfset(sfstdout,0,0)&SF_STRING)))
 			sh_subfork();
 		io_op[0] = '0'+(iof&IOUFD);
 		if(iof&IOPUT)
@@ -982,7 +1035,7 @@ int	sh_redirect(Shell_t *shp,struct ionod *iop, int flag)
 					}
 					if(shp->subshell && dupfd==1)
 					{
-						sh_subtmpfile();
+						sh_subtmpfile(0);
 						dupfd = sffileno(sfstdout);
 					}
 					else if(shp->sftable[dupfd])
@@ -1144,9 +1197,11 @@ int	sh_redirect(Shell_t *shp,struct ionod *iop, int flag)
 					if((off = file_offset(shp,fn,fname))<0)
 						goto fail;
 					if(sp)
-						r=sfseek(sp, off, SEEK_SET);
+						off=sfseek(sp, off, SEEK_SET);
 					else
-						r=lseek(fn, off, SEEK_SET);
+						off=lseek(fn, off, SEEK_SET);
+					if(off<0)
+						r = -1;
 				}
 				else
 				{

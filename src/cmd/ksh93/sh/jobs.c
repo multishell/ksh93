@@ -99,7 +99,6 @@ struct back_save
 {
 	int		count;
 	struct jobsave	*list;
-	struct back_save*free;
 };
 
 #define BYTE(n)		(((n)+CHAR_BIT-1)/CHAR_BIT)
@@ -213,36 +212,15 @@ int job_reap(register int sig)
 	static int wcontinued = WCONTINUED;
 	if (vmbusy())
 	{
-		write(2, "ksh: vmbusy -- should not happen\n", 12);
+		errormsg(SH_DICT,ERROR_warn(0),"vmbusy() inside job_reap() -- should not happen");
 		if (getenv("_AST_KSH_VMBUSY_ABORT"))
-		abort();
+			abort();
 	}
 #ifdef DEBUG
 	if(sfprintf(sfstderr,"ksh: job line %4d: reap pid=%d critical=%d signal=%d\n",__LINE__,getpid(),job.in_critical,sig) <=0)
 		write(2,"waitsafe\n",9);
 	sfsync(sfstderr);
 #endif /* DEBUG */
-	if(bp=bck.free)
-	{
-		struct jobsave *jpnext;
-		struct back_save *bpfree;
-
-		/*
-		 * dispose old job_subrestore() lists
-		 */
-
-		bck.free = 0;
-		do
-		{
-			for(jp=bp->list; jp; jp=jpnext)
-			{
-				jpnext = jp->next;
-				free(jp);
-			}
-			bpfree = bp->free;
-			free(bp);
-		} while(bp=bpfree);
-	}
 	job.savesig = 0;
 	if(sig)
 		flags = WNOHANG|WUNTRACED|wcontinued;
@@ -276,6 +254,7 @@ int job_reap(register int sig)
 		flags |= WNOHANG;
 		job.waitsafe++;
 		jp = 0;
+		lastpid = pid;
 		if(!(pw=job_bypid(pid)))
 		{
 #ifdef DEBUG
@@ -337,6 +316,9 @@ int job_reap(register int sig)
 				sh.cpipe[1] = -1;
 				sh.coutpipe = -1;
 			}
+			else if(sh.subshell)
+				sh_subjobcheck(pid);
+
 			pw->p_flag &= ~(P_STOPPED|P_SIGNALLED);
 			if (WIFSIGNALED(wstat))
 			{
@@ -1082,6 +1064,7 @@ int job_post(pid_t pid, pid_t join)
 {
 	register struct process *pw;
 	register History_t *hp = sh.hist_ptr;
+	int val;
 	sh.jobenv = sh.curenv;
 	if(njob_savelist < NJOB_SAVELIST)
 		init_savelist();
@@ -1149,10 +1132,9 @@ int job_post(pid_t pid, pid_t join)
 	else
 		pw->p_name = -1;
 #endif /* JOBS */
-	if(pid==lastpid)
+	if ((val = job_chksave(pid)) >= 0)
 	{
-		int val =  job_chksave(pid);
-		pw->p_exit = val>0?val:0;
+		pw->p_exit = val;
 		if(pw->p_exit==SH_STOPSIG)
 		{
 			pw->p_flag |= (P_SIGNALLED|P_STOPPED);
@@ -1270,6 +1252,12 @@ int	job_wait(register pid_t pid)
 		sfprintf(sfstderr,"ksh: job line %4d: wait pid=%d critical=%d flags=%o\n",__LINE__,getpid(),job.in_critical,pw->p_flag);
 #endif /* DEBUG*/
 	errno = 0;
+	if(sh.coutpipe>=0 && sh.cpid==lastpid)
+	{
+		sh_close(sh.coutpipe);
+		sh_close(sh.cpipe[1]);
+		sh.cpipe[1] = sh.coutpipe = -1;
+	}
 	while(1)
 	{
 		if(job.waitsafe)
@@ -1533,7 +1521,7 @@ static struct process *job_unpost(register struct process *pwtop,int notify)
 	for(pw=pwtop; pw; pw=pw->p_nxtproc)
 	{
 		/* save the exit status for background jobs */
-		if(pw->p_flag&P_EXITSAVE)
+		if((pw->p_flag&P_EXITSAVE) ||  pw->p_pid==sh.spid)
 		{
 			struct jobsave *jp;
 			/* save status for future wait */
@@ -1713,7 +1701,19 @@ void job_subrestore(void* ptr)
 	register struct jobsave *jp;
 	register struct back_save *bp = (struct back_save*)ptr;
 	register struct process *pw, *px, *pwnext;
+	struct jobsave *jpnext;
 	job_lock();
+	for(jp=bck.list; jp; jp=jpnext)
+	{
+		jpnext = jp->next;
+		if(jp->pid==sh.spid)
+		{
+			jp->next = bp->list;
+			bp->list = jp;
+		}
+		else
+			job_chksave(jp->pid);
+	}
 	for(pw=job.pwlist; pw; pw=pwnext)
 	{
 		pwnext = pw->p_nxtjob;
@@ -1728,16 +1728,8 @@ void job_subrestore(void* ptr)
 	 * queue up old lists for disposal by job_reap()
 	 */
 
-	jp = bck.list;
-	bp->free = bck.free;
 	bck = *bp;
-	if(job.pwlist)
-	{
-		bck.free = bp;
-		bp->list = jp;
-	}
-	else
-		free((void*)bp);
+	free((void*)bp);
 	job_unlock();
 }
 

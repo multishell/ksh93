@@ -43,7 +43,7 @@ HEADERGEN = align.h preroot.h sig.h tmx.h tv.h \
 	$(ID)_botch.h $(ID)_ccode.h $(ID)_fcntl.h $(ID)_float.h $(ID)_fs.h \
 	$(ID)_lib.h $(ID)_map.h $(ID)_mmap.h $(ID)_mode.h $(ID)_ndbm.h \
 	$(ID)_param.h $(ID)_sys.h $(ID)_time.h $(ID)_time.h $(ID)_tty.h \
-	$(ID)_types.h $(ID)_vfork.h $(ID)_wait.h $(ID)_limits.h $(ID)_standards.h \
+	$(ID)_vfork.h $(ID)_wait.h $(ID)_limits.h $(ID)_standards.h \
 	$(HEADERSTD:/^/$(ID)_/)
 
 HEADEREXP = $(ID)_common.h
@@ -167,6 +167,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	fgetc.c fgetpos.c fgets.c fileno.c fopen.c fprintf.c \
 	fpurge.c fputc.c fputs.c fread.c freopen.c fscanf.c \
 	fseek.c fseeko.c fsetpos.c ftell.c ftello.c fwrite.c \
+	flockfile.c ftrylockfile.c funlockfile.c \
 	getc.c getchar.c getw.c pclose.c popen.c printf.c \
 	putc.c putchar.c puts.c putw.c rewind.c scanf.c \
 	setbuf.c setbuffer.c setlinebuf.c setvbuf.c \
@@ -216,16 +217,21 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 .MAKEINIT : .AST.INIT
 .AST.INIT : .MAKE
 	CCFLAGS += -D_BLD_ast
+	ast_version.h : -IGNORE
+	(_AST_VERSION) : -PARAMETER
 
-parameter	(_BLD_ast) (_AST_VERSION)
+parameter	(_BLD_ast)
 virtual		ast/stdio.h
 
+		:NOPROTECT: sfprintf.c sfvprintf.c sfscanf.c sfvscanf.c
+
 		:NOOPTIMIZE: spawnveg.c
+"ibm.risc"	:NOOPTIMIZE: regcomp.c
 "sol*.*"	:NOOPTIMIZE: sfrd.c sfvprintf.c tmxfmt.c
 "win32*"	:NOOPTIMIZE: fastfind.c mc.c
 
 /*
- * NOTE: sun4 runtime link botches ro data so advertized sig_info is rw
+ * NOTE: sun4 runtime link botches ro data so advertised sig_info is rw
  */
 
 :READONLY: conftab.c lctab.c modedata.c /*sftable.c*/ \

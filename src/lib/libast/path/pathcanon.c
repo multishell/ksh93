@@ -66,8 +66,13 @@ pathcanon(char* path, int flags)
 	dots = loop = 0;
 	phys = path;
 	v = path + ((flags >> 5) & 01777);
-	if (*path == '/' && *(path + 1) == '/' && *astconf("PATH_LEADING_SLASHES", NiL, NiL) == '1')
-		do path++; while (*path == '/' && *(path + 1) == '/');
+	if (*path == '/')
+	{
+		if (*(path + 1) == '/' && *astconf("PATH_LEADING_SLASHES", NiL, NiL) == '1')
+			do path++; while (*path == '/' && *(path + 1) == '/');
+		if (!*(path + 1))
+			return path + 1;
+	}
 	p = r = s = t = path;
 	for (;;) switch (*t++ = *s++)
 	{

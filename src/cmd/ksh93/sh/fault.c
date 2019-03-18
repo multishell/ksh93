@@ -34,6 +34,7 @@
 #include	"variables.h"
 #include	"jobs.h"
 #include	"path.h"
+#include	"builtins.h"
 
 #define abortsig(sig)	(sig==SIGABRT || sig==SIGBUS || sig==SIGILL || sig==SIGSEGV)
 
@@ -87,7 +88,16 @@ void	sh_fault(register int sig)
 		shp->savesig = sig;
 		return;
 	}
-
+	trap = shp->st.trapcom[sig];
+	if(sig==SIGALRM && shp->bltinfun==b_sleep)
+	{
+		if(trap && *trap)
+		{
+			shp->trapnote |= SH_SIGTRAP;
+			shp->sigflag[sig] |= SH_SIGTRAP;
+		}
+		return;
+	}
 	if(shp->subshell && sig!=SIGINT && sig!=SIGQUIT && sig!=SIGWINCH)
 	{
 		shp->exitval = SH_EXITSIG|sig;
@@ -96,7 +106,7 @@ void	sh_fault(register int sig)
 		return;
 	}
 	/* handle ignored signals */
-	if((trap=shp->st.trapcom[sig]) && *trap==0)
+	if(trap && *trap==0)
 		return;
 	flag = shp->sigflag[sig]&~SH_SIGOFF;
 	if(!trap)
@@ -404,7 +414,8 @@ void	sh_chktrap(void)
  */
 int sh_trap(const char *trap, int mode)
 {
-	int	jmpval, savxit = sh.exitval;
+	Shell_t	*shp = sh_getinterp();
+	int	jmpval, savxit = shp->exitval;
 	int	was_history = sh_isstate(SH_HISTORY);
 	int	was_verbose = sh_isstate(SH_VERBOSE);
 	int	staktop = staktell();
@@ -414,7 +425,7 @@ int sh_trap(const char *trap, int mode)
 	fcsave(&savefc);
 	sh_offstate(SH_HISTORY);
 	sh_offstate(SH_VERBOSE);
-	sh.intrap++;
+	shp->intrap++;
 	sh_pushcontext(&buff,SH_JMPTRAP);
 	jmpval = sigsetjmp(buff.buff,0);
 	if(jmpval == 0)
@@ -438,15 +449,15 @@ int sh_trap(const char *trap, int mode)
 		else
 		{
 			if(jmpval==SH_JMPEXIT)
-				savxit = sh.exitval;
+				savxit = shp->exitval;
 			jmpval=SH_JMPTRAP;
 		}
 	}
 	sh_popcontext(&buff);
-	sh.intrap--;
-	sfsync(sh.outpool);
-	if(jmpval!=SH_JMPEXIT && jmpval!=SH_JMPFUN)
-		sh.exitval=savxit;
+	shp->intrap--;
+	sfsync(shp->outpool);
+	if(!shp->indebug && jmpval!=SH_JMPEXIT && jmpval!=SH_JMPFUN)
+		shp->exitval=savxit;
 	stakset(savptr,staktop);
 	fcrestore(&savefc);
 	if(was_history)
@@ -455,8 +466,8 @@ int sh_trap(const char *trap, int mode)
 		sh_onstate(SH_VERBOSE);
 	exitset();
 	if(jmpval>SH_JMPTRAP)
-		siglongjmp(*sh.jmplist,jmpval);
-	return(sh.exitval);
+		siglongjmp(*shp->jmplist,jmpval);
+	return(shp->exitval);
 }
 
 /*
@@ -529,9 +540,13 @@ void sh_exit(register int xno)
 	if(!pp)
 		sh_done(shp,sig);
 	shp->prefix = 0;
+#if SHOPT_TYPEDEF
+	shp->mktype = 0;
+#endif /* SHOPT_TYPEDEF*/
 	if(pp->mode == SH_JMPSCRIPT && !pp->prev) 
 		sh_done(shp,sig);
-	siglongjmp(pp->buff,pp->mode);
+	if(pp->mode)
+		siglongjmp(pp->buff,pp->mode);
 }
 
 static void array_notify(Namval_t *np, void *data)

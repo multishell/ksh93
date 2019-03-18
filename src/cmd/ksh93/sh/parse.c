@@ -840,7 +840,7 @@ static Shnode_t *funct(Lex_t *lexp)
 /*
  * Compound assignment
  */
-static struct argnod *assign(Lex_t *lexp, register struct argnod *ap)
+static struct argnod *assign(Lex_t *lexp, register struct argnod *ap, int tdef)
 {
 	register int n;
 	register Shnode_t *t, **tp;
@@ -871,6 +871,7 @@ static struct argnod *assign(Lex_t *lexp, register struct argnod *ap)
 	ap->argflag &= ARG_QUOTED;
 	ap->argflag |= array;
 	lexp->assignok = SH_ASSIGN;
+	lexp->aliasok = 1;
 	array=0;
 	if((n=skipnl(lexp,0))==RPAREN || n==LPAREN)
 	{
@@ -888,7 +889,7 @@ static struct argnod *assign(Lex_t *lexp, register struct argnod *ap)
 			sfprintf(stkp,"[%d]=",index++);
 			ap = (struct argnod*)stkfreeze(stkp,1);
 			ap->argnxt.ap = 0;
-			ap = assign(lexp,ap);
+			ap = assign(lexp,ap,0);
 			ap->argflag |= ARG_MESSAGE;
 			*settail = ap;
 			settail = &(ap->argnxt.ap);
@@ -924,6 +925,8 @@ static struct argnod *assign(Lex_t *lexp, register struct argnod *ap)
 		}
 		else if(n>0)
 			fcseek(-1);
+		if(array && tdef)
+			sh_syntax(lexp);
 	}
 	while(1)
 	{
@@ -1200,7 +1203,7 @@ static Shnode_t	*item(Lex_t *lexp,int flag)
 	    /* simple command */
 	    case 0:
 		t = (Shnode_t*)simple(lexp,flag,io);
-		if(t->com.comarg && lexp->intypeset && (lexp->sh->shcomp || sh_isoption(SH_NOEXEC)))
+		if(t->com.comarg && lexp->intypeset && (lexp->sh->shcomp || sh_isoption(SH_NOEXEC) || sh.dot_depth))
 			check_typedef(&t->com);
 		lexp->intypeset = 0;
 		lexp->inexec = 0;
@@ -1233,7 +1236,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 	struct argnod	**argtail;
 	struct argnod	**settail;
 	int	cmdarg=0;
-	int	argno = 0;
+	int	argno = 0, argmax=0;
 	int	assignment = 0;
 	int	key_on = (!(flag&SH_NOIO) && sh_isoption(SH_KEYWORD));
 	int	associative=0;
@@ -1294,7 +1297,11 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 		else
 		{
 			if(!(argp->argflag&ARG_RAW))
+			{
+				if(argno>0)
+					argmax = argno;
 				argno = -1;
+			}
 			if(argno>=0 && argno++==cmdarg && !(flag&SH_ARRAY) && *argp->argval!='/')
 			{
 				/* check for builtin command */
@@ -1336,6 +1343,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 			t = sh_cmd(lexp,RPAREN,SH_NL);
 			argp = (struct argnod*)stkalloc(stkp,sizeof(struct argnod));
 			*argp->argval = 0;
+			argmax = 0;
 			argno = -1;
 			*argtail = argp;
 			argtail = &(argp->argnxt.ap);
@@ -1349,8 +1357,11 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 			if(argp->argflag&ARG_ASSIGN)
 			{
 				int intypeset = lexp->intypeset;
+				int tdef = 0;
 				lexp->intypeset = 0;
-				argp = assign(lexp,argp);
+				if(t->comnamp==SYSTYPESET && t->comarg->argnxt.ap && strcmp(t->comarg->argnxt.ap->argval,"-T")==0)
+					tdef = 1;
+				argp = assign(lexp,argp,tdef);
 				lexp->intypeset = intypeset;
 				if(associative)
 					lexp->assignok |= SH_ASSIGN;
@@ -1391,7 +1402,9 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 		}
 	}
 	*argtail = 0;
-	t->comtyp = TCOM;
+	if(argno>0)
+		argmax = argno;
+	t->comtyp = TCOM | (argmax<<(COMBITS+2));
 #if SHOPT_KIA
 	if(lexp->kiafile && !(flag&SH_NOIO))
 	{

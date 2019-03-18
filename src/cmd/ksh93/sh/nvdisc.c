@@ -578,6 +578,8 @@ Namfun_t *nv_clone_disc(register Namfun_t *fp, int flags)
 	if(!(nfp=newof(NIL(Namfun_t*),Namfun_t,1,size-sizeof(Namfun_t))))
 		return(0);
 	memcpy(nfp,fp,size);
+	if(flags&NV_COMVAR)
+		nfp->nofree &= ~1;
 	nfp->nofree |= (flags&NV_RDONLY)?1:0;
 	return(nfp);
 }
@@ -808,13 +810,18 @@ static void *num_clone(register Namval_t *np, void *val)
 
 void clone_all_disc( Namval_t *np, Namval_t *mp, int flags)
 {
-	register Namfun_t *fp, **mfp = &mp->nvfun, *nfp;
-	for(fp=np->nvfun; fp;fp=fp->next)
+	register Namfun_t *fp, **mfp = &mp->nvfun, *nfp, *fpnext;
+	for(fp=np->nvfun; fp;fp=fpnext)
 	{
+		fpnext = fp->next;
+		if(!fpnext && (flags&NV_COMVAR) && fp->disc && fp->disc->namef)
+			return;
 		if((fp->nofree&2) && (flags&NV_NODISC))
 			nfp = 0;
 		if(fp->disc && fp->disc->clonef)
 			nfp = (*fp->disc->clonef)(np,mp,flags,fp);
+		else	if(flags&NV_MOVE)
+			nfp = fp;
 		else
 			nfp = nv_clone_disc(fp,flags);
 		if(!nfp)
@@ -831,6 +838,7 @@ void clone_all_disc( Namval_t *np, Namval_t *mp, int flags)
  * NV_MOVE - move <np> to <mp>
  * NV_NOFREE - mark the new node as nofree
  * NV_NODISC - discplines with funs non-zero will not be copied
+ * NV_COMVAR - cloning a compound variable
  */
 int nv_clone(Namval_t *np, Namval_t *mp, int flags)
 {
@@ -841,10 +849,12 @@ int nv_clone(Namval_t *np, Namval_t *mp, int flags)
 	for(fp=mp->nvfun; fp; fp=fpnext)
 	{
 		fpnext = fp->next;
+		if(!fpnext && (flags&NV_COMVAR) && fp->disc && fp->disc->namef)
+			break;
 		if(!(fp->nofree&1))
 			free((void*)fp);
 	}
-	mp->nvfun = 0;
+	mp->nvfun = fp;
 	if(fp=np->nvfun)
 	{
 		if(nv_isattr(mp,NV_EXPORT|NV_MINIMAL) == (NV_EXPORT|NV_MINIMAL))
@@ -852,34 +862,41 @@ int nv_clone(Namval_t *np, Namval_t *mp, int flags)
 			mp->nvenv = 0;
 			nv_offattr(mp,NV_MINIMAL);
 		}
-		if(!nv_isattr(np,NV_MINIMAL) && np->nvenv && !(nv_isattr(mp,NV_MINIMAL)))
+		if(!(flags&NV_COMVAR) && !nv_isattr(np,NV_MINIMAL) && np->nvenv && !(nv_isattr(mp,NV_MINIMAL)))
 			mp->nvenv = np->nvenv;
-	        mp->nvflag = np->nvflag&~NV_ARRAY;
+		mp->nvflag &= NV_MINIMAL;
+	        mp->nvflag |= np->nvflag&~(NV_ARRAY|NV_MINIMAL|NV_NOFREE);
 		flag = mp->nvflag;
-		mp->nvfun = 0;
-		if(flags&NV_MOVE)
-		{
-			mp->nvfun = fp;
-			goto skip;
-		}
 		clone_all_disc(np, mp, flags);
 	}
 	if(flags&NV_APPEND)
 		return(1);
-skip:
 	if(mp->nvsize == size)
 	        nv_setsize(mp,nv_size(np));
-	if(mp->nvalue.cp==val && !nv_isattr(np,NV_INTEGER))
-	        mp->nvalue.cp = np->nvalue.cp;
 	if(mp->nvflag == flag)
-	        mp->nvflag = (np->nvflag&~NV_MINIMAL)|(mp->nvflag&NV_MINIMAL);
+	        mp->nvflag = (np->nvflag&~(NV_MINIMAL))|(mp->nvflag&NV_MINIMAL);
+	if(mp->nvalue.cp==val && !nv_isattr(np,NV_INTEGER))
+	{
+		if(np->nvalue.cp && np->nvalue.cp!=Empty && (flags&NV_COMVAR) && !(flags&NV_MOVE))
+		{
+			if(size)
+				mp->nvalue.cp = (char*)memdup(np->nvalue.cp,size);
+			else
+			        mp->nvalue.cp = strdup(np->nvalue.cp);
+			nv_offattr(mp,NV_NOFREE);
+		}
+		else if(!(mp->nvalue.cp = np->nvalue.cp))
+			nv_offattr(mp,NV_NOFREE);
+	}
 	if(flags&NV_MOVE)
 	{
+		if(nv_isattr(np,NV_INTEGER))
+			mp->nvalue.ip = np->nvalue.ip;
 		np->nvfun = 0;
 		np->nvalue.cp = 0;
 		if(!nv_isattr(np,NV_MINIMAL) || nv_isattr(mp,NV_EXPORT))
 		        np->nvenv = 0;
-		np->nvflag = 0;
+		np->nvflag &= NV_MINIMAL;
 	        nv_setsize(np,0);
 		return(1);
 	}

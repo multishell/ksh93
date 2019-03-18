@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-06-22
+info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-10-28
 setv INSTALLROOT ../../..
 setv PACKAGEROOT ../../../../..
 setv AR ar
@@ -491,8 +491,6 @@ make mamake.o
 make mamake.c
 make shlib-compat.h implicit
 done shlib-compat.h dontcare virtual
-make bp-sym.h implicit
-done bp-sym.h dontcare virtual
 make ast.h implicit
 done ast.h dontcare virtual
 done mamake.c
@@ -1196,17 +1194,23 @@ exec - test '' = 'socket.req' || ${STDCMP} 2>/dev/null -s socket.req ${INSTALLRO
 done ${INSTALLROOT}/lib/lib/socket generated
 make ${INSTALLROOT}/lib/lib/dbm
 make dbm.req
+make db.c
+done db.c
 make gdbm.c
 done gdbm.c
+make gdbm1.c
+make gdbm-ndbm.h implicit
+done gdbm-ndbm.h dontcare virtual
+done gdbm1.c
 make gdbm2.c
 make ndbm.h implicit
 done ndbm.h dontcare virtual
 done gdbm2.c
 exec - r='-'
-exec - for i in gdbm.c gdbm2.c
+exec - for i in db.c gdbm.c gdbm1.c gdbm2.c
 exec - do	if	${CC} -c $i > /dev/null
 exec - 	then	g=
-exec - 		for p in gdbm_compat - gdbm - ndbm - dbm -
+exec - 		for p in db - gdbm_compat - gdbm - ndbm - dbm -
 exec - 		do	case $p in
 exec - 			-)	if	${CC} -o dbm.exe $i $g > /dev/null
 exec - 				then	${CC} -o dbm.exe $i > /dev/null || {
@@ -1223,7 +1227,7 @@ exec - 		done
 exec - 	fi
 exec - done 2>/dev/null
 exec - echo " $r" > dbm.req
-exec - rm -f dbm.exe gdbm gdbm2
+exec - rm -f dbm.exe db gdbm gdbm1 gdbm2
 done dbm.req generated
 exec - test '' = 'dbm.req' || ${STDCMP} 2>/dev/null -s dbm.req ${INSTALLROOT}/lib/lib/dbm || { ${STDMV} ${INSTALLROOT}/lib/lib/dbm ${INSTALLROOT}/lib/lib/dbm.old 2>/dev/null || true; ${STDCP} dbm.req ${INSTALLROOT}/lib/lib/dbm  		    		    ;}
 done ${INSTALLROOT}/lib/lib/dbm generated

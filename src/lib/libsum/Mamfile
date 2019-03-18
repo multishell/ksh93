@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-06-22
+info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-10-28
 setv INSTALLROOT ../../..
 setv PACKAGE_ast_INCLUDE ${INSTALLROOT}/include/ast
 setv PACKAGE_ast_LIB ${INSTALLROOT}/lib
@@ -89,6 +89,8 @@ make sha2.h implicit
 done sha2.h dontcare virtual
 make sha1.h implicit
 done sha1.h dontcare virtual
+make md5.h implicit
+done md5.h dontcare virtual
 make md4.h implicit
 done md4.h dontcare virtual
 done sum-lmd.c dontcare

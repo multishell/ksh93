@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-06-22
+info mam static 00000 1994-07-17 make (AT&T Research) 5.3 2008-10-28
 setv INSTALLROOT ../../..
 setv PACKAGEROOT ../../../../..
 setv AR ar
@@ -96,10 +96,6 @@ done ast_map.h dontcare generated
 done ast_common.h dontcare generated
 done std/bytesex.h dontcare
 done std/endian.h dontcare
-make comp/getopt.h implicit
-make include/ast_getopt.h implicit
-done include/ast_getopt.h dontcare
-done comp/getopt.h dontcare
 done FEATURE/param generated
 prev ast_map.h
 make ast_limits.h
@@ -155,6 +151,10 @@ make conftab.c
 done conftab.c generated
 done joint.conflim.h virtual
 prev FEATURE/param implicit
+make comp/getopt.h implicit
+make include/ast_getopt.h implicit
+done include/ast_getopt.h dontcare
+done comp/getopt.h dontcare
 prev FEATURE/common implicit
 prev FEATURE/lib implicit
 prev FEATURE/standards implicit
@@ -181,13 +181,17 @@ make ast_botch.h implicit
 make FEATURE/botch
 meta FEATURE/botch features/%.c>FEATURE/% features/botch.c botch
 make features/botch.c
-make FEATURE/types implicit
-meta FEATURE/types >FEATURE/%  types
-exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} '   def types
-done FEATURE/types generated
+make FEATURE/sys implicit
+meta FEATURE/sys features/%>FEATURE/% features/sys sys
+make features/sys
+done features/sys
+exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} '   run features/sys
+prev std/endian.h implicit
+prev std/endian.h implicit
+done FEATURE/sys generated
 prev FEATURE/lib implicit
 done features/botch.c
-exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Istd  ${LDFLAGS} '   run features/botch.c
+exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iinclude -Istd  ${LDFLAGS} '   run features/botch.c
 done FEATURE/botch generated
 exec - cmp 2>/dev/null -s FEATURE/botch ast_botch.h || { rm -f ast_botch.h; silent test -d . || mkdir .; ${STDCP} FEATURE/botch ast_botch.h; }
 done ast_botch.h dontcare generated
@@ -221,14 +225,7 @@ prev ast_fs.h implicit
 done ast_fcntl.h dontcare generated
 prev include/ast_getopt.h implicit
 make ast_sys.h implicit
-make FEATURE/sys
-meta FEATURE/sys features/%>FEATURE/% features/sys sys
-make features/sys
-done features/sys
-exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} '   run features/sys
-prev std/endian.h implicit
-prev std/endian.h implicit
-done FEATURE/sys generated
+prev FEATURE/sys
 exec - cmp 2>/dev/null -s FEATURE/sys ast_sys.h || { rm -f ast_sys.h; silent test -d . || mkdir .; ${STDCP} FEATURE/sys ast_sys.h; }
 done ast_sys.h dontcare generated
 make ast_lib.h implicit
@@ -391,7 +388,7 @@ done include/modecanon.h
 prev FEATURE/param implicit
 done features/mode.c
 prev ast.req
-exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iinclude -Istd  ${LDFLAGS} '   run features/mode.c
+exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Iinclude -Istd  ${LDFLAGS} '   run features/mode.c
 done FEATURE/mode generated
 exec - cmp 2>/dev/null -s FEATURE/mode ast_mode.h || { rm -f ast_mode.h; silent test -d . || mkdir .; ${STDCP} FEATURE/mode ast_mode.h; }
 done ast_mode.h dontcare generated
@@ -3660,7 +3657,7 @@ prev regex/reglib.h implicit
 done regex/regcomp.c
 meta regcomp.o %.c>%.o regex/regcomp.c regcomp
 prev regex/regcomp.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Iregex -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c regex/regcomp.c
+exec - ${CC} ${mam_cc_FLAGS} ${-debug-symbols?1?${mam_cc_DEBUG} -D_BLD_DEBUG?${CCFLAGS.FORCE}?} -I. -Icomp -Iport -Iregex -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c regex/regcomp.c
 done regcomp.o generated
 make regcache.o
 make regex/regcache.c
@@ -4147,7 +4144,7 @@ prev sfio/sfhdr.h implicit
 done sfio/sfprintf.c
 meta sfprintf.o %.c>%.o sfio/sfprintf.c sfprintf
 prev sfio/sfprintf.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfprintf.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS.FORCE} ${mam_cc_NOPROTECT} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfprintf.c
 done sfprintf.o generated
 make sfputd.o
 make sfio/sfputd.c
@@ -4211,7 +4208,7 @@ prev sfio/sfhdr.h implicit
 done sfio/sfscanf.c
 meta sfscanf.o %.c>%.o sfio/sfscanf.c sfscanf
 prev sfio/sfscanf.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfscanf.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS.FORCE} ${mam_cc_NOPROTECT} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfscanf.c
 done sfscanf.o generated
 make sfseek.o
 make sfio/sfseek.c
@@ -4342,7 +4339,7 @@ prev sfio/sfhdr.h implicit
 done sfio/sfvprintf.c
 meta sfvprintf.o %.c>%.o sfio/sfvprintf.c sfvprintf
 prev sfio/sfvprintf.c
-exec - ${CC} ${mam_cc_FLAGS} ${-debug-symbols?1?${mam_cc_DEBUG} -D_BLD_DEBUG?${CCFLAGS.FORCE}?} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfvprintf.c
+exec - ${CC} ${mam_cc_FLAGS} ${-debug-symbols?1?${mam_cc_DEBUG} -D_BLD_DEBUG?${CCFLAGS.FORCE}?} ${mam_cc_NOPROTECT} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfvprintf.c
 done sfvprintf.o generated
 make sfvscanf.o
 make sfio/sfvscanf.c
@@ -4351,7 +4348,7 @@ prev sfio/sfhdr.h implicit
 done sfio/sfvscanf.c
 meta sfvscanf.o %.c>%.o sfio/sfvscanf.c sfvscanf
 prev sfio/sfvscanf.c
-exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfvscanf.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS.FORCE} ${mam_cc_NOPROTECT} -I. -Icomp -Iport -Isfio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c sfio/sfvscanf.c
 done sfvscanf.o generated
 make sfwr.o
 make sfio/sfwr.c
@@ -4780,6 +4777,30 @@ meta fwrite.o %.c>%.o stdio/fwrite.c fwrite
 prev stdio/fwrite.c
 exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Istdio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c stdio/fwrite.c
 done fwrite.o generated
+make flockfile.o
+make stdio/flockfile.c
+prev stdio/stdhdr.h implicit
+done stdio/flockfile.c
+meta flockfile.o %.c>%.o stdio/flockfile.c flockfile
+prev stdio/flockfile.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Istdio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c stdio/flockfile.c
+done flockfile.o generated
+make ftrylockfile.o
+make stdio/ftrylockfile.c
+prev stdio/stdhdr.h implicit
+done stdio/ftrylockfile.c
+meta ftrylockfile.o %.c>%.o stdio/ftrylockfile.c ftrylockfile
+prev stdio/ftrylockfile.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Istdio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c stdio/ftrylockfile.c
+done ftrylockfile.o generated
+make funlockfile.o
+make stdio/funlockfile.c
+prev stdio/stdhdr.h implicit
+done stdio/funlockfile.c
+meta funlockfile.o %.c>%.o stdio/funlockfile.c funlockfile
+prev stdio/funlockfile.c
+exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -I. -Icomp -Iport -Isfio -Istdio -Iinclude -Istd -I${INSTALLROOT}/include -D_PACKAGE_ast -c stdio/funlockfile.c
+done funlockfile.o generated
 make getc.o
 make stdio/getc.c
 prev stdio/stdhdr.h implicit
@@ -5873,8 +5894,8 @@ exec - ${AR} cr libast.a streval.o strexpr.o strmatch.o strcopy.o modei.o modex.
 exec - ${AR} cr libast.a strperm.o struid.o strgid.o strtoip4.o strtoip6.o stack.o stk.o swapget.o swapmem.o swapop.o swapput.o sigdata.o sigcrit.o sigunblock.o procopen.o procclose.o procrun.o procfree.o tmdate.o tmequiv.o tmfix.o tmfmt.o tmform.o tmgoff.o tminit.o tmleap.o tmlex.o tmlocale.o tmmake.o tmpoff.o tmscan.o tmsleep.o tmtime.o tmtype.o tmweek.o tmword.o tmzone.o tmxdate.o tmxfmt.o tmxgettime.o tmxleap.o tmxmake.o tmxscan.o tmxsettime.o tmxsleep.o tmxtime.o tmxtouch.o tvcmp.o tvgettime.o tvsettime.o tvsleep.o tvtouch.o cmdarg.o vecargs.o vecfile.o vecfree.o vecload.o vecstring.o univdata.o touch.o mnt.o debug.o memccpy.o memchr.o memcmp.o memcpy.o memdup.o memmove.o memset.o mkdir.o mkfifo.o mknod.o rmdir.o remove.o rename.o link.o unlink.o strdup.o strchr.o strrchr.o strstr.o strtod.o strtold.o strtol.o strtoll.o strtoul.o strtoull.o strton.o strtonll.o strntod.o strntold.o strnton.o strntonll.o strntol.o strntoll.o strntoul.o strntoull.o strcasecmp.o strncasecmp.o strerror.o mktemp.o
 exec - ${AR} cr libast.a tmpnam.o fsync.o execlp.o execve.o execvp.o execvpe.o spawnveg.o vfork.o killpg.o hsearch.o tsearch.o getlogin.o putenv.o setenv.o unsetenv.o lstat.o statvfs.o eaccess.o gross.o omitted.o readlink.o symlink.o getpgrp.o setpgid.o setsid.o waitpid.o creat64.o fcntl.o open.o atexit.o getdents.o getwd.o dup2.o errno.o getpreroot.o ispreroot.o realopen.o setpreroot.o getgroups.o mount.o system.o iblocks.o modedata.o tmdata.o memfatal.o sfkeyprintf.o sfdcdio.o sfdcdos.o sfdcfilter.o sfdcseekable.o sfdcslow.o sfdcsubstr.o sfdctee.o sfdcunion.o sfdcmore.o sfdcprefix.o wc.o basename.o closelog.o dirname.o fmtmsglib.o fnmatch.o ftw.o getdate.o getsubopt.o glob.o nftw.o openlog.o re_comp.o resolvepath.o realpath.o regcmp.o regexp.o setlogmask.o strftime.o strptime.o swab.o syslog.o tempnam.o wordexp.o mktime.o regalloc.o regclass.o regcoll.o regcomp.o regcache.o regdecomp.o regerror.o regexec.o regfatal.o reginit.o regnexec.o regsubcomp.o regsubexec.o regsub.o regrecord.o regrexec.o regstat.o dtclose.o dtdisc.o dtextract.o
 exec - ${AR} cr libast.a dtflatten.o dthash.o dtlist.o dtmethod.o dtnew.o dtopen.o dtrenew.o dtrestore.o dtsize.o dtstat.o dtstrhash.o dttree.o dttreeset.o dtview.o dtwalk.o sfclose.o sfclrlock.o sfdisc.o sfdlen.o sfexcept.o sfgetl.o sfgetu.o sfcvt.o sfecvt.o sffcvt.o sfextern.o sffilbuf.o sfflsbuf.o sfprints.o sfgetd.o sfgetr.o sfllen.o sfmode.o sfmove.o sfnew.o sfpkrd.o sfnotify.o sfnputc.o sfopen.o sfpeek.o sfpoll.o sfpool.o sfpopen.o sfprintf.o sfputd.o sfputl.o sfputr.o sfputu.o sfrd.o sfread.o sfreserve.o sfscanf.o sfseek.o sfset.o sfsetbuf.o sfsetfd.o sfsize.o sfsk.o sfstack.o sfstrtod.o sfsync.o sfswap.o sftable.o sftell.o sftmp.o sfungetc.o sfvprintf.o sfvscanf.o sfwr.o sfwrite.o sfpurge.o sfraise.o sfgetm.o sfmutex.o sfputm.o sfresize.o _sfclrerr.o _sfeof.o _sferror.o _sffileno.o _sfopen.o _sfstacked.o _sfvalue.o _sfgetc.o _sfgetl.o _sfgetl2.o _sfgetu.o _sfgetu2.o _sfdlen.o _sfllen.o _sfslen.o _sfulen.o _sfputc.o _sfputd.o _sfputl.o _sfputm.o _sfputu.o clearerr.o fclose.o fdopen.o feof.o
-exec - ${AR} cr libast.a ferror.o fflush.o fgetc.o fgetpos.o fgets.o fileno.o fopen.o fprintf.o fpurge.o fputc.o fputs.o fread.o freopen.o fscanf.o fseek.o fseeko.o fsetpos.o ftell.o ftello.o fwrite.o getc.o getchar.o getw.o pclose.o popen.o printf.o putc.o putchar.o puts.o putw.o rewind.o scanf.o setbuf.o setbuffer.o setlinebuf.o setvbuf.o snprintf.o sprintf.o sscanf.o asprintf.o vasprintf.o tmpfile.o ungetc.o vfprintf.o vfscanf.o vprintf.o vscanf.o vsnprintf.o vsprintf.o vsscanf.o _doprnt.o _doscan.o _filbuf.o _flsbuf.o _stdfun.o _stdopen.o _stdprintf.o _stdscanf.o _stdsprnt.o _stdvbuf.o _stdvsnprnt.o _stdvsprnt.o _stdvsscn.o fgetwc.o fwprintf.o putwchar.o vfwscanf.o wprintf.o fgetws.o fwscanf.o swprintf.o vswprintf.o wscanf.o fputwc.o getwc.o swscanf.o vswscanf.o fputws.o getwchar.o ungetwc.o vwprintf.o fwide.o putwc.o vfwprintf.o vwscanf.o stdio_c99.o stdio_gnu.o frexp.o frexpl.o astcopy.o astconf.o astdynamic.o astlicense.o astquery.o astwinsize.o conftab.o aststatic.o getopt.o getoptl.o vmbest.o vmclear.o
-exec - ${AR} cr libast.a vmclose.o vmdcheap.o vmdebug.o vmdisc.o vmexit.o vmlast.o vmopen.o vmpool.o vmprivate.o vmprofile.o vmregion.o vmsegment.o vmset.o vmstat.o vmstrdup.o vmtrace.o vmwalk.o vmmopen.o malloc.o vmgetmem.o a64l.o acosh.o asinh.o atanh.o cbrt.o crypt.o erf.o err.o exp.o exp__E.o expm1.o gamma.o getpass.o lgamma.o log.o log1p.o log__L.o rand48.o random.o rcmd.o rint.o support.o sfstrtmp.o spawn.o
+exec - ${AR} cr libast.a ferror.o fflush.o fgetc.o fgetpos.o fgets.o fileno.o fopen.o fprintf.o fpurge.o fputc.o fputs.o fread.o freopen.o fscanf.o fseek.o fseeko.o fsetpos.o ftell.o ftello.o fwrite.o flockfile.o ftrylockfile.o funlockfile.o getc.o getchar.o getw.o pclose.o popen.o printf.o putc.o putchar.o puts.o putw.o rewind.o scanf.o setbuf.o setbuffer.o setlinebuf.o setvbuf.o snprintf.o sprintf.o sscanf.o asprintf.o vasprintf.o tmpfile.o ungetc.o vfprintf.o vfscanf.o vprintf.o vscanf.o vsnprintf.o vsprintf.o vsscanf.o _doprnt.o _doscan.o _filbuf.o _flsbuf.o _stdfun.o _stdopen.o _stdprintf.o _stdscanf.o _stdsprnt.o _stdvbuf.o _stdvsnprnt.o _stdvsprnt.o _stdvsscn.o fgetwc.o fwprintf.o putwchar.o vfwscanf.o wprintf.o fgetws.o fwscanf.o swprintf.o vswprintf.o wscanf.o fputwc.o getwc.o swscanf.o vswscanf.o fputws.o getwchar.o ungetwc.o vwprintf.o fwide.o putwc.o vfwprintf.o vwscanf.o stdio_c99.o stdio_gnu.o frexp.o frexpl.o astcopy.o astconf.o astdynamic.o astlicense.o astquery.o astwinsize.o conftab.o aststatic.o getopt.o
+exec - ${AR} cr libast.a getoptl.o vmbest.o vmclear.o vmclose.o vmdcheap.o vmdebug.o vmdisc.o vmexit.o vmlast.o vmopen.o vmpool.o vmprivate.o vmprofile.o vmregion.o vmsegment.o vmset.o vmstat.o vmstrdup.o vmtrace.o vmwalk.o vmmopen.o malloc.o vmgetmem.o a64l.o acosh.o asinh.o atanh.o cbrt.o crypt.o erf.o err.o exp.o exp__E.o expm1.o gamma.o getpass.o lgamma.o log.o log1p.o log__L.o rand48.o random.o rcmd.o rint.o support.o sfstrtmp.o spawn.o
 exec - (ranlib libast.a) >/dev/null 2>&1 || true
 done libast.a generated
 done ast virtual
@@ -6875,6 +6896,7 @@ make features/ndbm
 done features/ndbm
 prev ast.req
 exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} '   run features/ndbm
+prev std/stdio.h implicit
 done FEATURE/ndbm generated
 exec - cmp 2>/dev/null -s FEATURE/ndbm ast_ndbm.h || { rm -f ast_ndbm.h; silent test -d . || mkdir .; ${STDCP} FEATURE/ndbm ast_ndbm.h; }
 done ast_ndbm.h generated
@@ -6916,17 +6938,6 @@ exec - then	rm -f 1.${COTEMP}.x
 exec - else	mv 1.${COTEMP}.x ${INSTALLROOT}/include/ast/ast_tty.h
 exec - fi
 done ${INSTALLROOT}/include/ast/ast_tty.h generated
-make ${INSTALLROOT}/include/ast/ast_types.h
-make ast_types.h
-prev FEATURE/types
-exec - cmp 2>/dev/null -s FEATURE/types ast_types.h || { rm -f ast_types.h; silent test -d . || mkdir .; ${STDCP} FEATURE/types ast_types.h; }
-done ast_types.h generated
-exec - proto -p -s -l ${PACKAGEROOT}/lib/package/ast.lic '-o since=1985,author=gsf+dgk+kpv'  ast_types.h  > 1.${COTEMP}.x
-exec - if	cmp 2>/dev/null -s ${INSTALLROOT}/include/ast/ast_types.h 1.${COTEMP}.x
-exec - then	rm -f 1.${COTEMP}.x
-exec - else	mv 1.${COTEMP}.x ${INSTALLROOT}/include/ast/ast_types.h
-exec - fi
-done ${INSTALLROOT}/include/ast/ast_types.h generated
 make ${INSTALLROOT}/include/ast/ast_vfork.h
 prev ast_vfork.h
 exec - proto -p -s -l ${PACKAGEROOT}/lib/package/ast.lic '-o since=1985,author=gsf+dgk+kpv'  ast_vfork.h  > 1.${COTEMP}.x

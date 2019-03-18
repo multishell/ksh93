@@ -27,7 +27,7 @@
  *	linux.sparc	sfdlen,sfputd		frexp,ldexp	
  */
 
-#if N >= 7
+#if N >= 8
 #define _ISOC99_SOURCE	1
 #endif
 
@@ -62,6 +62,9 @@ main()
 #endif
 #if N == 6
 	return isnan(value);
+#endif
+#if N == 7
+	return copysign(1.0, value) < 0;
 #endif
 #if N == 8
 	return signbit(value);

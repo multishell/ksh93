@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -163,7 +163,6 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 	if (forked)
 	{
 		int	i;
-		int	k;
 #ifndef TIOCSCTTY
 		char*	s;
 #endif
@@ -202,7 +201,7 @@ modify(Proc_t* proc, int forked, int op, long arg1, long arg2)
 				return -1;
 #endif
 			for (i = 0; i <= 2; i++)
-				if (arg1 != i && arg2 != i && (k = fcntl(arg1, F_DUPFD, i)) != i)
+				if (arg1 != i && arg2 != i && fcntl(arg1, F_DUPFD, i) != i)
 					return -1;
 			if (arg1 > 2)
 				close(arg1);

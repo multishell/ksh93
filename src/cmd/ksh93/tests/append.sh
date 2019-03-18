@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2011 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2012 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                 Eclipse Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -82,5 +82,21 @@ unset foo
 foo=a
 foo+=''
 [[ $foo == 'a' ]] || err_exit 'appending an empty string not working'
+
+unset x z arr
+typeset -a x=(a b)
+x+=(c d)
+exp='typeset -a x=(a b c d)'
+[[ $(typeset -p x) == "$exp" ]] || err_exit 'append (c d) to index array not working'
+
+typeset -a arr=(a=b b=c)
+arr+=(c=d d=e)
+exp='typeset -a arr=(a\=b b\=c c\=d d\=e)'
+[[ $(typeset -p arr) == "$exp" ]] || err_exit 'append (c=d d=e) to index array not working'
+
+exp='typeset -a z=(a\=b b\=c d\=3 e f\=l)'
+typeset -a z=(a=b b=c)
+{ z+=(d=3 e f=l); } 2> /dev/null
+[[ $(typeset -p z) == "$exp" ]] || err_exit 'append (d=3 e f=l) to index array not working'
 
 exit $((Errors<125?Errors:125))

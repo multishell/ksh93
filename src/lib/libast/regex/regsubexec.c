@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -193,4 +193,42 @@ regsubexec(const regex_t* p, const char* s, size_t nmatch, regmatch_t* match)
 	*b->re_cur = 0;
 	b->re_len = b->re_cur - b->re_buf;
 	return 0;
+}
+
+/*
+ * 20120528: regoff_t changed from int to ssize_t
+ */
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
+#undef	regsubexec
+
+extern int
+regsubexec(const regex_t* p, const char* s, size_t nmatch, oldregmatch_t* oldmatch)
+{
+	if (oldmatch)
+	{
+		regmatch_t*	match;
+		ssize_t		i;
+		int		r;
+
+		if (!(match = oldof(0, regmatch_t, nmatch, 0)))
+			return -1;
+			for (i = 0; i < nmatch; i++)
+			{
+				match[i].rm_so = oldmatch[i].rm_so;
+				match[i].rm_eo = oldmatch[i].rm_eo;
+			}
+		if (!(r = regsubexec_20120528(p, s, nmatch, match)))
+			for (i = 0; i < nmatch; i++)
+			{
+				oldmatch[i].rm_so = match[i].rm_so;
+				oldmatch[i].rm_eo = match[i].rm_eo;
+			}
+		free(match);
+		return r;
+	}
+	return regsubexec_20120528(p, s, 0, NiL);
 }

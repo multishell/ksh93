@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -20,7 +20,7 @@
 *                                                                      *
 ***********************************************************************/
 #if __STDC__
-#include	"FEATURE/isoc99"
+#include	"FEATURE/standards"
 #endif
 #include	"sfhdr.h"
 
@@ -51,22 +51,19 @@ static char		*Zero = "0";
 #endif
 #endif
 
-#if ! _lib_signbit && defined(signbit)
-#undef	_lib_signbit
-#define _lib_signbit	1
-#endif
-
 #if ! _lib_signbit
 #if ! _ast_fltmax_double
 static int neg0ld(Sfdouble_t f)
 {
-	Sfdouble_t	z = -0.0;
+	Sfdouble_t	z = 0;
+	z = -z;
 	return !memcmp(&f, &z, sizeof(f));
 }
 #endif
 static int neg0d(double f)
 {
-	double		z = -0.0;
+	double		z = 0;
+	z = -z;
 	return !memcmp(&f, &z, sizeof(f));
 }
 #endif

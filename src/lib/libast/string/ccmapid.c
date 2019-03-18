@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -139,7 +139,7 @@ ccmapid(const char* name)
 	register int		c;
 	const Ccmap_t*		bp;
 	int			n;
-	int			sub[2];
+	ssize_t			sub[2];
 
 	bp = 0;
 	n = 0;

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -37,6 +37,7 @@
 
 #include <ast_common.h>
 #include <ast_wchar.h>
+#include <ast_api.h>
 
 #define REG_VERSION	20100930L
 
@@ -132,12 +133,17 @@ struct regdisc_s; typedef struct regdisc_s regdisc_t;
 
 typedef int (*regclass_t)(int);
 typedef uint32_t regflags_t;
-typedef int regoff_t;
 typedef int (*regerror_t)(const regex_t*, regdisc_t*, int, ...);
 typedef void* (*regcomp_t)(const regex_t*, const char*, size_t, regdisc_t*);
 typedef int (*regexec_t)(const regex_t*, void*, const char*, size_t, const char*, size_t, char**, regdisc_t*);
 typedef void* (*regresize_t)(void*, void*, size_t);
 typedef int (*regrecord_t)(void*, const char*, size_t);
+
+#if ASTAPI(20120528)
+typedef ssize_t regoff_t;
+#else
+typedef int regoff_t;
+#endif
 
 typedef struct regmatch_s
 {

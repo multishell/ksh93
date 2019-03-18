@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -83,6 +83,12 @@
 #define ERROR_POP		0x0020	/* pop context			*/
 #define ERROR_PUSH		0x0040	/* push context			*/
 #define ERROR_SET		0x0080	/* set context			*/
+
+#ifdef ECONNRESET
+#define ERROR_PIPE(e)		((e)==EPIPE||(e)==ECONNRESET)
+#else
+#define ERROR_PIPE(e)		((e)==EPIPE)
+#endif
 
 /*
  * errorpush()/errorpop() are obsolete -- use errorctx() instead

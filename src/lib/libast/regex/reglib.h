@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -305,8 +305,8 @@ typedef struct Vector_s
 	char*		vec;		/* the data			*/
 	int		inc;		/* growth increment		*/
 	int		siz;		/* element size			*/
-	int		max;		/* max index			*/
-	int		cur;		/* current index -- user domain	*/
+	ssize_t		max;		/* max index			*/
+	ssize_t		cur;		/* current index -- user domain	*/
 } Vector_t;
 
 /*
@@ -554,6 +554,12 @@ typedef struct reglib_s			/* library private regex_t info	*/
 	unsigned char	sub;		/* re_sub is valid		*/
 	unsigned char	test;		/* debug/test bitmask		*/
 } Env_t;
+
+typedef struct oldregmatch_s		/* pre-20120528 regmatch_t	*/
+{
+	int		rm_so;		/* offset of start		*/
+	int		rm_eo;		/* offset of end		*/
+} oldregmatch_t;
 
 typedef struct State_s				/* shared state		*/
 {

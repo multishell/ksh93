@@ -93,7 +93,26 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-12-05-17  --- Release ksh93u+ ---
+12-05-31  --- Release ksh93u+ ---
+12-05-31  Use getrlimit64/setrlimit64 on systems that support it.
+12-05-31  Fix 64 bit big-endian arithmentic bug that mishandled nan and inf.
+12-05-31  Handle ECONNRESET like EPIPE.
+12-05-31  Change .paths parse to use only the last BUILTIN_LIB from the top
+	  and treat BUILTIN_LIB value as a ':' separated list of lib names.
+12-05-29  Fix BUILTIN_LIB binding bug that ignored subsequent lookups.
+12-05-29  shtests: --nocompile omits the compile test and --compile does only
+	  the compile test.
+12-05-25  A command subsitution containing a here-document that itself contains
+	  a here-document no longer hangs.
+12-05-24  When the redirection operatory >; is directed to a symlink, it now
+	  overwrites the file named by the link rather than the link.
+12-05-21 +Added printf formats %(type)q where type can be html, url, pattern,
+	  ere, or csv. 
+12-05-18  A bug with appending elements to an indexed array has been fixed.
+12-05-18  The exit status from getopts --man interactively was 0 instead of 2
+	  and has been fixed.
+12-05-18  Another bug with SHOPT_EDPREDICT which could cause a core dump has
+	  been fixed.  
 12-05-17  A bug with fixed size arrays which could cause a core dump has been
 	  fixed.
 12-05-17  A bug in which the here-document <<< $(<file) was not processed
@@ -3119,6 +3138,12 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+12-05-31 error.h: add ERROR_PIPE(errno) to handle EPIPE and ECONNRESET
+12-05-31 Makefile: don't install $(INCLUDEDIR)/prototyped.h: src/cmd/INIT does it
+12-05-31 regcomp.c: add (?V...) ~(V...) REG_REGEXP switch
+12-05-28 regex: regoff_t in => ssize_t via api 20120528
+12-05-21 features/asometh: split intrinsic and method tests so code only instantiated in aso.c
+12-05-21 comp/strdup.c: use oldof() since mem overwritten by string copy
 12-05-18 misc/stk.c: fix access of moved realloc() data
 12-05-15 misc/optget.c: #? option with no value should have opt_info.num==0
 12-05-11 misc/stk.c: fix memmove() read of 1 uninitialized byte
@@ -4907,6 +4932,8 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
+12-05-31 cat,head,tee: use errno==EPIPE => ERROR_PIPE(errno)
+12-05-25 vmstate.c: #include <sfdisc.h> for sfkeyprintf() prototype
 12-04-20 chgrp.c,chmod.c,cksum.c,cp.c: default fts_flags()|FTS_META (to disable pure FTS_PHYSICAL)
 12-03-26 cp.c: fix --interactive astquery() logic that ignored no&quit!
 12-02-14 rm.c: --force ignores no file operands specified

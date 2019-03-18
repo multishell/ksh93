@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -278,7 +278,7 @@ tvtouch(const char* path, register const Tv_t* av, register const Tv_t* mv, cons
 	if (av == (const Tv_t*)&now && mv == (const Tv_t*)&now)
 		return 0;
 #if _lib_utimets
-	return utimets(path, am);
+	return utimets(path, ts);
 #else
 #if _lib_utimes
 	return utimes(path, am);

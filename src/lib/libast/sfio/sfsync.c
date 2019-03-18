@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                  Copyright (c) 1985-2005 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -100,6 +100,9 @@ reg Sfio_t*	f;	/* stream to be synchronized */
 		(void)sfclose((*_Sfstack)(origf,NIL(Sfio_t*)));
 
 	rv = 0;
+
+	if(origf->mode == (SF_SYNCED|SF_READ) ) /* already synced */
+		goto done;
 
 	if((origf->mode&SF_RDWR) != SFMODE(origf,local) && _sfmode(origf,0,local) < 0)
 	{	rv = -1;

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                  Copyright (c) 1985-2005 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -178,9 +178,9 @@ strperm(const char* aexpr, char** e, register int perm)
 								if (typ & S_IXGRP)
 									perm |= who & S_IXUSR;
 								if (typ & S_IWGRP)
-									perm |= who &S_IWUSR;
+									perm |= who & S_IWUSR;
 								if (typ & S_IRGRP)
-									perm |= who &S_IRUSR;
+									perm |= who & S_IRUSR;
 
 								/*
 								 * if any execute then read => execute

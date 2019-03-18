@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                  Copyright (c) 1985-2005 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -43,7 +43,7 @@ reg Sfio_t*	f;
 	if(!(f->mode&SF_INIT) &&
 	   SFMODE(f,local) != (f->mode&SF_RDWR) &&
 	   SFMODE(f,local) != (f->mode&(SF_READ|SF_SYNCED)) &&
-	   _sfmode(f,0,local) < 0)
+	   _sfmode(f,SF_SYNCED,local) < 0)
 		SFMTXRETURN(f,-1);
 
 	/* closing a stack of streams */

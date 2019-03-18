@@ -157,7 +157,7 @@ extern int	lchmod(const char*, mode_t);
  */
 
 int
-b_chmod(int argc, char** argv, void* context)
+b_chmod(int argc, char** argv, Shbltin_t* context)
 {
 	register int	mode;
 	register int	force = 0;

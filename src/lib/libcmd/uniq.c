@@ -243,7 +243,7 @@ static int uniq(Sfio_t *fdin, Sfio_t *fdout, int fields, int chars, int width, i
 }
 
 int
-b_uniq(int argc, char** argv, void* context)
+b_uniq(int argc, char** argv, Shbltin_t* context)
 {
 	register int n, mode=0;
 	register char *cp;

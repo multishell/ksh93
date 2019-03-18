@@ -439,7 +439,7 @@ optinfo(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 }
 
 int
-b_cksum(int argc, register char** argv, void* context)
+b_cksum(int argc, register char** argv, Shbltin_t* context)
 {
 	register int	flags;
 	char*		file;

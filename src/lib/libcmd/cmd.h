@@ -59,7 +59,7 @@
 
 #else
 
-extern int CMD_STANDALONE(int, char**, void*);
+extern int CMD_STANDALONE(int, char**, Shbltin_t*);
 
 #endif
 
@@ -70,7 +70,7 @@ extern int CMD_STANDALONE(int, char**, void*);
  */
 
 static int
-cmdinit(int argc, register char** argv, void* context, const char* catalog, int flags)
+cmdinit(int argc, register char** argv, Shbltin_t* context, const char* catalog, int flags)
 {
 	register char*	cp;
 	register char*	pp;
@@ -154,7 +154,7 @@ main(int argc, char** argv)
 #define extern			extern __EXPORT__
 #endif
 
-extern int	_cmd_init(int, char**, void*, const char*, int);
+extern int	_cmd_init(int, char**, Shbltin_t*, const char*, int);
 
 #undef	extern
 

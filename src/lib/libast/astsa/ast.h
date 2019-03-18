@@ -146,6 +146,7 @@ typedef struct
 extern _Ast_info_t	ast;
 
 extern int		astwinsize(int, int*, int*);
+extern int		chresc(const char*, char**);
 extern char*		fmtbuf(size_t);
 extern char*		fmtip4(uint32_t, int);
 extern char*		sfgetr(Sfio_t*, int, int);

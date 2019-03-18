@@ -547,4 +547,16 @@ cmp -s <(print -- "$($bincat<( $bincat $out ) )") <(print -- "$(cat <( cat $out 
 
 [[ $($SHELL -c '{ printf %R "["; print ok;}' 2> /dev/null) == ok ]] || err_exit $'\'printf %R "["\' causes shell to abort'
 
+v=$( $SHELL -c $'
+	trap \'print "usr1"\' USR1
+	trap exit USR2
+	sleep 1 && {
+		kill -USR1 $$ && sleep 1
+		kill -0 $$ 2>/dev/null && kill -USR2 $$
+	} &
+	sleep 2 | read
+	echo done
+' ) 2> /dev/null
+[[ $v == $'usr1\ndone' ]] ||  err_exit 'read not terminating when receiving USR1 signal'
+
 exit $((Errors<125?Errors:125))

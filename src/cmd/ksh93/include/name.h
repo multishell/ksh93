@@ -30,7 +30,8 @@
 
 #include	<ast.h>
 #include	<cdt.h>
-#include	"shtable.h"
+
+typedef int (*Nambfp_f)(int, char**, void*);
 
 /* Nodes can have all kinds of values */
 union Value
@@ -52,7 +53,7 @@ union Value
 	struct Ufunction 	*rp;	/* shell user defined functions */
 	struct Namfun		*funp;	/* discipline pointer */
 	struct Namref		*nrp;	/* name reference */
-	int			(*bfp)(int,char*[],void*);/* builtin entry point function pointer */
+	Nambfp_f		bfp;	/* builtin entry point function pointer */
 };
 
 #include	"nval.h"

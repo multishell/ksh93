@@ -321,6 +321,13 @@ done
 rm -f ls
 PATH=${PATH%:}
 
+#whence -p bug fix
+function foo
+{
+	:
+}
+[[ $(whence -p foo) == foo ]] && err_exit 'whence -p foo should not find function foo'
+
 # whence -q bug fix
 $SHELL -c 'whence -q cat' & pid=$!
 sleep 3

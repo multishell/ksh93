@@ -57,7 +57,11 @@ pathpath_20100601(const char* p, const char* a, int mode, register char* path, s
 	static char*	cmd;
 
 	if (!path)
+	{
 		path = buf;
+		if (!size || size > sizeof(buf))
+			size = sizeof(buf);
+	}
 	if (!p)
 	{
 		if (cmd)

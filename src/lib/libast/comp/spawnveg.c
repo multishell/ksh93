@@ -212,7 +212,7 @@ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
 			m = 0;
 			if (pgid == 1 || pgid == -2 && (m = 1))
 				pgid = getpid();
-			if (setpgid(pgid, pgid) < 0 && pgid && errno == EPERM)
+			if (setpgid(0, pgid) < 0 && errno == EPERM)
 				setpgid(pgid, 0);
 #if _lib_tcgetpgrp
 			if (m)

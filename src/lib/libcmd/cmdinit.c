@@ -27,7 +27,7 @@
 #include <shcmd.h>
 
 int
-_cmd_init(int argc, char** argv, void* context, const char* catalog, int flags)
+_cmd_init(int argc, char** argv, Shbltin_t* context, const char* catalog, int flags)
 {
 	register char*	cp;
 
@@ -42,7 +42,7 @@ _cmd_init(int argc, char** argv, void* context, const char* catalog, int flags)
 		}
 		else if (flags & ERROR_NOTIFY)
 		{
-			((Shbltin_t*)(context))->notify = 1;
+			context->notify = 1;
 			flags &= ~ERROR_NOTIFY;
 		}
 		error_info.flags |= flags;
@@ -67,7 +67,7 @@ _cmd_init(int argc, char** argv, void* context, const char* catalog, int flags)
 #undef	cmdinit
 
 extern void
-cmdinit(char** argv, void* context, const char* catalog, int flags)
+cmdinit(char** argv, Shbltin_t* context, const char* catalog, int flags)
 {
 	_cmd_init(0, argv, context, catalog, flags);
 }

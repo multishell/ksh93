@@ -174,5 +174,4 @@ Void_t* dtuserdata(Dt_t* dt, Void_t* data, unsigned int key)
 		dtuserlock(dt, key, -1);
 		return data;
 	}
-			
 }

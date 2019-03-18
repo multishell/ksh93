@@ -62,7 +62,7 @@ USAGE_LICENSE
 #define DIRMODE	(S_IRWXU|S_IRWXG|S_IRWXO)
 
 int
-b_mkdir(int argc, char** argv, void* context)
+b_mkdir(int argc, char** argv, Shbltin_t* context)
 {
 	register char*	path;
 	register int	n;

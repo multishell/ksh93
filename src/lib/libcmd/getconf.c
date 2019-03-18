@@ -128,7 +128,7 @@ typedef struct Path_s
 } Path_t;
 
 int
-b_getconf(int argc, char** argv, void* context)
+b_getconf(int argc, char** argv, Shbltin_t* context)
 {
 	register char*		name;
 	register char*		path;

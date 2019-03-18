@@ -568,7 +568,7 @@ cutfields(Cut_t* cut, Sfio_t* fdin, Sfio_t* fdout)
 }
 
 int
-b_cut(int argc, char** argv, void* context)
+b_cut(int argc, char** argv, Shbltin_t* context)
 {
 	register char*		cp = 0;
 	register Sfio_t*	fp;

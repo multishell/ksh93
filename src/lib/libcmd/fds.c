@@ -156,7 +156,7 @@ static const NV_t	family[] =
 #endif
 
 int
-b_fds(int argc, char** argv, void* context)
+b_fds(int argc, char** argv, Shbltin_t* context)
 {
 	register char*		s;
 	register int		i;

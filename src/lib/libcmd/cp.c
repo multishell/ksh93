@@ -156,7 +156,7 @@ static const char usage_tail[] =
 
 typedef struct State_s			/* program state		*/
 {
-	void*		context;	/* builtin context		*/
+	Shbltin_t*	context;	/* builtin context		*/
 	int		backup;		/* BAK_* type			*/
 	int		directory;	/* destination is directory	*/
 	int		flags;		/* FTS_* flags			*/
@@ -672,7 +672,7 @@ visit(State_t* state, register FTSENT* ent)
 }
 
 int
-b_cp(int argc, register char** argv, void* context)
+b_cp(int argc, register char** argv, Shbltin_t* context)
 {
 	register char*	file;
 	register char*	s;
@@ -686,7 +686,7 @@ b_cp(int argc, register char** argv, void* context)
 	struct stat	st;
 	State_t*	state;
 	Shbltin_t*	sh;
-	void*		cleanup = context;
+	Shbltin_t*	cleanup = context;
 
 	cmdinit(argc, argv, context, ERROR_CATALOG, ERROR_NOTIFY);
 	if (!(sh = CMD_CONTEXT(context)) || !(state = (State_t*)sh->ptr))

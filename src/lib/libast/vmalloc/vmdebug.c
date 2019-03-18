@@ -234,13 +234,13 @@ int		line;	/* and line number			*/
 			if(db)
 			{	(*_Vmstrcpy)(db->file,file,0);
 				db->next = Dbfile;
-				Dbfile = db->next;
+				Dbfile = db;
 			}
 		}
 		else if(last) /* move-to-front heuristic */
 		{	last->next = db->next;
 			db->next = Dbfile;
-			Dbfile = db->next;
+			Dbfile = db;
 		}
 	}
 

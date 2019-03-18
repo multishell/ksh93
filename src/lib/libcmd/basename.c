@@ -99,7 +99,7 @@ static void namebase(Sfio_t *outfile, register char *pathname, char *suffix)
 }
 
 int
-b_basename(int argc,register char *argv[], void* context)
+b_basename(int argc, register char** argv, Shbltin_t* context)
 {
 	char*	string;
 	char*	suffix = 0;

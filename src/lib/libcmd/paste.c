@@ -172,7 +172,7 @@ static int spaste(Sfio_t *in,register Sfio_t* out,register const char *delim,int
 }
 
 int
-b_paste(int argc,register char *argv[], void* context)
+b_paste(int argc, char** argv, Shbltin_t* context)
 {
 	register int		n, sflag=0;
 	register Sfio_t		*fp, **streams;

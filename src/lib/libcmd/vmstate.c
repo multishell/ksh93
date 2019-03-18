@@ -148,7 +148,7 @@ visit(Vmalloc_t* vm, void* addr, size_t size, Vmdisc_t* disc, void* handle)
 }
 
 int
-b_vmstate(int argc, char** argv, void* context)
+b_vmstate(int argc, char** argv, Shbltin_t* context)
 {
 	register int	i;
 	State_t		state;

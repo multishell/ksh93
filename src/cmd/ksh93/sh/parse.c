@@ -233,7 +233,7 @@ static void check_typedef(struct comnod *tp)
 	if(cp)
 	{
 		Namval_t	*mp=(Namval_t*)tp->comnamp ,*bp;
-		bp = sh_addbuiltin(cp,mp->nvalue.bfp, (void*)0);
+		bp = sh_addbuiltin(cp, (Shbltin_f)mp->nvalue.bfp, (void*)0);
 		nv_onattr(bp,nv_isattr(mp,NV_PUBLIC));
 	}
 }
@@ -1474,7 +1474,7 @@ static Shnode_t *simple(Lex_t *lexp,int flag, struct ionod *io)
 						cmdarg++;
 					else if(np==SYSEXEC)
 						lexp->inexec = 1;
-					else if(np->nvalue.bfp==b_getopts)
+					else if(np->nvalue.bfp==(Nambfp_f)b_getopts)
 						opt_get |= FOPTGET;
 				}
 			}

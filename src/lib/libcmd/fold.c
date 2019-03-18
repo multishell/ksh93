@@ -167,7 +167,7 @@ static void fold(Sfio_t *in, Sfio_t *out, register int width, const char *cont, 
 }
 
 int
-b_fold(int argc, char *argv[], void* context)
+b_fold(int argc, char** argv, Shbltin_t* context)
 {
 	register int n, width=WIDTH;
 	register Sfio_t *fp;

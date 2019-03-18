@@ -22,6 +22,8 @@
 #ifndef _DEBUG_H
 #define _DEBUG_H	1
 
+#define DEBUG_ASSERT(x)
+
 #define message(p)
 
 #endif

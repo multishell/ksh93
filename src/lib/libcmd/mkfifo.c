@@ -50,7 +50,7 @@ USAGE_LICENSE
 #include <ls.h>
 
 int
-b_mkfifo(int argc, char *argv[], void* context)
+b_mkfifo(int argc, char** argv, Shbltin_t* context)
 {
 	register char*	arg;
 	register mode_t mode = S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH;

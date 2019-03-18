@@ -37,14 +37,14 @@ static void hist_subst(const char*, int fd, char*);
 
 #if 0
     /* for the benefit of the dictionary generator */
-    int	b_fc(int argc,char *argv[], void *extra){}
+    int	b_fc(int argc,char *argv[], Shbltin_t *context){}
 #endif
-int	b_hist(int argc,char *argv[], void *extra)
+int	b_hist(int argc,char *argv[], Shbltin_t *context)
 {
 	register History_t *hp;
 	register char *arg;
 	register int flag,fdo;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	Sfio_t *outfile;
 	char *fname;
 	int range[2], incr, index2, indx= -1;

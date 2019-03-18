@@ -87,7 +87,7 @@ static void printout(register Wc_t *wp, register char *name,register int mode)
 }
 
 int
-b_wc(int argc,register char **argv, void* context)
+b_wc(int argc,register char **argv, Shbltin_t* context)
 {
 	register char	*cp;
 	register int	mode=0, n;

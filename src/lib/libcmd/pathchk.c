@@ -228,7 +228,7 @@ static int pathchk(char* path, int mode)
 }
 
 int
-b_pathchk(int argc, char** argv, void* context)
+b_pathchk(int argc, char** argv, Shbltin_t* context)
 {
 	register int	mode = 0;
 	register char*	s;

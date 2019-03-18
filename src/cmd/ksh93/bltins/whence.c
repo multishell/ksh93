@@ -49,10 +49,10 @@ static int whence(Shell_t *,char**, int);
  * In this case return 0 when -v or -V or unknown option, otherwise
  *   the shift count to the command is returned
  */
-int	b_command(register int argc,char *argv[],void *extra)
+int	b_command(register int argc,char *argv[],Shbltin_t *context)
 {
 	register int n, flags=0;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	opt_info.index = opt_info.offset = 0;
 	while((n = optget(argv,sh_optcommand))) switch(n)
 	{
@@ -92,10 +92,10 @@ int	b_command(register int argc,char *argv[],void *extra)
 /*
  *  for the whence command
  */
-int	b_whence(int argc,char *argv[],void *extra)
+int	b_whence(int argc,char *argv[],Shbltin_t *context)
 {
 	register int flags=0, n;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	NOT_USED(argc);
 	if(*argv[0]=='t')
 		flags = V_FLAG;
@@ -221,7 +221,11 @@ static int whence(Shell_t *shp,char **argv, register int flags)
 		do
 		{
 			if(path_search(shp,name,&pp,2+(aflag>1)))
+			{
 				cp = name;
+				if((flags&P_FLAG) && *cp!='/')
+					cp = 0;
+			}
 			else
 			{
 				cp = stakptr(PATH_OFFSET);

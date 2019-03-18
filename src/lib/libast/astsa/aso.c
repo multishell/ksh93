@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1994-2012 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -15,20 +15,42 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
-/*
- * -lm test #1
- */
+#pragma prototyped
 
-#ifndef sin
-#include <math.h>
-#endif
+#include <aso.h>
 
 int
-main()
+asolock(unsigned int volatile* lock, unsigned int key, int type)
 {
-	sin(0.0);
-	fmod(100.234, 11.0);
-	return 0;
+	unsigned int	k;
+
+	if (key)
+		switch (type)
+		{
+		case ASO_UNLOCK:
+			if (*lock != 0)
+			{
+				if (*lock != key)
+					return -1;
+				*lock = 0;
+			}
+			return 0;
+		case ASO_TRYLOCK:
+			if (*lock != key)
+			{
+				if (*lock != 0)
+					return -1;
+				*lock = key;
+			}
+			return 0;
+		case ASO_LOCK:
+		case ASO_SPINLOCK:
+			*lock = key;
+			return 0;
+		}
+	return -1;
 }

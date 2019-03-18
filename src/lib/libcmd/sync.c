@@ -51,7 +51,7 @@ USAGE_LICENSE
 #include <ls.h>
 
 int
-b_sync(int argc, char** argv, void* context)
+b_sync(int argc, char** argv, Shbltin_t* context)
 {
 	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	for (;;)

@@ -18,8 +18,7 @@
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
-#include	"shtable.h"
-#include	<shell.h>
+#include	"shell.h"
 #include	"shlex.h"
 #include	"FEATURE/options"
 

@@ -42,11 +42,11 @@
 #   undef _lib_poll
 #endif /* _lib_poll_notimer */
 
-int	b_sleep(register int argc,char *argv[],void *extra)
+int	b_sleep(register int argc,char *argv[],Shbltin_t *context)
 {
 	register char *cp;
 	register double d=0;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	int sflag=0;
 	time_t tloc = 0;
 	char *last;

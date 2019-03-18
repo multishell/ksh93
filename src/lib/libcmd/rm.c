@@ -81,7 +81,7 @@ USAGE_LICENSE
 
 typedef struct State_s			/* program state		*/
 {
-	void*		context;	/* builtin context		*/
+	Shbltin_t*	context;	/* builtin context		*/
 	int		clobber;	/* clear out file data first	*/
 	int		directory;	/* remove(dir) not rmdir(dir)	*/
 	int		force;		/* force actions		*/
@@ -326,7 +326,7 @@ rm(State_t* state, register FTSENT* ent)
 }
 
 int
-b_rm(int argc, register char** argv, void* context)
+b_rm(int argc, register char** argv, Shbltin_t* context)
 {
 	State_t		state;
 	FTS*		fts;

@@ -54,7 +54,7 @@ USAGE_LICENSE
 #include <cmd.h>
 
 int
-b_rmdir(int argc, char** argv, void* context)
+b_rmdir(int argc, char** argv, Shbltin_t* context)
 {
 	register char*	dir;
 	register char*	end;

@@ -49,12 +49,12 @@ static void rehash(register Namval_t *np,void *data)
 		_nv_unset(np,0);
 }
 
-int	b_cd(int argc, char *argv[],void *extra)
+int	b_cd(int argc, char *argv[],Shbltin_t *context)
 {
 	register char *dir;
 	Pathcomp_t *cdpath = 0;
 	register const char *dp;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	int saverrno=0;
 	int rval,flag=0;
 	char *oldpwd;
@@ -206,11 +206,11 @@ success:
 	return(0);
 }
 
-int	b_pwd(int argc, char *argv[],void *extra)
+int	b_pwd(int argc, char *argv[],Shbltin_t *context)
 {
 	register int n, flag = 0;
 	register char *cp;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	NOT_USED(argc);
 	while((n = optget(argv,sh_optpwd))) switch(n)
 	{

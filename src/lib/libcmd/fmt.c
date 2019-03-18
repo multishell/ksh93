@@ -562,7 +562,7 @@ dofmt(Fmt_t* fp)
 }
 
 int
-b_fmt(int argc, char** argv, void *context)
+b_fmt(int argc, char** argv, Shbltin_t* context)
 {
 	register int	n;
 	char*		cp;

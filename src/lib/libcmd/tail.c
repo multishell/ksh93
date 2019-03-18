@@ -398,7 +398,7 @@ num(register const char* s, char** e, int* f, int o)
 }
 
 int
-b_tail(int argc, char** argv, void* context)
+b_tail(int argc, char** argv, Shbltin_t* context)
 {
 	register Sfio_t*	ip;
 	register int		n;

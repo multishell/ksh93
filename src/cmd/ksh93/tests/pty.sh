@@ -38,6 +38,20 @@ whence -q pty || { lineno=$LINENO; err_exit "pty command not found -- tests skip
 
 bintrue=$(whence -p true)
 
+x=$( $SHELL <<- \EOF
+		trap 'exit 0' EXIT
+		bintrue=$(whence -p true)
+		set -o monitor
+		{
+			eval $'set -o vi\npty $bintrue'
+		} < /dev/null & pid=$!
+		#sleep 1
+		jobs
+		kill $$
+	EOF
+)
+[[ $x == *Stop* ]] && err_exit 'monitor mode enabled incorrectly cause job to stop'
+
 function tst
 {
 	integer lineno=$1 offset
@@ -352,7 +366,7 @@ p :test-1:
 c echo hello\E
 s 400
 c v
-u ".*"
+u /tmp/
 c A world\E
 s 400
 w :wq

@@ -217,7 +217,7 @@ getids(register char* s, char** e, Key_t* key, int options)
  */
 
 int
-b_chgrp(int argc, char** argv, void* context)
+b_chgrp(int argc, char** argv, Shbltin_t* context)
 {
 	register int	options = 0;
 	register char*	s;

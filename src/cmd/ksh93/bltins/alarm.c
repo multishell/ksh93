@@ -230,12 +230,12 @@ static const Namdisc_t alarmdisc =
 	setdisc,
 };
 
-int	b_alarm(int argc,char *argv[],void *extra)
+int	b_alarm(int argc,char *argv[],Shbltin_t *context)
 {
 	register int n,rflag=0;
 	register Namval_t *np;
 	register struct tevent *tp;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	while (n = optget(argv, sh_optalarm)) switch (n)
 	{
 	    case 'r':

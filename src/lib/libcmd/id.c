@@ -416,7 +416,7 @@ getids(Sfio_t* sp, const char* name, register int flags)
 }
 
 int
-b_id(int argc, char *argv[], void* context)
+b_id(int argc, char** argv, Shbltin_t* context)
 {
 	register int	flags = 0;
 	register int	n;

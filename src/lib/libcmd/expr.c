@@ -489,13 +489,13 @@ static int expr_or(State_t* state, Node_t *np)
 }
 
 int
-b_expr(int argc, char *argv[], void *context)
+b_expr(int argc, char** argv, Shbltin_t* context)
 {
 	State_t	state;
 	Node_t	node;
 	int	n;
 
-	cmdinit(argc, argv,context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	state.standard = !!conformance(0, 0);
 #if 0
 	if (state.standard)

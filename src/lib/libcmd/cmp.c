@@ -245,7 +245,7 @@ cmp(const char* file1, Sfio_t* f1, const char* file2, Sfio_t* f2, int flags, Sfo
 }
 
 int
-b_cmp(int argc, register char** argv, void* context)
+b_cmp(int argc, register char** argv, Shbltin_t* context)
 {
 	char*		s;
 	char*		e;

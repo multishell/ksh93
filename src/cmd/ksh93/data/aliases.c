@@ -18,12 +18,10 @@
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
-#include	<ast.h>
+#include	"defs.h"
 #include	<signal.h>
 #include	"FEATURE/options"
 #include	"FEATURE/dynamic"
-#include	"shtable.h"
-#include	"name.h"
 
 /*
  * This is the table of built-in aliases.  These should be exported.

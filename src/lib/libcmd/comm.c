@@ -145,7 +145,7 @@ static int comm(Sfio_t *in1, Sfio_t *in2, register Sfio_t *out,register int mode
 }
 
 int
-b_comm(int argc, char *argv[], void* context)
+b_comm(int argc, char *argv[], Shbltin_t* context)
 {
 	register int mode = C_FILE1|C_FILE2|C_COMMON;
 	register char *cp;

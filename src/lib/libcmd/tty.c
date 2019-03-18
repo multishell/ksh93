@@ -54,7 +54,7 @@ USAGE_LICENSE
 #endif
 
 int
-b_tty(int argc, char *argv[], void* context)
+b_tty(int argc, char** argv, Shbltin_t* context)
 {
 	register int n,sflag=0,lflag=0;
 	register char *tty;

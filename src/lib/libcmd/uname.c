@@ -249,7 +249,7 @@ uname(register struct utsname* ut)
 			} while (0)
 
 int
-b_uname(int argc, char** argv, void* context)
+b_uname(int argc, char** argv, Shbltin_t* context)
 {
 	register long	flags = 0;
 	register int	sep = 0;

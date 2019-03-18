@@ -896,7 +896,7 @@ static int infof(Opt_t* op, Sfio_t* sp, const char* s, Optdisc_t* dp)
 #endif /* _lib_tcgetpgrp */
 
 int
-b_stty(int argc, char** argv, void* context)
+b_stty(int argc, char** argv, Shbltin_t* context)
 {
 	struct termios		tty;
 	register int		n;

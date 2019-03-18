@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: tee (AT&T Research) 2010-12-01 $\n]"
+"[-?\n@(#)$Id: tee (AT&T Research) 2012-01-01 $\n]"
 USAGE_LICENSE
 "[+NAME?tee - duplicate standard input]"
 "[+DESCRIPTION?\btee\b copies standard input to standard output "
@@ -107,7 +107,7 @@ tee_cleanup(register Tee_t* tp)
 }
 
 int
-b_tee(int argc, register char** argv, void* context)
+b_tee(int argc, register char** argv, Shbltin_t* context)
 {
 	register Tee_t*		tp = 0;
 	register int		oflag = O_WRONLY|O_TRUNC|O_CREAT|O_BINARY;
@@ -195,7 +195,7 @@ b_tee(int argc, register char** argv, void* context)
 		else
 			error(ERROR_exit(0), "out of space");
 	}
-	if ((sfmove(sfstdin, sfstdout, SF_UNBOUND, -1) < 0 || !sfeof(sfstdin)) && errno != EPIPE)
+	if ((sfmove(sfstdin, sfstdout, SF_UNBOUND, -1) < 0 || !sfeof(sfstdin)) && errno != EPIPE && errno != EINTR)
 		error(ERROR_system(0), "read error");
 	if (sfsync(sfstdout))
 		error(ERROR_system(0), "write error");

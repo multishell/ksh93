@@ -404,7 +404,7 @@ static const Namdisc_t servdisc =
 	setdisc
 };
 
-int	b_mkservice(int argc, char** argv, void* extra)
+int	b_mkservice(int argc, char** argv, Shbltin_t *context)
 {
 	register char*		var;
 	register char*		path;
@@ -413,7 +413,7 @@ int	b_mkservice(int argc, char** argv, void* extra)
 	register int		fd;
 
 	NOT_USED(argc);
-	NOT_USED(extra);
+	NOT_USED(context);
 	for (;;)
 	{
 		switch (optget(argv, mkservice_usage))
@@ -438,7 +438,7 @@ int	b_mkservice(int argc, char** argv, void* extra)
 	sp->actionf = Action;
 	sp->errorf = Error;
 	sp->refcount = 1;
-	sp->context = extra;
+	sp->context = context;
 	sp->node = 0;
 	sp->fun.disc = &servdisc;
 	if((fd = sh_open(path, O_SERVICE|O_RDWR))<=0)
@@ -458,11 +458,11 @@ int	b_mkservice(int argc, char** argv, void* extra)
 	return(0);
 }
 
-int	b_eloop(int argc, char** argv, void* extra)
+int	b_eloop(int argc, char** argv, Shbltin_t *context)
 {
 	register long	timeout = -1;
 	NOT_USED(argc);
-	NOT_USED(extra);
+	NOT_USED(context);
 	for (;;)
 	{
 		switch (optget(argv, eloop_usage))

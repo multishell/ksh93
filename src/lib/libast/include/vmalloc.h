@@ -35,8 +35,6 @@
 #include	<ast_common.h>
 #endif
 
-#include	<aso.h>
-
 typedef struct _vmalloc_s	Vmalloc_t;
 typedef struct _vmstat_s	Vmstat_t;
 typedef struct _vmdisc_s	Vmdisc_t;

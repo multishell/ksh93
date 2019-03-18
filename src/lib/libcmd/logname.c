@@ -50,7 +50,7 @@ USAGE_LICENSE
 #include <cmd.h>
 
 int
-b_logname(int argc, char** argv, void* context)
+b_logname(int argc, char** argv, Shbltin_t* context)
 {
 	register char*	logname;
 

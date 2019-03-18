@@ -259,9 +259,9 @@ char* sh_regress_etc(const char* path, unsigned int line, const char* file)
  * __regress__ builtin
  */
 
-int b___regress__(int argc, char** argv, void *extra)
+int b___regress__(int argc, char** argv, Shbltin_t *context)
 {
-	register Shell_t*	shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t*	shp = context->shp;
 	int			n;
 
 	for (;;)

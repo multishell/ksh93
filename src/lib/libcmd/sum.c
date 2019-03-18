@@ -29,7 +29,7 @@
 #include <cmd.h>
 
 int
-b_sum(int argc, register char** argv, void* context)
+b_sum(int argc, register char** argv, Shbltin_t* context)
 {
 	return b_cksum(argc, argv, context);
 }

@@ -216,7 +216,7 @@ typedef struct Fmt
  */
 
 static int
-settime(void* context, const char* cmd, Time_t now, int adjust, int network)
+settime(Shbltin_t* context, const char* cmd, Time_t now, int adjust, int network)
 {
 	char*		s;
 	char**		argv;
@@ -274,7 +274,7 @@ convert(register Fmt_t* f, char* s, Time_t now)
 }
 
 int
-b_date(int argc, register char** argv, void* context)
+b_date(int argc, register char** argv, Shbltin_t* context)
 {
 	register int	n;
 	register char*	s;

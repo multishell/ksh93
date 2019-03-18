@@ -25,7 +25,7 @@
 
 #include	<ast.h>
 
-#include	"shtable.h"
+#include	"defs.h"
 #include	"test.h"
 
 /*

@@ -157,7 +157,7 @@
 
 typedef struct Limit_s
 {
-	const char	name[8];
+	const char	name[16];
 	const char*	description;
 	int		index;
 	const char*	conf;

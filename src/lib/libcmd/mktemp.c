@@ -64,7 +64,7 @@ USAGE_LICENSE
 #include <ls.h>
 
 int
-b_mktemp(int argc, char** argv, void* context)
+b_mktemp(int argc, char** argv, Shbltin_t* context)
 {
 	mode_t		mode = 0;
 	mode_t		mask;

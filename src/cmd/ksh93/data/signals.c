@@ -17,9 +17,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                                                                      *
 ***********************************************************************/
-#include	<ast.h>
-#include	"shtable.h"
-#include	"fault.h"
+#include	"defs.h"
 
 #if defined(SIGCLD) && !defined(SIGCHLD)
 #   define SIGCHLD	SIGCLD

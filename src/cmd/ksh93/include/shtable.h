@@ -47,7 +47,7 @@ struct shtable3
 {
 	const char	*sh_name;
 	const unsigned	sh_number;
-	int		(*sh_value)(int, char*[], void*);
+	int		(*sh_value)(int, char*[], Shbltin_t*);
 };
 
 #define sh_lookup(name,value)	(sh_locate(name,(Shtable_t*)(value),sizeof(*(value)))->sh_number)

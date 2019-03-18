@@ -41,12 +41,12 @@
  */
 #if 0
     /* for the dictionary generator */
-    int	b_exit(int n, register char *argv[],void *extra){}
+    int	b_exit(int n, register char *argv[],Shbltin_t *context){}
 #endif
-int	b_return(register int n, register char *argv[],void *extra)
+int	b_return(register int n, register char *argv[],Shbltin_t *context)
 {
 	register char *arg;
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	struct checkpt *pp = (struct checkpt*)shp->jmplist;
 	const char *options = (**argv=='r'?sh_optreturn:sh_optexit);
 	while((n = optget(argv,options))) switch(n)
@@ -78,13 +78,13 @@ done:
  */
 #if 0
     /* for the dictionary generator */
-    int	b_continue(int n, register char *argv[],void *extra){}
+    int	b_continue(int n, register char *argv[],Shbltin_t *context){}
 #endif
-int	b_break(register int n, register char *argv[],void *extra)
+int	b_break(register int n, register char *argv[],Shbltin_t *context)
 {
 	char *arg;
 	register int cont= **argv=='c';
-	register Shell_t *shp = ((Shbltin_t*)extra)->shp;
+	register Shell_t *shp = context->shp;
 	while((n = optget(argv,cont?sh_optcont:sh_optbreak))) switch(n)
 	{
 	    case ':':

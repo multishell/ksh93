@@ -168,7 +168,7 @@ void	sh_fault(register int sig)
 		}
 	}
 	errno = 0;
-	if(pp->mode==SH_JMPCMD)
+	if(pp->mode==SH_JMPCMD || (pp->mode==1 && shp->bltinfun) && !(flag&SH_SIGIGNORE))
 		shp->lastsig = sig;
 	if(trap)
 	{

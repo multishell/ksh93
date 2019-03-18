@@ -159,7 +159,7 @@ typedef struct Join_s
 	int		mb;
 	char*		same;
 	int		samesize;
-	void*		context;
+	Shbltin_t*	context;
 	File_t		file[2];
 } Join_t;
 
@@ -813,7 +813,7 @@ sfprintf(sfstdout, "[X#%d:%d,%p,%p,%d,%02o,%02o%s]", __LINE__, n, cp1, cp2, cmp,
 }
 
 int
-b_join(int argc, char** argv, void* context)
+b_join(int argc, char** argv, Shbltin_t* context)
 {
 	register int		n;
 	register char*		cp;

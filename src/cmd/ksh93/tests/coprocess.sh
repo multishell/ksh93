@@ -193,7 +193,9 @@ do	if	( trap - $sig ) 2> /dev/null
 					sleep 2
 					kill $$
 				) &
-				read -p
+				while	read -p || (($? > 256))
+				do	:
+				done
 			++EOF++
 			} ) != $'TRAP\nTRAP' ]] 2> /dev/null
 		then	err_exit 'traps when reading from coprocess not working'

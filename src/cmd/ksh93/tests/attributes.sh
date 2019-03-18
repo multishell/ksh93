@@ -409,4 +409,10 @@ typeset groupDB="" userDB=""
 typeset -l -L1 DBPick=""
 [[ -n "$groupDB" ]]  && err_exit 'typeset -l -L1 causes unwanted side effect'
 
+HISTFILE=foo
+typeset -u PS1='hello --- '
+HISTFILE=foo
+[[ $HISTFILE == foo ]] || err_exit  'typeset -u PS1 affects HISTFILE'
+
+
 exit $((Errors<125?Errors:125))

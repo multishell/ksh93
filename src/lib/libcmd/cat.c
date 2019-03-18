@@ -31,7 +31,7 @@
 #include <fcntl.h>
 
 static const char usage[] =
-"[-?\n@(#)$Id: cat (AT&T Research) 2010-04-11 $\n]"
+"[-?\n@(#)$Id: cat (AT&T Research) 2012-01-01 $\n]"
 USAGE_LICENSE
 "[+NAME?cat - concatenate files]"
 "[+DESCRIPTION?\bcat\b copies each \afile\a in sequence to the standard"
@@ -393,7 +393,7 @@ vcat(register char* states, Sfio_t* ip, Sfio_t* op, Reserve_f reserve, int flags
 }
 
 int
-b_cat(int argc, char** argv, void* context)
+b_cat(int argc, char** argv, Shbltin_t* context)
 {
 	register int		n;
 	register int		flags = 0;
@@ -539,7 +539,7 @@ b_cat(int argc, char** argv, void* context)
 			n = -1;
 		if (fp != sfstdin)
 			sfclose(fp);
-		if (n < 0 && errno != EPIPE)
+		if (n < 0 && errno != EPIPE && errno != EINTR)
 		{
 			if (cp)
 				error(ERROR_system(0), "%s: read error", cp);

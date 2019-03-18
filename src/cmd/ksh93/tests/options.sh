@@ -536,4 +536,9 @@ do		if	{ date | true;} ; true
 done
 (( (SECONDS-t1) > .5 )) && err_exit 'pipefail should not wait for background processes'
 
+# process source files from profiles as profile files
+print '. ./dotfile' > envfile
+print $'alias print=:\nprint foobar' > dotfile
+[[ $(ENV=$PWD/envfile $SHELL -i -c : 2>/dev/null) == foobar ]] && err_exit 'files source from profile does not process aliases correctly'
+
 exit $((Errors<125?Errors:125))

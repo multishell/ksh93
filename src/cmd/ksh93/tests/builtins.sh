@@ -525,4 +525,10 @@ done
 [[ $($SHELL -c 'y=3; unset 123 y;print $?$y') == 1 ]] 2> /dev/null ||  err_exit 'y is not getting unset with unset 123 y'
 [[ $($SHELL -c 'trap foo TERM; (trap;(trap) )') == 'trap -- foo TERM' ]] || err_exit 'traps not getting reset when subshell is last process'
 
+n=$(printf "%b" 'a\0b\0c' | wc -c)
+(( n == 5 )) || err_exit '\0 not working with %b format with printf'
+
+t=$(ulimit -t)
+[[ $($SHELL -c 'ulimit -v 15000; ulimit -t') == "$t" ]] || err_exit 'ulimit -v changes ulimit -t'
+
 exit $((Errors))

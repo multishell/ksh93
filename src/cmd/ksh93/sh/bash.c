@@ -289,7 +289,7 @@ int     b_shopt(int argc,register char *argv[],void *extra)
 		sh_applyopts(shp,newflags);
 		shp->options = newflags;
 		if(is_option(&newflags,SH_XTRACE))
-			sh_trace(argv,1);
+			sh_trace(shp,argv,1);
 	}
 	else if(!(setflag&SET_NOARGS)) /* no -s,-u but args, ret=0 if opt&mask==mask */
 	{
@@ -308,9 +308,8 @@ int     b_shopt(int argc,register char *argv[],void *extra)
    mode < 0: shutdown
 */
 
-void bash_init(int mode)
+void bash_init(Shell_t *shp,int mode)
 {
-	Shell_t		*shp = &sh;
 	Sfio_t		*iop;
 	Namval_t	*np;
 	int		n=0,xtrace,verbose;

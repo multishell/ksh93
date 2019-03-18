@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2010 AT&T Intellectual Property          *
+*          Copyright (c) 1990-2010 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -15,8 +15,6 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
-*                  David Korn <dgk@research.att.com>                   *
-*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
@@ -24,18 +22,35 @@
  * Glenn Fowler
  * AT&T Research
  *
- * OBSOLETE: use errormsg()
+ * coshell procrun(3)
  */
 
-#include <error.h>
+#include "colib.h"
+
+#include <proc.h>
 
 int
-libevent(void* handle, void* discipline, int level, ...)
+coprocrun(const char* path, char** argv, int flags)
 {
-	va_list	ap;
+	register char*		s;
+	register char**		a;
+	register Sfio_t*	tmp;
+	int			n;
 
-	va_start(ap, level);
-	errorv((level & ERROR_LIBRARY) ? *((char**)handle) : (char*)0, level, ap);
-	va_end(ap);
-	return 0;
+	if (!(a = argv))
+		return procclose(procopen(path, a, NiL, NiL, PROC_FOREGROUND|PROC_GID|PROC_UID|flags));
+	if (!(tmp = sfstropen()))
+		return -1;
+	sfputr(tmp, path ? path : "sh", -1);
+	while (s = *++a)
+	{
+		sfputr(tmp, " '", -1);
+		coquote(tmp, s, 0);
+		sfputc(tmp, '\'');
+	}
+	if (!(s = costash(tmp)))
+		return -1;
+	n = cosystem(s);
+	sfstrclose(tmp);
+	return n;
 }

@@ -27,6 +27,7 @@
  */
 
 #include	"FEATURE/options"
+#include	"defs.h"
 #include	"shtable.h"
 /*
  *  These are the valid test operators
@@ -56,9 +57,9 @@
 #define TEST_END	8
 #define TEST_REP	20
 
-extern int test_unop(int, const char*);
+extern int test_unop(Shell_t*,int, const char*);
 extern int test_inode(const char*, const char*);
-extern int test_binop(int, const char*, const char*);
+extern int test_binop(Shell_t*,int, const char*, const char*);
 
 extern const char	sh_opttest[];
 extern const char	test_opchars[];

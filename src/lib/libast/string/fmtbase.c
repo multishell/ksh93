@@ -31,26 +31,34 @@
 
 #include <ast.h>
 
-#undef	fmtbasell
-
 char*
-fmtbasell(register intmax_t n, register int b, int p)
+fmtbase(intmax_t n, int b, int p)
 {
 	char*	buf;
 	int	z;
 
+	if (!p)
+	{
+		if (!n)
+			return "0";
+		if (!b)
+			return fmtint(n, 0);
+		if (b == 10)
+			return fmtint(n, 1);
+	}
 	buf = fmtbuf(z = 72);
-	if (!p && (n == 0 || b == 0))
-		sfsprintf(buf, z, "%I*d", sizeof(n), n);
-	else
-		sfsprintf(buf, z, p ? "%#..*I*u" : "%..*I*u", b, sizeof(n), n);
+	sfsprintf(buf, z, p ? "%#..*I*u" : "%..*I*u", b, sizeof(n), n);
 	return buf;
 }
 
-#undef	fmtbase
+#if __OBSOLETE__ < 20140101
+
+#undef	fmtbasell
 
 char*
-fmtbase(long n, int b, int p)
+fmtbasell(intmax_t n, int b, int p)
 {
-	return fmtbasell((intmax_t)n, b, p);
+	return fmtbase(n, b, p);
 }
+
+#endif

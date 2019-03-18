@@ -33,6 +33,7 @@
 #include "FEATURE/options"
 #include "FEATURE/vmalloc"
 #include "FEATURE/eaccess"
+#include "FEATURE/api"
 
 #if _opt_map_libc && !defined(_map_libc)
 #define _map_libc	1
@@ -536,6 +537,27 @@ main()
 #if _npt_strtoull && !_map_libc && !_std_strtoul
 	printf("#endif\n");
 #endif
+#endif
+
+	/*
+	 * finally some features/api mediation
+	 */
+
+#if defined(_API_ast_MAP) && _map_libc
+	{
+		register const char*	s;
+		register const char*	t;
+
+		static const char	map[] = _API_ast_MAP;
+
+		printf("\n");
+		t = map;
+		do
+		{
+			for (s = t; *t && *t != ' '; t++);
+			printf("#define %-.*s	_ast_%-.*s\n", t - s, s, t - s, s);
+		} while (*t++);
+	}
 #endif
 	printf("\n");
 	printf("#undef	extern\n");

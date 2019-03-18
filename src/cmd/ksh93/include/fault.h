@@ -105,22 +105,20 @@ struct checkpt
 #endif
 };
 
-#define sh_pushcontext(bp,n)	( (bp)->mode=(n) , (bp)->olist=0,  \
-				  (bp)->topfd=sh.topfd, (bp)->prev=sh.jmplist, \
+#define sh_pushcontext(shp,bp,n)( (bp)->mode=(n) , (bp)->olist=0,  \
+				  (bp)->topfd=shp->topfd, (bp)->prev=shp->jmplist, \
 				  (bp)->err = *ERROR_CONTEXT_BASE, \
-					sh.jmplist = (sigjmp_buf*)(&(bp)->buff) \
+					shp->jmplist = (sigjmp_buf*)(&(bp)->buff) \
 				)
-#define sh_popcontext(bp)	(sh.jmplist=(bp)->prev, errorpop(&((bp)->err)))
+#define sh_popcontext(shp,bp)	(shp->jmplist=(bp)->prev, errorpop(&((bp)->err)))
 
 extern void 	sh_fault(int);
 extern void 	sh_done(void*,int);
-extern void 	sh_chktrap(void);
 extern void 	sh_sigclear(int);
 extern void 	sh_sigdone(void);
 extern void	sh_siginit(void*);
 extern void 	sh_sigtrap(int);
 extern void 	sh_sigreset(int);
-extern void 	sh_timetraps(void);
 extern void 	*sh_timeradd(unsigned long,int ,void (*)(void*),void*);
 extern void	timerdel(void*);
 

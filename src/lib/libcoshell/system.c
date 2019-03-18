@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2010 AT&T Intellectual Property          *
+*          Copyright (c) 1990-2010 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -15,26 +15,43 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
-*                  David Korn <dgk@research.att.com>                   *
-*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
- * AT&T Bell Laboratories
+ * AT&T Research
  *
- * OBSOLETE: use errormsg()
+ * coshell system(3)
  */
 
-#include <error.h>
+#include "colib.h"
 
-void
-liberror(const char* lib, int level, ...)
+int
+cosystem(const char* cmd)
 {
-	va_list	ap;
+	Coshell_t*	co;
+	Cojob_t*	cj;
+	int		status;
 
-	va_start(ap, level);
-	errorv(lib, level, ap);
-	va_end(ap);
+	if (!cmd)
+		return !eaccess(pathshell(), X_OK);
+	if (!(co = coopen(NiL, CO_ANY, NiL)))
+		return -1;
+	if (cj = coexec(co, cmd, CO_SILENT, NiL, NiL, NiL))
+		cj = cowait(co, cj, -1);
+	if (!cj)
+		return -1;
+
+	/*
+	 * synthesize wait() status from shell status
+	 * lack of synthesis is the standard's proprietary sellout
+	 */
+
+	status = cj->status;
+	if (EXITED_TERM(status))
+		status &= ((1<<(EXIT_BITS-1))-1);
+	else
+		status = (status & ((1<<EXIT_BITS)-1)) << EXIT_BITS;
+	return status;
 }

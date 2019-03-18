@@ -465,16 +465,16 @@ got=$(
 
 ( $SHELL -c 'trap : DEBUG; x=( $foo); exit 0') 2> /dev/null  || err_exit 'trap DEBUG fails'
 
-true=$(whence -p true)
+bintrue=$(whence -p true)
 set -o pipefail
 float start=$SECONDS end 
 for ((i=0; i < 2; i++))
 do	print foo
 	sleep 1.5
-done | { read; $true; end=$SECONDS ;}
+done | { read; $bintrue; end=$SECONDS ;}
 (( (SECONDS-start) < 1 )) && err_exit "pipefail not waiting for pipe to finish"
 set +o pipefail
-(( (SECONDS-start) > 2 )) &&  err_exit "pipefail causing /bin/true to wait for other end of pipe"
+(( (SECONDS-start) > 2 )) &&  err_exit "pipefail causing $bintrue to wait for other end of pipe"
 
 
 { env A__z=C+SHLVL $SHELL -c : ;} 2> /dev/null || err_exit "SHLVL with wrong attribute fails"

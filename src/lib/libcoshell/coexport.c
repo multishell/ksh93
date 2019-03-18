@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1992-2010 AT&T Intellectual Property          *
+*          Copyright (c) 1990-2010 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -15,42 +15,66 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
-*                  David Korn <dgk@research.att.com>                   *
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
 /*
- * use tw to recurse on argc,argv with pfxc,pfxv prefix args
+ * Glenn Fowler
+ * at&t Research
+ *
+ * coshell export var set/unset
  */
 
-#include <cmd.h>
-#include <proc.h>
-#include <ftwalk.h>
+#include "colib.h"
+
+/*
+ * set or unset coshell export variable
+ */
 
 int
-cmdrecurse(int argc, char** argv, int pfxc, char** pfxv)
+coexport(Coshell_t* co, const char* name, const char* value)
 {
-	register char**	v;
-	register char**	a;
-	int		resolve = 'L';
-	char		arg[16];
+	Coexport_t*	ex;
+	char*		v;
 
-	if (!(a = (char**)stakalloc((argc + pfxc + 4) * sizeof(char**))))
-		error(ERROR_exit(1), "out of space");
-	v = a;
-	*v++ = "tw";
-	*v++ = arg;
-	*v++ = *(argv - opt_info.index);
-	while (*v = *pfxv++)
+	if (!co->export)
 	{
-		if (streq(*v, "-H"))
-			resolve = 'H';
-		else if (streq(*v, "-P"))
-			resolve = 'P';
-		v++;
+		if (!(co->exdisc = vmnewof(co->vm, 0, Dtdisc_t, 1, 0)))
+			return -1;
+		co->exdisc->link = offsetof(Coexport_t, link);
+		co->exdisc->key = offsetof(Coexport_t, name);
+		co->exdisc->size = 0;
+		if (!(co->export = dtnew(co->vm, co->exdisc, Dthash)))
+		{
+			vmfree(co->vm, co->exdisc);
+			return -1;
+		}
 	}
-	while (*v++ = *argv++);
-	sfsprintf(arg, sizeof(arg), "-%cc%d", resolve, pfxc + 2);
-	procopen(*a, a, NiL, NiL, PROC_OVERLAY);
-	return(-1);
+	if (!(ex = (Coexport_t*)dtmatch(co->export, name)))
+	{
+		if (!value)
+			return 0;
+		if (!(ex = vmnewof(co->vm, 0, Coexport_t, 1, strlen(name))))
+			return -1;
+		strcpy(ex->name, name);
+		dtinsert(co->export, ex);
+	}
+	if (ex->value)
+	{
+		vmfree(co->vm, ex->value);
+		ex->value = 0;
+	}
+	if (value)
+	{
+		if (!(v = vmstrdup(co->vm, value)))
+			return -1;
+		ex->value = v;
+	}
+	else
+	{
+		dtdelete(co->export, ex);
+		vmfree(co->vm, ex);
+	}
+	co->init.sync = 1;
+	return 0;
 }

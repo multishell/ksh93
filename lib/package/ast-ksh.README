@@ -93,7 +93,9 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-12-06-26  --- Release ksh93u+ ---
+12-06-28  --- Release ksh93u+ ---
+12-06-28  Fix ulimit -a to list (Kibytes) instead of (kbytes).
+12-06-27  Fix unitialized data reference for <CR> as first char in --vi mode.
 12-06-26  The formatting of printf "%q" for multibyte locales has changed to
 	  output using \u[xxx] format for valid wide characters.
 12-06-25  The size limit for read -N and read -n has been raised to INT_MAX.
@@ -3180,6 +3182,9 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+12-06-28 vmalloc/malloc.c: use sbrk() unless VMALLOC_OPTIONS=mmap or asoinit(0,0,0)!=0 (workaround until next malloc update)
+12-06-28 aso/aso.c: asoinit(0,0,0): 0: no specific init, 1: app initialized
+12-06-27 sfio/sfvprintf.c: allow { L* z* } aliases for I* -- posix will probably pick one
 12-06-26 regex/regnexec.c: fix uninitialized variable reference
 12-06-26 comp/setlocale.c: utf8_wctomb() now calls (the corrrect) wc2utf8()
 12-06-25 string/chresc.c: accept \u[U+<hex>] and \u{U+<hex>}

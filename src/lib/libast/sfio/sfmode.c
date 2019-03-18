@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -278,11 +278,15 @@ reg Sfio_t*	f;	/* stream to close */
 #if _PACKAGE_ast
 		sigcritical(SIG_REG_EXEC|SIG_REG_PROC);
 #endif
+		status = -1;
 		while ((pid = waitpid(p->pid,&status,0)) == -1 && errno == EINTR)
 			;
-		if(pid == -1)
-			status = -1;
 #if _PACKAGE_ast
+		status = status == -1 ?
+			 EXIT_QUIT :
+			 WIFSIGNALED(status) ?
+			 EXIT_TERM(WTERMSIG(status)) :
+			 EXIT_CODE(WEXITSTATUS(status));
 		sigcritical(0);
 #endif
 

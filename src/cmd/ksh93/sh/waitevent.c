@@ -31,8 +31,8 @@
 void	*sh_waitnotify(int(*newevent)(int,long,int))
 {
 	int (*old)(int,long,int);
-	old = sh.waitevent;
-	sh.waitevent = newevent;
+	old = shgd->waitevent;
+	shgd->waitevent = newevent;
 	return((void*)old);
 }
 

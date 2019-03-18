@@ -41,7 +41,7 @@ esac
 function check_restricted
 {
 	rm -f out
-	rksh -c "$@" 2> out > /dev/null
+	LC_MESSAGES=C rksh -c "$@" 2> out > /dev/null
 	grep restricted out  > /dev/null 2>&1
 }
 

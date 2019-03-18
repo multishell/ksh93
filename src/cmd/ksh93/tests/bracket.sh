@@ -320,4 +320,8 @@ x=abc
 unset x
 [[ ${x[@]+x} ]] && err_exit  '${x[@]+x} should be Empty'
 unset x y z foo bar
+
+{ x=$($SHELL -c '[[ (( $# -eq 0 )) ]] && print ok') 2> /dev/null;}
+[[ $x == ok ]] || err_exit '((...)) inside [[...]] not treated as nested ()'
+
 exit $((Errors))

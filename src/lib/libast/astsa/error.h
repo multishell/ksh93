@@ -61,7 +61,7 @@ extern Error_info_t	error_info;
 #define errorx(l,x,c,m)	(char*)m
 
 extern void	error(int, ...);
-extern void	errorf(void*, void*, int, ...);
+extern int	errorf(void*, void*, int, ...);
 extern void	errorv(const char*, int, va_list);
 
 #endif

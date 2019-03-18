@@ -266,7 +266,7 @@ sendlog(const char* msg)
 			p = (Namval_t*)&attempt[log.attempt++];
 			if (p->value && !(p->value & log.flags))
 				continue;
-			if (*(s = p->name) != '/' && !(s = pathpath(buf, s, "", PATH_REGULAR|PATH_READ)))
+			if (*(s = p->name) != '/' && !(s = pathpath(buf, s, "", PATH_REGULAR|PATH_READ, sizeof(buf))))
 				continue;
 			if ((log.fd = open(s, O_WRONLY|O_APPEND|O_NOCTTY)) < 0 && (log.fd = sockopen(s)) < 0)
 				continue;

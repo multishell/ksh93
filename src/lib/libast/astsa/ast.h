@@ -36,6 +36,12 @@
 #include <string.h>
 #include <limits.h>
 
+#define FMT_EXP_CHAR	0x020		/* expand single byte chars	*/
+#define FMT_EXP_LINE	0x040		/* expand \n and \r		*/
+#define FMT_EXP_WIDE	0x080		/* expand \u \U \x wide chars	*/
+#define FMT_EXP_NOCR	0x100		/* skip \r			*/
+#define FMT_EXP_NONL	0x200		/* skip \n			*/
+
 #define STR_MAXIMAL	01		/* maximal match		*/
 #define STR_LEFT	02		/* implicit left anchor		*/
 #define STR_RIGHT	04		/* implicit right anchor	*/
@@ -100,6 +106,7 @@ typedef struct
 #define NoP(x)			(&x,1)
 #endif
 
+#define conformance(a,b)	"ast"
 #define fmtident(s)		((char*)(s)+10)
 #define mbchar(s)		(*s++)
 #define setlocale(a,b)
@@ -142,6 +149,7 @@ extern int		astwinsize(int, int*, int*);
 extern char*		fmtbuf(size_t);
 extern char*		fmtip4(uint32_t, int);
 extern char*		sfgetr(Sfio_t*, int, int);
+extern char*		strcopy(char*, const char*);
 extern int		strmatch(const char*, const char*);
 extern int		strtoip4(const char*, char**, uint32_t*, unsigned char*);
 

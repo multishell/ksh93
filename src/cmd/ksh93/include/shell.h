@@ -50,7 +50,10 @@ Shopt_t;
 typedef struct Shell_s Shell_t;
 
 typedef void	(*Shinit_f)(Shell_t*, int);
-typedef int	(*Shwait_f)(int, long, int);
+#ifndef SH_wait_f_defined
+    typedef int	(*Shwait_f)(int, long, int);
+#   define SH_wait_f_defined
+#endif
 
 union Shnode_u;
 typedef union Shnode_u Shnode_t;

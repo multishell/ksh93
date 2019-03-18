@@ -928,7 +928,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 		if (mp->keep[level]++ && b > buf && *(b - 1) != ' ' && *q && *q != ',' && *q != '.' && *q != '\b')
 			*b++ = ' ';
 		if (ep->type == 'd' || ep->type == 'D')
-			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), fmttime("%?%l", (time_t)num));
+			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), fmttime("%?%QL", (time_t)num));
 		else if (ep->type == 'v')
 			b += sfsprintf(b, PATH_MAX - (b - buf), q + (*q == '\b'), fmtversion(num));
 		else

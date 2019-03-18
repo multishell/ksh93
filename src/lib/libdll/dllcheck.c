@@ -20,74 +20,39 @@
 #pragma prototyped
 /*
  * Glenn Fowler
- * at&t research
+ * AT&T Research
  */
 
 #include "dlllib.h"
 
-#if 0
-
 /*
- * dlopen() wrapper that properly initializes LIBPATH
- * with the path of the dll to be opened
- *
- * 2009-04-15 -- if ld.so re-checked the env this would work ...
+ * check if dll on path has plugin version >= ver
+ * 1 returned on success, 0 on failure
  */
 
-void*
-dllopen(const char* name, int mode)
+extern int
+dllcheck(void* dll, const char* path, unsigned long ver)
 {
-	void*		dll;
-	Dllinfo_t*	info;
-	char*		olibpath;
-	char*		path;
-	char*		oenv;
-	char*		nenv[2];
-	char*		dir;
-	char*		base;
-	int		len;
+	unsigned long		v;
+	Dll_plugin_version_f	pvf;
 
-	if (!environ)
-	{
-		nenv[0] = nenv[1] = 0;
-		environ = nenv;
-	}
-	info = dllinfo();
-	oenv = environ[0];
-	olibpath = getenv(info->env);
-	if (base = strrchr(name, '/'))
-	{
-		dir = (char*)name;
-		len = ++base - dir;
-	}
-	else
-	{
-		dir = "./";
-		len = 2;
-		base = (char*)name;
-	}
-	path = sfprints("%-.*s%s%c%s=%-.*s%s%s", len, dir, base, 0, info->env, len, dir, olibpath ? ":" : "", olibpath ? olibpath : "");
-	environ[0] = path + strlen(path) + 1;
 	state.error = 0;
-	dll = dlopen(path, mode);
-	if (environ == nenv)
-		environ = 0;
-	else
-		environ[0] = oenv;
-	return dll;
+	if (ver)
+	{
+		if (!(pvf = (Dll_plugin_version_f)dlllook(dll, "plugin_version")))
+		{
+			state.error = 1;
+			sfsprintf(state.errorbuf, sizeof(state.errorbuf), "plugin_version() not found");
+			errorf("dll", NiL, 1, "%s: %s", path, state.errorbuf);
+			return 0;
+		}
+		if ((v = (*pvf)()) < ver)
+		{
+			state.error = 1;
+			sfsprintf(state.errorbuf, sizeof(state.errorbuf), "plugin version %lu older than caller %lu", v, ver);
+			errorf("dll", NiL, 1, "%s: %s", path, state.errorbuf);
+			return 0;
+		}
+	}
+	return 1;
 }
-
-#else
-
-/*
- * dlopen() wrapper -- waiting for prestidigitaions
- */
-
-void*
-dllopen(const char* name, int mode)
-{
-	state.error = 0;
-	return dlopen(name, mode);
-}
-
-#endif

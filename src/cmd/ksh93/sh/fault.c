@@ -98,7 +98,7 @@ void	sh_fault(register int sig)
 		}
 		return;
 	}
-	if(shp->subshell && sig!=SIGINT && sig!=SIGQUIT && sig!=SIGWINCH && sig!=SIGCONT)
+	if(shp->subshell && trap && sig!=SIGINT && sig!=SIGQUIT && sig!=SIGWINCH && sig!=SIGCONT)
 	{
 		shp->exitval = SH_EXITSIG|sig;
 		sh_subfork();

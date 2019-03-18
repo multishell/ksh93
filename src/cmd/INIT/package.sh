@@ -64,7 +64,7 @@ all_types='*.*|sun4'		# all but sun4 match *.*
 case `(getopts '[-][123:xyz]' opt --xyz; echo 0$opt) 2>/dev/null` in
 0123)	USAGE=$'
 [-?
-@(#)$Id: package (AT&T Research) 2010-04-22 $
+@(#)$Id: package (AT&T Research) 2010-06-22 $
 ]'$USAGE_LICENSE$'
 [+NAME?package - source and binary package control]
 [+DESCRIPTION?The \bpackage\b command controls source and binary
@@ -1394,11 +1394,11 @@ onpath() # command
 	return 1
 }
 
-# true if no nmake or nmake too old
+# true if no nmake or nmake not from AT&T or nmake too old
 
 nonmake() # nmake
 {
-	_nonmake_version=`( $1 -n -f - 'print $(MAKEVERSION:@/.* //:/-//G)' . ) </dev/null 2>/dev/null || echo 19840919`
+	_nonmake_version=`( $1 -n -f - 'print $(MAKEVERSION:@/.*AT&T.* //:/-//G:@/.* .*/19960101/)' . ) </dev/null 2>/dev/null || echo 19840919`
 	if	test $_nonmake_version -lt 20001031
 	then	return 0
 	fi
@@ -2611,6 +2611,7 @@ cat $INITROOT/$i.sh
 	path=$PATH
 	PATH=$INSTALLROOT/bin:$PATH
 	checkcc
+	PATH=$path
 	case $cc in
 	?*)	if	test -f $INITROOT/hello.c
 		then	
@@ -2619,8 +2620,8 @@ cat $INITROOT/$i.sh
 			(
 				cd /tmp || exit 3
 				cp $INITROOT/hello.c pkg$$.c || exit 3
-				$CC -o pkg$$.exe pkg$$.c > pkg$$.e 2>&1 || {
-					if $CC -Dnew=old -o pkg$$.exe pkg$$.c > /dev/null 2>&1
+				PATH=$path $CC -o pkg$$.exe pkg$$.c > pkg$$.e 2>&1 || {
+					if PATH=$path $CC -Dnew=old -o pkg$$.exe pkg$$.c > /dev/null 2>&1
 					then	echo "$command: ${warn}$CC: must be a C compiler (not C++)" >&2
 					else	cat pkg$$.e
 						echo "$command: ${warn}$CC: failed to compile and link $INITROOT/hello.c -- is it a C compiler?" >&2
@@ -2641,7 +2642,6 @@ cat $INITROOT/$i.sh
 		fi
 		;;
 	esac
-	PATH=$path
 	EXECTYPE=$HOSTTYPE
 	EXECROOT=$INSTALLROOT
 	case $CROSS in

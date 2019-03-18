@@ -81,7 +81,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	pathgetlink.c pathsetlink.c pathbin.c pathshell.c pathcd.c \
 	pathprog.c \
 	fs3d.c ftwalk.c ftwflags.c fts.c \
-	astintercept.c getenv.c setenviron.c \
+	astintercept.c conformance.c getenv.c setenviron.c \
 	optget.c optjoin.c optesc.c optctx.c strsort.c struniq.c \
 	magic.c mime.c mimetype.c signal.c sigflag.c systrace.c \
 	error.c errorf.c errormsg.c errorx.c \

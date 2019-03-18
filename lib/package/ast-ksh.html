@@ -7,18 +7,19 @@
 <TITLE> ast-ksh package </TITLE>
 <META name="author" content="gsf+dgk+kpv">
 </HEAD>
-<BODY bgcolor=white link=slateblue vlink=teal >
+<BODY bgcolor='#ffffff' >
 <TABLE border=0 align=center width=96%>
 <TBODY><TR><TD valign=top align=left>
+<!--INDEX--><!--/INDEX-->
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ast-ksh package">ast-ksh package</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="ast-ksh package">ast-ksh package</A></H3></CENTER>
 The AT&amp;T Software Technology ast-ksh package from AT&amp;T Research
 contains ksh and support libraries. This is the minimal set of
 components needed to build ksh.
 Components in this package:
 <P>
 <P></P><TABLE border=0 frame=void rules=none width=100%><TBODY><TR><TD>
-<TABLE align=center border=0 bordercolor=white cellpadding=0 cellspacing=0 frame=void rules=none width=99% >
+<TABLE align=center border=0 bordercolor='#ffffff' cellpadding=0 cellspacing=0 frame=void rules=none width=99% >
 <TBODY>
 <TR><TD align=left>
 <A href="#ksh93">ksh93</A>&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libast&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libcmd&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libdll&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libsum</TD></TR>
@@ -29,7 +30,7 @@ A recent
 	<A href="#release change log">release change log</A>
 is also included.
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93">ksh93</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="ksh93">ksh93</A></H3></CENTER>
 KSH-93 is the most recent version of the KornShell Language
 described in
 "The KornShell Command and Programming Language,"
@@ -171,28 +172,20 @@ README file.  In addition, the "New KornShell Command and Programming
 Language," book is available from Prentice Hall.
 
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="release change log">release change log</A></H3></FONT></FONT></CENTER>
-<!--LABELS-->
-<B><FONT size=-1 face="verdana,arial,helvetica,geneva,sans-serif">
-<TABLE align=center cellpadding=2 border=4 bgcolor=lightgrey width=90%><TR>
-<TD align=center valign=center><A href="#ksh93 changes">ksh93</A></TD>
-<TD align=center valign=center><A href="#libast changes">libast</A></TD>
-<TD align=center valign=center><A href="#libcmd changes">libcmd</A></TD>
-<TD align=center valign=center><A href="#libsum changes">libsum</A></TD>
-<TD align=center valign=center><A href="#libdll changes">libdll</A></TD>
-</TR></TABLE>
-</FONT></B>
-<!--/LABELS-->
+<P><HR><CENTER><H3><A name="release change log">release change log</A></H3></CENTER>
 <PRE>
 
 All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="ksh93 changes">ksh93 changes</A></H3></CENTER>
 <PRE>
 
-10-05-24  --- Release ksh93t+  ---
+10-06-21  --- Release ksh93t+  ---
+10-06-21  The next release this directory will be renamed ksh93t and will
+	  install as ksh93t and ksh93u will become the default ksh.
+10-05-27  Rewrote the subshell code to avoid using pipes in many cases.
 10-05-24  Fixed a bug which cause an exception when both -s and -s were
 	  specified with typeset -i.
 10-05-21  Inputting of three dimensional indexed arrays with ( ( (...)...)...) 
@@ -2506,9 +2499,14 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="libast changes">libast changes</A></H3></CENTER>
 <PRE>
 
+10-06-01 comp/setlocale.c: handle C.UTF-8 test locale
+10-05-28 include/ast_version.h: add AST_PLUGIN_VERSION for dllplugin()
+10-05-28 include/shcmd.h: add SH_PLUGIN_VERSION for dllplugin()
+10-05-28 misc/conformance.c: add conformance(3)
+10-05-28 misc/optget.c: add &#0091;(id1|id2)...&#0093; conformance("id1|id2",0) conditionals
 10-05-25 include/sfhdr.h: adjust SF_NMAP according to _ptr_bits
 10-05-25 include/shcmd.h: add sh_builtin() macro for lib_init() table initialization
 10-05-21 misc/optget.c: --html \bfoo::bar(&#0091;&#0091;:digit:&#0093;&#0093;&#0091;&#0091;:upper:&#0093;&#0093;*) =&gt; foo-bar.html
@@ -4157,9 +4155,11 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="libcmd changes">libcmd changes</A></H3></CENTER>
 <PRE>
 
+10-06-14 rm.c: fix -rfu logic
+10-06-12 paste.c: repeat after me: do not modify argv&#0091;i&#0093;
 10-05-09 tail.c: fix -0f bug that inially listed the entire file
 10-05-06 basename.c: add { -a,--all -s,--suffux=suffix } from BSD
 10-04-12 cat.c: fix -v bug that dumped core and make consistent with cmp --print-chars
@@ -4469,7 +4469,7 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libsum changes">libsum changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="libsum changes">libsum changes</A></H3></CENTER>
 <PRE>
 
 09-09-28 sumlib.c: use simple (faster) method name match function
@@ -4490,9 +4490,12 @@ All recorded changes follow.
 
 </PRE>
 <P>
-<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libdll changes">libdll changes</A></H3></FONT></FONT></CENTER>
+<P><HR><CENTER><H3><A name="libdll changes">libdll changes</A></H3></CENTER>
 <PRE>
 
+10-05-28 dllplug.c: add dllplugin() with dllcheck() version check
+10-05-28 dllcheck.c: add dllcheck() to do plugin_version() checks
+10-05-28 dllerror.c: add dllerror(int retain) for dll*() and dl*() messages
 09-11-17 dllscan.c: handle name&#0091;-.&#0093;version in dlsopen()
 09-04-15 dllopen.c: add, use dllopen() internally to wrap dlopen()
 08-05-12 dllscan.c: LIBSUFFIX==.dylib =&gt; default plugin version match 0.0
@@ -4543,7 +4546,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>May 28, 2010</TD>
+<TD align=right>June 24, 2010</TD>
 </TR>
 </TABLE>
 <P>

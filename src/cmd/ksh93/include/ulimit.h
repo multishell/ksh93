@@ -85,7 +85,11 @@
 #	define RLIMIT_CORE	0
 #   endif /* !RLIMIT_CORE */
 #   ifndef RLIMIT_VMEM
-#	define RLIMIT_VMEM	0
+#	ifdef RLIMIT_AS
+#	    define RLIMIT_VMEM RLIMIT_AS
+#	else
+#	    define RLIMIT_VMEM	0
+#	endif
 #   endif /* !RLIMIT_VMEM */
 #   ifndef RLIMIT_NOFILE
 #	define RLIMIT_NOFILE	0

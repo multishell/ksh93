@@ -33,9 +33,9 @@
 
 #define NUMSIZE	(4+(ARRAY_MAX>999)+(ARRAY_MAX>9999)+(ARRAY_MAX>99999))
 #define is_associative(ap)	array_assoc((Namarr_t*)(ap))
-#define array_setbit(cp, n)	(cp[(n)/CHAR_BIT] |= 2<<(((n)&(CHAR_BIT-1))))
-#define array_clrbit(cp, n)	(cp[(n)/CHAR_BIT] &= ~(2<<(((n)&(CHAR_BIT-1)))))
-#define array_isbit(cp, n)	(cp[(n)/CHAR_BIT] & 2<<(((n)&(CHAR_BIT-1))))
+#define array_setbit(cp, n)	(cp[(n)/CHAR_BIT] |= 1<<(((n)&(CHAR_BIT-1))))
+#define array_clrbit(cp, n)	(cp[(n)/CHAR_BIT] &= ~(1<<(((n)&(CHAR_BIT-1)))))
+#define array_isbit(cp, n)	(cp[(n)/CHAR_BIT] & 1<<(((n)&(CHAR_BIT-1))))
 #define NV_CHILD		NV_EXPORT
 
 static char Empty[] = "";
@@ -238,7 +238,7 @@ static Namfun_t *array_clone(Namval_t *np, Namval_t *mp, int flags, Namfun_t *fp
 		else if(nv_isattr(np,NV_INTEGER))
 		{
 			Sfdouble_t d= nv_getnum(np);
-			nv_putval(mp,(char*)&d,NV_LONG|NV_DOUBLE|NV_INTEGER);
+			nv_putval(mp,(char*)&d,NV_LDOUBLE);
 		}
 		else
 			nv_putval(mp,nv_getval(np),NV_RDONLY);

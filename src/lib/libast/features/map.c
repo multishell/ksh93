@@ -222,6 +222,8 @@ main()
 	printf("#define regcomb		_ast_regcomb\n");
 	printf("#undef	regcomp\n");
 	printf("#define regcomp		_ast_regcomp\n");
+	printf("#undef	regdecomp\n");
+	printf("#define regdecomp	_ast_regdecomp\n");
 	printf("#undef	regdup\n");
 	printf("#define regdup		_ast_regdup\n");
 	printf("#undef	regerror\n");
@@ -450,6 +452,8 @@ main()
 #if _map_libc || _std_strtod
 	printf("#undef	strtod\n");
 	printf("#define strtod		_ast_strtod\n");
+#endif
+#if _map_libc || _std_strtold
 	printf("#undef	strtold\n");
 	printf("#define strtold		_ast_strtold\n");
 #endif
@@ -485,12 +489,12 @@ main()
 	printf("#if !_UWIN\n");
 	printf("#undef	extern\n");
 	printf("#endif\n");
-#if _npt_strtold || _map_libc || _std_strtod
-#if _npt_strtold && !_map_libc && !_std_strtod
+#if _npt_strtold || _map_libc || _std_strtold
+#if _npt_strtold && !_map_libc && !_std_strtold
 	printf("#ifndef _ISOC99_SOURCE\n");
 #endif
 	printf("extern _ast_fltmax_t	strtold(const char*, char**);\n");
-#if _npt_strtold && !_map_libc && !_std_strtod
+#if _npt_strtold && !_map_libc && !_std_strtold
 	printf("#endif\n");
 #endif
 #endif

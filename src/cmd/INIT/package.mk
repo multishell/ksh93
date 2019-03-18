@@ -1,7 +1,7 @@
 /*
  * source and binary package support
  *
- * @(#)package.mk (AT&T Research) 2006-02-01
+ * @(#)package.mk (AT&T Research) 2007-03-28
  *
  * usage:
  *
@@ -56,7 +56,10 @@
  *		:LICENSE: type.class pattern override
  *
  *	notice=1
- *		include the conspcuous empty notice file
+ *		include the conspicuous empty notice file
+ *
+ *	copyright=0
+ *		do not prepend source file copyright notice
  *
  *	strip=0
  *		don't strip non-lcl binary package members
@@ -81,8 +84,9 @@ url = http://www.research.att.com/sw/download
 
 base =
 category = utils
-closure =
 checksum = md5
+closure =
+copyright = 1
 delta =
 format = tgz
 incremental =
@@ -1010,7 +1014,7 @@ vendor.cyg = gnu
 							echo ";;;$tmp/$m.mam;$i/Mamfile"
 						fi
 					fi
-					$(MAKE) --noexec $(-) $(=) recurse list.package.$(type) package.license.class=$(license:Q)
+					$(MAKE) --noexec $(-) $(=) recurse list.package.$(type) package.license.class=$(license:Q) $(copyright:N=1:??LICENSE=?)
 				fi
 			done
 			set -- $(package.dir:P=G)
@@ -1313,11 +1317,15 @@ binary : .binary.init .binary.gen .binary.$$(style)
 			$(op:N=delta:?--format=gzip??) \
 			-s",^$tmp/,$(INSTALLOFFSET)/," \
 			$(PACKAGEROOT:C%.*%-s",^&/,,"%)
+		echo $(binary) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		$(SUM) -x $(checksum) < $(binary) > $(binary:D:B:S=.$(checksum))
+		echo $(binary:D:B:S=.$(checksum)) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		echo local > $(binary:D:B=$(name):S=.$(CC.HOSTTYPE).tim)
 		if	[[ '$(incremental)' == 1 && '$(old.binary)' ]]
 		then	$(PAX) -rf $(binary) -wvf $(old.new.binary) -z $(old.binary)
+			echo $(old.new.binary) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 			$(SUM) -x $(checksum) < $(old.new.binary) > $(old.new.binary:D:B:S=.$(checksum))
+			echo $(old.new.binary:D:B:S=.$(checksum)) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		fi
 		rm -rf $tmp
 	else	if	[[ '$(binary.$(name))' ]]
@@ -1342,7 +1350,9 @@ binary : .binary.init .binary.gen .binary.$$(style)
 			*.gz)	gzip < $exe > $(binary) ;;
 			*)	cp $exe $(binary) ;;
 			esac
+			echo $(binary) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 			$(SUM) -x $(checksum) < $(binary) > $(binary:D:B:S=.$(checksum))
+			echo $(binary:D:B:S=.$(checksum)) >> $(binary:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 			echo local > $(binary:D:B=$(name):S=.$(CC.HOSTTYPE).tim)
 		fi
 	fi
@@ -1497,11 +1507,15 @@ runtime : .runtime.init .runtime.gen .runtime.$$(style)
 			$(op:N=delta:?--format=gzip??) \
 			-s",^$tmp/,$(INSTALLOFFSET)/," \
 			$(PACKAGEROOT:C%.*%-s",^&/,,"%)
+		echo $(runtime) >> $(runtime:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		$(SUM) -x $(checksum) < $(runtime) > $(runtime:D:B:S=.$(checksum))
+		echo $(runtime:D:B:S=.$(checksum)) >> $(runtime:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		echo local > $(runtime:D:B=$(name)-run:S=.$(CC.HOSTTYPE).tim)
 		if	[[ '$(incremental)' == 1 && '$(old.runtime)' ]]
 		then	$(PAX) -rf $(runtime) -wvf $(old.new.runtime) -z $(old.runtime)
+			echo $(old.new.runtime) >> $(runtime:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 			$(SUM) -x $(checksum) < $(old.new.runtime) > $(old.new.runtime:D:B:S=.$(checksum))
+			echo $(old.new.runtime:D:B:S=.$(checksum)) >> $(runtime:D:B=PACKAGE:S=.$(CC.HOSTTYPE).lst)
 		fi
 		rm -rf $tmp
 	fi

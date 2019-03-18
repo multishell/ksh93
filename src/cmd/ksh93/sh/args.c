@@ -638,7 +638,6 @@ void sh_printopts(Shopt_t oflags,register int mode, Shopt_t *mask)
 		else if (value&(SH_BASHEXTRA|SH_BASHOPT))
 			continue;
 		on = !!is_option(&oflags,value);
-		value &= 0xff;
 		name = tp->sh_name;
 		if(name[0] == 'n' && name[1] == 'o' && name[2] != 't')
 		{
@@ -662,7 +661,7 @@ void sh_printopts(Shopt_t oflags,register int mode, Shopt_t *mask)
 					on?'-':'+',
 					name);
 		}
-		else if(value!=SH_INTERACTIVE && value!=SH_RESTRICTED && value!=SH_PFSH && is_option(&oflags,value))
+		else if(!(value&SH_COMMANDLINE) && is_option(&oflags,value&0xff))
 			sfprintf(sfstdout," %s%s%s",(mode&PRINT_SHOPT)?"":"--",on?"":"no",name);
 	}
 	if(!(mode&(PRINT_VERBOSE|PRINT_ALL)))
@@ -757,7 +756,7 @@ char **sh_argbuild(int *nargs, const struct comnod *comptr,int flag)
 #if _pipe_socketpair && !_socketpair_devfd
 #   define sh_pipe	arg_pipe
 /*
- * create a real pipe (not a socked) and print message on failure
+ * create a real pipe (not a socket) and print message on failure
  */
 static int	arg_pipe(register int pv[])
 {

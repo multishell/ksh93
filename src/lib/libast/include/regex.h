@@ -127,7 +127,7 @@ struct regex_s; typedef struct regex_s regex_t;
 struct regdisc_s; typedef struct regdisc_s regdisc_t;
 
 typedef int (*regclass_t)(int);
-typedef _ast_int4_t regflags_t;
+typedef int32_t regflags_t;
 typedef int regoff_t;
 typedef int (*regerror_t)(const regex_t*, regdisc_t*, int, ...);
 typedef void* (*regcomp_t)(const regex_t*, const char*, size_t, regdisc_t*);
@@ -182,7 +182,7 @@ struct regex_s
 	regsub_t*	re_sub;		/* regsubcomp() data		*/
 };
 
-#define reginit(disc)	(memset(disc,0,sizeof(*disc)),disc->re_version=REG_VERSION)
+#define reginit(disc)	(memset(disc,0,sizeof(*(disc))),(disc)->re_version=REG_VERSION)
 
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		__EXPORT__
@@ -195,9 +195,14 @@ extern void	regfree(regex_t*);
 
 /* nonstandard hooks */
 
+#define _REG_cache	1	/* have regcache()			*/
+#define _REG_class	1	/* have regclass()			*/
 #define _REG_collate	1	/* have regcollate(), regclass()	*/
 #define _REG_comb	1	/* have regcomb()			*/
+#define _REG_decomp	1	/* have regdecomp()			*/
+#define _REG_dup	1	/* have regdup()			*/
 #define _REG_fatal	1	/* have regfatal(), regfatalpat()	*/
+#define _REG_ncomp	1	/* have regncomp()			*/
 #define _REG_nexec	1	/* have regnexec()			*/
 #define _REG_rexec	1	/* have regrexec(), regrecord()		*/
 #define _REG_stat	1	/* have regstat()			*/

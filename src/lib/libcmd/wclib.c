@@ -30,12 +30,17 @@
 #include <wc.h>
 #include <ctype.h>
 
-#if _hdr_wchar
+#if _hdr_wchar && _hdr_wctype
+
 #include <wchar.h>
-#endif
+#include <wctype.h>
+
+#else
 
 #ifndef iswspace
 #define iswspace(x)	isspace(x)
+#endif
+
 #endif
 
 #define endline(c)	(((signed char)-1)<0?(c)<0:(c)==((char)-1))

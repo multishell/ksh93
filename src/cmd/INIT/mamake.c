@@ -25,7 +25,7 @@
  * coded for portability
  */
 
-static char id[] = "\n@(#)$Id: mamake (AT&T Research) 2005-03-19 $\0\n";
+static char id[] = "\n@(#)$Id: mamake (AT&T Research) 2007-02-26 $\0\n";
 
 #if _PACKAGE_ast
 
@@ -33,7 +33,7 @@ static char id[] = "\n@(#)$Id: mamake (AT&T Research) 2005-03-19 $\0\n";
 #include <error.h>
 
 static const char usage[] =
-"[-?\n@(#)$Id: mamake (AT&T Research) 2005-03-19 $\n]"
+"[-?\n@(#)$Id: mamake (AT&T Research) 2007-02-26 $\n]"
 USAGE_LICENSE
 "[+NAME?mamake - make abstract machine make]"
 "[+DESCRIPTION?\bmamake\b reads \amake abstract machine\a target and"
@@ -323,7 +323,7 @@ report(int level, char* text, char* item, unsigned long stamp)
 			fprintf(stderr, "%s: ", item);
 		fprintf(stderr, "%s", text);
 		if (stamp && state.debug <= -2)
-			fprintf(stderr, " %10u", stamp);
+			fprintf(stderr, " %10lu", stamp);
 		fprintf(stderr, "\n");
 		if (level > 2)
 			exit(level - 2);
@@ -566,7 +566,7 @@ search(register Dict_t* dict, char* name, void* value)
  */
 
 static int
-apply(Dict_t* dict, Dict_item_t* item, int (*func)(Dict_item_t*, void* handle), void* handle)
+apply(Dict_t* dict, Dict_item_t* item, int (*func)(Dict_item_t*, void*), void* handle)
 {
 	register Dict_item_t*	right;
 
@@ -586,7 +586,7 @@ apply(Dict_t* dict, Dict_item_t* item, int (*func)(Dict_item_t*, void* handle), 
  */
 
 static int
-walk(Dict_t* dict, int (*func)(Dict_item_t*, void* handle), void* handle)
+walk(Dict_t* dict, int (*func)(Dict_item_t*, void*), void* handle)
 {
 	return dict->root ? apply(dict, dict->root, func, handle) : 0;
 }
@@ -773,6 +773,7 @@ substitute(Buf_t* buf, register char* s)
 	register char*	q;
 	register int	c;
 	register int	n;
+	int		a = 0;
 
 	while (c = *s++)
 	{
@@ -793,6 +794,8 @@ substitute(Buf_t* buf, register char* s)
 				*s = c;
 				continue;
 			}
+			if (t[0] == 'A' && t[1] == 'R' && t[2] == 0)
+				a = 1;
 			*s = c;
 			if (c && c != '}')
 			{
@@ -854,7 +857,22 @@ substitute(Buf_t* buf, register char* s)
 			case '=':
 			case '}':
 				if (v)
-					substitute(buf, v);
+				{
+					if (a && t[0] == 'm' && t[1] == 'a' && t[2] == 'm' && t[3] == '_' && t[4] == 'l' && t[5] == 'i' && t[6] == 'b')
+					{
+						for (t = v; *t == ' '; t++);
+						for (; *t && *t != ' '; t++);
+						if (*t)
+							*t = 0;
+						else
+							t = 0;
+						substitute(buf, v);
+						if (t)
+							*t = ' ';
+					}
+					else
+						substitute(buf, v);
+				}
 				break;
 			}
 			if (*s)
@@ -1389,12 +1407,6 @@ attributes(register Rule_t* r, register char* s)
 		}
 	}
 }
-
-typedef struct Req_s
-{
-	int		hit;
-	char*		req;
-} Req_t;
 
 /*
  * define ${mam_libX} for library reference lib

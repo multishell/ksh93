@@ -46,6 +46,7 @@ typedef struct Nambfun Nambfun_t;
 typedef struct Namarray Namarr_t;
 typedef struct Nambltin Nambltin_t;
 typedef struct Namtype Namtype_t;
+
 /*
  * This defines the template for nodes that have their own assignment
  * and or lookup functions
@@ -188,6 +189,16 @@ struct Namval
 
 #define NV_PUBLIC	(~(NV_NOSCOPE|NV_ASSIGN|NV_IDENT|NV_VARNAME|NV_NOADD))
 
+/* numeric types */
+#define NV_INT16	(NV_SHORT|NV_INTEGER)
+#define NV_UINT16	(NV_UNSIGN|NV_SHORT|NV_INTEGER)
+#define NV_INT32	(NV_INTEGER)
+#define NV_UNT32	(NV_UNSIGN|NV_INTEGER)
+#define NV_INT64	(NV_LONG|NV_INTEGER)
+#define NV_UINT64	(NV_UNSIGN|NV_LONG|NV_INTEGER)
+#define NV_FLOAT	(NV_SHORT|NV_DOUBLE|NV_INTEGER)
+#define NV_LDOUBLE	(NV_LONG|NV_DOUBLE|NV_INTEGER)
+
 /* name-value pair macros */
 #define nv_isattr(np,f)		((np)->nvflag & (f))
 #define nv_onattr(n,f)		((n)->nvflag |= (f))
@@ -243,8 +254,8 @@ extern void 		nv_close(Namval_t*);
 extern void		*nv_context(Namval_t*);
 extern Namval_t		*nv_create(const char*, Dt_t*, int,Namfun_t*);
 extern Dt_t		*nv_dict(Namval_t*);
-extern Sfdouble_t 	nv_getn(Namval_t*, Namfun_t*);
-extern Sfdouble_t 	nv_getnum(Namval_t*);
+extern Sfdouble_t	nv_getn(Namval_t*, Namfun_t*);
+extern Sfdouble_t	nv_getnum(Namval_t*);
 extern char 		*nv_getv(Namval_t*, Namfun_t*);
 extern char 		*nv_getval(Namval_t*);
 extern Namfun_t		*nv_hasdisc(Namval_t*, const Namdisc_t*);
@@ -257,7 +268,7 @@ extern void 		nv_putv(Namval_t*,const char*,int,Namfun_t*);
 extern int		nv_scan(Dt_t*,void(*)(Namval_t*,void*),void*,int,int);
 extern Namval_t		*nv_scoped(Namval_t*);
 extern char 		*nv_setdisc(Namval_t*,const char*,Namval_t*,Namfun_t*);
-extern void		nv_setref(Namval_t*);
+extern void		nv_setref(Namval_t*, Dt_t*,int);
 extern int		nv_settype(Namval_t*, Namval_t*, int);
 extern void 		nv_setvec(Namval_t*,int,int,char*[]);
 extern void		nv_setvtree(Namval_t*);
@@ -267,6 +278,7 @@ extern void 		nv_unset(Namval_t*);
 extern Namval_t		*nv_search(const char *, Dt_t*, int);
 extern void		nv_unscope(void);
 extern char		*nv_name(Namval_t*);
+extern Namval_t		*nv_type(Namval_t*);
 extern const Namdisc_t	*nv_discfun(int);
 
 #ifdef _DLL

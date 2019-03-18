@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
+*           Copyright (c) 1996-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -15,45 +15,50 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
-*                  David Korn <dgk@research.att.com>                   *
-*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
+#pragma prototyped
+
 /*
- * types by byte capacity
+ * Glenn Fowler
+ * AT&T Research
+ *
+ * checksum library interface
  */
 
-#ifndef _INT_H
-#define _INT_H
+#ifndef _SUM_H
+#define _SUM_H
 
-#include <ast_common.h>
+#include <ast.h>
 
-#ifdef _ast_int1_t
-#define int_1		_ast_int1_t
-#endif
-#ifdef _ast_int2_t
-#define int_2		_ast_int2_t
-#endif
-#ifdef _ast_int4_t
-#define int_4		_ast_int4_t
-#endif
-#ifdef _ast_int8_t
-#define int_8		_ast_int8_t
-#endif
+#define SUM_SIZE	(1<<0)		/* print size too		*/
+#define SUM_SCALE	(1<<1)		/* traditional size scale	*/
+#define SUM_TOTAL	(1<<2)		/* print totals since sumopen	*/
 
-#define int_max		_ast_intmax_t
-#define int_swap	_ast_intswap
+#define _SUM_PUBLIC_	const char*	name;
 
-#ifdef _ast_flt4_t
-#define flt_4		_ast_flt4_t
-#endif
-#ifdef _ast_flt8_t
-#define flt_8		_ast_flt8_t
-#endif
-#ifdef _ast_flt16_t
-#define flt_16		_ast_flt16_t
-#endif
+typedef struct Sumdata_s
+{
+	uint32_t	size;
+	uint32_t	num;
+	void*		buf;
+} Sumdata_t;
 
-#define flt_max		_ast_fltmax_t
+typedef struct Sum_s
+{
+	_SUM_PUBLIC_
+#ifdef	_SUM_PRIVATE_
+	_SUM_PRIVATE_
+#endif
+} Sum_t;
+
+extern Sum_t*	sumopen(const char*);
+extern int	suminit(Sum_t*);
+extern int	sumblock(Sum_t*, const void*, size_t);
+extern int	sumdone(Sum_t*);
+extern int	sumdata(Sum_t*, Sumdata_t*);
+extern int	sumprint(Sum_t*, Sfio_t*, int);
+extern int	sumusage(Sfio_t*);
+extern int	sumclose(Sum_t*);
 
 #endif

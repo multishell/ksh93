@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
 <HEAD>
-<META name="generator" content="mm2html (AT&T Labs Research) 2006-10-31">
+<META name="generator" content="mm2html (AT&T Labs Research) 2007-02-09">
 <META name="description" content="INIT package">
 <META name="keywords" content="software, package">
 <TITLE> INIT package </TITLE>
@@ -48,6 +48,15 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="INIT changes">INIT changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+07-03-28 package.sh: fix binary tgz architecture type duplication
+07-03-28 package.mk: add binary write PACKAGE.$HOSTTYPE.lst
+07-03-28 iffe.sh: add -F header to mac test
+07-03-23 make.probe: handle file(1) that returns 'archive' for .so
+07-03-22 mamprobe.sh: fix STDED probe for implementations that ignore EOF
+07-03-11 package.sh: add nocopyright and tst =&gt; nocopyright
+07-03-11 package.mk: add copyright=0
+07-03-08 C+probe: restore IFS after probe.ini
+07-02-26 mamake.c: expand first of ${mam_lib*} for ${AR}
 07-01-05 package.sh: fix "admin write binary" logic
 07-01-01 iffe.sh: add "cmd" --verbose trace
 07-01-01 iffe.sh: sort =&gt; LC_ALL=C sort
@@ -807,7 +816,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>January 12, 2007</TD>
+<TD align=right>March 29, 2007</TD>
 </TR>
 </TABLE>
 <P>

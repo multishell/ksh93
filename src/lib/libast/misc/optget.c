@@ -45,30 +45,32 @@
 #define OPT_MARGIN	10		/* default help text margin	*/
 #define OPT_USAGE	7		/* usage continuation indent	*/
 
-#define OPT_flag	0001		/* flag ( 0 or 1 )		*/
-#define OPT_hidden	0002		/* remaining are hidden		*/
-#define OPT_ignorecase	0004		/* arg match ignores case	*/
-#define OPT_invert	0010		/* flag inverts long sense	*/
-#define OPT_listof	0020		/* arg is ' ' or ',' list	*/
-#define OPT_number	0040		/* arg is strtonll() number	*/
-#define OPT_oneof	0100		/* arg may be set once		*/
-#define OPT_optional	0200		/* arg is optional		*/
-#define OPT_string	0400		/* arg is string		*/
+#define OPT_flag	0x001		/* flag ( 0 or 1 )		*/
+#define OPT_hidden	0x002		/* remaining are hidden		*/
+#define OPT_ignorecase	0x004		/* arg match ignores case	*/
+#define OPT_invert	0x008		/* flag inverts long sense	*/
+#define OPT_listof	0x010		/* arg is ' ' or ',' list	*/
+#define OPT_minus	0x021		/* '-' is an option flag	*/
+#define OPT_number	0x040		/* arg is strtonll() number	*/
+#define OPT_oneof	0x080		/* arg may be set once		*/
+#define OPT_optional	0x100		/* arg is optional		*/
+#define OPT_string	0x200		/* arg is string		*/
 
 #define OPT_preformat	0001		/* output preformat string	*/
 
 #define OPT_TYPE	(OPT_flag|OPT_number|OPT_string)
 
-#define STYLE_short	0		/* [default] short usage	*/
-#define STYLE_long	1		/* long usage			*/
-#define STYLE_match	2		/* long description of matches	*/
-#define STYLE_options	3		/* short and long descriptions	*/
-#define STYLE_man	4		/* pretty details		*/
-#define STYLE_html	5		/* html details			*/
-#define STYLE_nroff	6		/* nroff details		*/
-#define STYLE_api	7		/* program details		*/
-#define STYLE_keys	8		/* translation key strings	*/
-#define STYLE_usage	9		/* escaped usage string		*/
+#define STYLE_posix	0		/* posix getopt usage		*/
+#define STYLE_short	1		/* [default] short usage	*/
+#define STYLE_long	2		/* long usage			*/
+#define STYLE_match	3		/* long description of matches	*/
+#define STYLE_options	4		/* short and long descriptions	*/
+#define STYLE_man	5		/* pretty details		*/
+#define STYLE_html	6		/* html details			*/
+#define STYLE_nroff	7		/* nroff details		*/
+#define STYLE_api	8		/* program details		*/
+#define STYLE_keys	9		/* translation key strings	*/
+#define STYLE_usage	10		/* escaped usage string		*/
 
 #define FONT_BOLD	1
 #define FONT_ITALIC	2
@@ -222,6 +224,8 @@ static const Help_t	styles[] =
 	Z("List detailed info in nroff."),
 	C("options"),	"?options",	STYLE_options,
 	Z("List short and long option details."),
+	C("posix"),	"?posix",	STYLE_posix,
+	Z("List posix getopt usage."),
 	C("short"),	"?short",	STYLE_short,
 	Z("List short option usage."),
 	C("usage"),	"?usage",	STYLE_usage,
@@ -320,9 +324,27 @@ static unsigned char	map[UCHAR_MAX];
 
 static Optstate_t	state;
 
-Opt_t			opt_info = { 0,0,0,0,0,0,0,{0},{0},0,0,0,{0},{0},&state };
+/*
+ * 2007-03-19 move opt_info from _opt_info_ to (*_opt_data_)
+ *	      to allow future Opt_t growth
+ *            by 2009 _opt_info_ can be static
+ */
+
+#if _BLD_ast && defined(__EXPORT__)
+#define extern		extern __EXPORT__
+#endif
+
+extern Opt_t	_opt_info_;
+
+Opt_t		_opt_info_ = { 0,0,0,0,0,0,0,{0},{0},0,0,0,{0},{0},&state };
+
+#undef	extern
 
 __EXTERN__(Opt_t, _opt_info_);
+
+__EXTERN__(Opt_t*, _opt_infop_);
+
+Opt_t*		_opt_infop_ = &_opt_info_;
 
 #if _BLD_DEBUG
 
@@ -542,8 +564,8 @@ match(char* s, char* t, int version, const char* catalog)
 				w = skip(t, ':', '?', 0, 1, 0, 0, version);
 				w = sfprints("%-.*s", w - t, t);
 				x = T(error_info.id, catalog, w);
-				if (x != w)
-					break;
+				if (x == w)
+					continue;
 			}
 			x = T(NiL, ID, t);
 			if (x == t)
@@ -809,8 +831,6 @@ init(register char* s, Optpass_t* p)
 		else
 			p->catalog = ID;
 	}
-	if (!error_info.catalog)
-		error_info.catalog = p->catalog;
 	s = p->oopts;
 	if (*s == ':')
 		s++;
@@ -819,6 +839,17 @@ init(register char* s, Optpass_t* p)
 		s++;
 		p->flags |= OPT_plus;
 	}
+	if (*s != '[')
+		for (t = s, a = 0; *t; t++)
+			if (!a && *t == '-')
+			{
+				p->flags |= OPT_minus;
+				break;
+			}
+			else if (*t == '[')
+				a++;
+			else if (*t == ']')
+				a--;
 	if (!p->version && (t = strchr(s, '(')) && strchr(t, ')') && (opt_info.state->cp || (opt_info.state->cp = sfstropen())))
 	{
 		/*
@@ -880,6 +911,7 @@ font(int f, int style, int set)
 		return fonts[f].nroff[set];
 	case STYLE_short:
 	case STYLE_long:
+	case STYLE_posix:
 	case STYLE_api:
 		break;
 	default:
@@ -2098,6 +2130,8 @@ opthelp(const char* oopts, const char* what)
 		for (q = o; q < e; q++)
 			if (!(q->flags & OPT_ignore) && !streq(q->catalog, o->catalog))
 				o = q;
+		/*FALLTHROUGH*/
+	case STYLE_posix:
 		sfputc(mp, '\f');
 		break;
 	default:
@@ -2463,7 +2497,7 @@ opthelp(const char* oopts, const char* what)
 				sp_body = 0;
 			}
 		}
-		else if (style <= STYLE_short && prefix < 2)
+		else if (style == STYLE_short && prefix < 2)
 			style = STYLE_long;
 		if (*p == ':')
 			p++;
@@ -2638,7 +2672,7 @@ opthelp(const char* oopts, const char* what)
 							f = *s;
 					}
 					re = p;
-					if (style == STYLE_short)
+					if (style <= STYLE_short)
 					{
 						if (!z && !f)
 							z = -1;
@@ -2720,6 +2754,12 @@ opthelp(const char* oopts, const char* what)
 				p++;
 				continue;
 			}
+			else if (*p == '\\' && style==STYLE_posix)
+			{
+				if (*++p)
+					p++;
+				continue;
+			}
 			else
 			{
 				f = *p++;
@@ -2731,7 +2771,7 @@ opthelp(const char* oopts, const char* what)
 			{
 				if (style == STYLE_long || prefix < 2 || (q->flags & OPT_long))
 					f = 0;
-				else if (style == STYLE_short)
+				else if (style <= STYLE_short)
 					w = 0;
 				if (!f && !w)
 					z = -1;
@@ -2786,9 +2826,9 @@ opthelp(const char* oopts, const char* what)
 				a |= OPT_flag;
 			if (!z)
 			{
-				if (style == STYLE_short && !y && !mutex)
+				if (style <= STYLE_short && !y && !mutex || style == STYLE_posix)
 				{
-					if (!sfstrtell(sp))
+					if (style != STYLE_posix && !sfstrtell(sp))
 					{
 						sfputc(sp, '[');
 						if (sp == sp_plus)
@@ -2801,6 +2841,8 @@ opthelp(const char* oopts, const char* what)
 						for (c = 0; c < sl; c++)
 							if (s[c] != '|')
 								sfputc(sp, s[c]);
+					if (style == STYLE_posix && y)
+						sfputc(sp, ':');
 				}
 				else
 				{
@@ -2906,7 +2948,14 @@ opthelp(const char* oopts, const char* what)
 							sfputc(sp_body, '-');
 							sfputr(sp_body, font(FONT_BOLD, style, 1), -1);
 							if (!sl)
+							{
 								sfputc(sp_body, f);
+								if (f == '-' && y)
+								{
+									y = 0;
+									sfputr(sp_body, C("long-option[=value]"), -1);
+								}
+							}
 							else
 								sfwrite(sp_body, s, sl);
 							sfputr(sp_body, font(FONT_BOLD, style, 0), -1);
@@ -3050,7 +3099,7 @@ opthelp(const char* oopts, const char* what)
 		return opt_info.msg = p;
 	}
 	sp = sp_text;
-	if (sfstrtell(sp))
+	if (sfstrtell(sp) && style != STYLE_posix)
 		sfputc(sp, ']');
 	if (style == STYLE_nroff)
 	{
@@ -3189,7 +3238,7 @@ opthelp(const char* oopts, const char* what)
 		sfclose(sp_body);
 		sp_body = 0;
 	}
-	if (x)
+	if (x && style != STYLE_posix)
 		args(sp, x, xl, flags, style, sp_info, version, catalog);
 	if (sp_info)
 	{
@@ -3527,10 +3576,10 @@ optusage(const char* opts)
  * 0x.* or <base>#* for alternate bases
  */
 
-static _ast_intmax_t     
+static intmax_t     
 optnumber(const char* s, char** t, int* e)
 {
-	_ast_intmax_t	n;
+	intmax_t	n;
 	int		oerrno;
 
 	while (*s == '0' && isdigit(*(s + 1)))
@@ -3707,7 +3756,21 @@ optget(register char** argv, const char* oopts)
 	Optcache_t*	pcache;
 	Optpass_t*	pass;
 
-	opt_info.state = &state; /* not initialized in some dll's! */
+#if !_YOU_FIGURED_OUT_HOW_TO_GET_ALL_DLLS_TO_DO_THIS_
+	/*
+	 * these are not initialized by all dlls!
+	 */
+
+	extern Error_info_t	_error_info_;
+	extern Opt_t		_opt_info_;
+
+	if (!_error_infop_)
+		_error_infop_ = &_error_info_;
+	if (!_opt_infop_)
+		_opt_infop_ = &_opt_info_;
+	if (!opt_info.state)
+		opt_info.state = &state;
+#endif
 	if (!oopts)
 		return 0;
 	opt_info.state->pindex = opt_info.index;
@@ -3768,6 +3831,8 @@ optget(register char** argv, const char* oopts)
 	version = pass->version;
 	if (!(xp = opt_info.state->xp) || (catalog = pass->catalog) && !X(catalog))
 		catalog = 0;
+	else /* if (!error_info.catalog) */
+		error_info.catalog = catalog;
  again:
 	psp = 0;
 
@@ -3837,12 +3902,23 @@ optget(register char** argv, const char* oopts)
 					opt_info.index++;
 					return 0;
 				}
+				if (version || *s == '?' || !(pass->flags & OPT_minus))
+				{
+					/*
+					 * long with double prefix
+					 */
 
-				/*
-				 * long with double prefix
-				 */
+					n = 2;
+				}
+				else
+				{
+					/*
+					 * short option char '-'
+					 */
 
-				n = 2;
+					s--;
+					n = 1;
+				}
 			}
 			else if (prefix == 1 && *s != '?')
 			{
@@ -5086,7 +5162,7 @@ optstr(const char* str, const char* opts)
 		if ((c == '?' || c == ':') && (opt_info.arg[0] == '-' && opt_info.arg[1] == '-'))
 			opt_info.arg += 2;
 		s = opt_info.name;
-		if (*s++ == '-' && *s++ == '-')
+		if (*s++ == '-' && *s++ == '-' && *s)
 		{
 			e = opt_info.name;
 			while (*e++ = *s++);

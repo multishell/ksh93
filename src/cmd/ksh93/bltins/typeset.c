@@ -45,6 +45,7 @@
 struct tdata
 {
 	Shell_t 	*sh;
+	Namval_t	*tp;
 	Sfio_t  	*outfile;
 	char    	*prefix;
 	int     	aflag;
@@ -52,7 +53,6 @@ struct tdata
 	int     	scanmask;
 	Dt_t 		*scanroot;
 	char    	**argnam;
-	Namval_t	*tp;
 };
 
 
@@ -339,9 +339,11 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 {
 	register char *name;
 	char *last = 0;
-	int nvflags=(flag&(NV_ARRAY|NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT|NV_ASSIGN));
+	int nvflags=(flag&(NV_ARRAY|NV_NOARRAY|NV_VARNAME|NV_IDENT|NV_ASSIGN));
 	int r=0, ref=0;
 	Shell_t *shp =tp->sh;
+	if(!sh.prefix)
+		nvflags |= NV_NOSCOPE;
 	flag &= ~(NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT);
 	if(argv[1])
 	{
@@ -490,7 +492,15 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 			if(ref)
 			{
 				if(tp->aflag=='-')
-					nv_setref(np);
+				{
+					Dt_t *hp=0;
+					if(nv_isattr(np,NV_PARAM) && shp->st.prevst)
+					{
+						if(!(hp=(Dt_t*)shp->st.prevst->save_tree))
+							hp = dtvnext(shp->var_tree);
+					}
+					nv_setref(np,hp,NV_VARNAME);
+				}
 				else
 					nv_unref(np);
 			}
@@ -870,10 +880,10 @@ static int print_namval(Sfio_t *file,register Namval_t *np,register int flag, st
 		sfputc(file,flag);
 		if(flag != '\n')
 		{
-			if(nv_isref(np) && np->nvenv)
+			if(nv_isref(np) && nv_refsub(np))
 			{
 				sfputr(file,sh_fmtq(cp),-1);
-				sfprintf(file,"[%s]\n", sh_fmtq(np->nvenv));
+				sfprintf(file,"[%s]\n", sh_fmtq(nv_refsub(np)));
 			}
 			else
 				sfputr(file,sh_fmtq(cp),'\n');
@@ -921,7 +931,7 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
 	tp->outfile = file;
 	if(flag&NV_INTEGER)
 		tp->scanmask |= (NV_DOUBLE|NV_EXPNOTE);
-	namec = nv_scan(root,nullscan,(void*)0,tp->scanmask,flag);
+	namec = nv_scan(root,nullscan,(void*)tp,tp->scanmask,flag);
 	argv = tp->argnam  = (char**)stakalloc((namec+1)*sizeof(char*));
 	namec = nv_scan(root, pushname, (void*)tp, tp->scanmask, flag);
 	if(mbcoll())

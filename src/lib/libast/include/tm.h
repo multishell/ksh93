@@ -30,10 +30,7 @@
 #ifndef _TM_H
 #define _TM_H
 
-#define TM_VERSION	20041201L
-
-#define tm_data		_tm_data_
-#define tm_info		_tm_info_
+#define TM_VERSION	20070319L
 
 #include <ast.h>
 #include <times.h>
@@ -146,7 +143,7 @@ typedef struct Tm_s
 	int			tm_wday;
 	int			tm_yday;
 	int			tm_isdst;
-	unsigned _ast_int4_t	tm_nsec;
+	uint32_t		tm_nsec;
 	Tm_zone_t*		tm_zone;
 } Tm_t;
 
@@ -157,8 +154,11 @@ typedef struct Tm_s
 #define extern		extern __IMPORT__
 #endif
 
-extern Tm_data_t	tm_data;
-extern Tm_info_t	tm_info;
+extern Tm_data_t*	_tm_datap_;
+extern Tm_info_t*	_tm_infop_;
+
+#define tm_data		(*_tm_datap_)
+#define tm_info		(*_tm_infop_)
 
 #undef	extern
 

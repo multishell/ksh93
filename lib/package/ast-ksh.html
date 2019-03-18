@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
 <HEAD>
-<META name="generator" content="mm2html (AT&T Labs Research) 2006-10-31">
+<META name="generator" content="mm2html (AT&T Labs Research) 2007-02-09">
 <META name="description" content="ast-ksh package">
 <META name="keywords" content="software, package">
 <TITLE> ast-ksh package </TITLE>
@@ -22,7 +22,7 @@ Components in this package:
 <TABLE align=center border=0 bordercolor=white cellpadding=0 cellspacing=0 frame=void rules=none width=99% >
 <TBODY>
 <TR><TD align=left>
-<A href="#ksh93">ksh93</A>&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libast&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libcmd&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libdll</TD></TR>
+<A href="#ksh93">ksh93</A>&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libast&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libcmd&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libdll&nbsp;&nbsp;</TD><TD align=left>&nbsp;&nbsp;libsum</TD></TR>
 </TBODY></TABLE></TD></TR></TBODY></TABLE>
 <P>
 This package is a superset of the following package: ksh; you won't need this if you download ast-ksh.
@@ -179,6 +179,7 @@ Language," book is available from Prentice Hall.
 <TD align=left><A href="#ksh93 changes">ksh93</A></TD>
 <TD align=left><A href="#libast changes">libast</A></TD>
 <TD align=left><A href="#libcmd changes">libcmd</A></TD>
+<TD align=left><A href="#libsum changes">libsum</A></TD>
 <TD align=left><A href="#libdll changes">libdll</A></TD>
 </TR></TABLE>
 </FONT></B>
@@ -191,6 +192,33 @@ All recorded changes follow.
 <P>
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
+
+07-03-08  --- Release ksh93s+  ---
+07-03-08  A bug in which set +o output command line options has been fixed.
+07-03-08  A bug in which an error in read (for example, an invalid variable
+	  name), could leave the terminal in raw mode has been fixed.
+07-03-06  A bug in which read could core dump when specified with an array
+	  variable with a subscript that is an arithmetic expression has
+	  been fixed.
+07-03-06  Several serious bugs with the restricted shell were reported and
+	  fixed.
+07-03-02  If a job is stopped, and subsequently restarted with a CONT
+	  signal and exits normally, ksh93 was incorrectly exiting with
+	  the exit status of the stop signal number.
+07-02-26  M-^L added to emacs mode to clear the screen.
+07-02-26  A bug in which setting a variable readonly in a subshell would
+	  cause an unset error when the subshell completed has been fixed. 
+07-02-19  The format with printf uses the new = flag to center the output.
+07-02-19  A bug in which ksh93 did not allow multibyte characters in
+	  identifier names has been fixed.
+07-02-19  A bug introduced in ksh93 that causes global compound variable
+	  definitions inside functions to exit with "no parent" has been fixed.
+07-02-19  A bug in which using compound commands in process redirection
+	  arguments would give syntax errors &lt;(...) and &gt;(...) has been fixed.
+07-01-29  A bug which caused the shell to core dump which can occur when a
+	  built-in exits without closing files that it opens has been fixed.
+07-01-26  A bug in which ~(E) in patterns containing &nbsp;that are not inside ()
+	  has been fixed.
 
 06-12-29  --- Release ksh93s  ---
 06-12-29  A bug in which the value of IFS could be changed after a command
@@ -1624,6 +1652,30 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+07-03-28 misc/optget.c: fix l10n --?-
+07-03-25 features/common: fix { ast_std.h ast_map.h stdint.h } logic
+07-03-21 error.h: move from error_info to (*_error_data_)
+07-03-21 option.h: move from opt_info to (*_opt_data_)
+07-03-19 regex/regdecomp.c: fix REX_ONECHAR escapes and add REX_KMP
+07-03-11 tm/tmxscan.c,regex/regnexec.c: fix strict-alias transgressions
+07-02-27 comp/conf.sh: handle native getconf invalid numeric values
+07-02-21 comp/conf.sh,comp/conf.tab: handle SSIZE_MAX vs _POSIX_SSIZE_MAX
+07-02-20 sfio/sfvprintf.c: handle SF_WCWIDTH justification
+07-02-14 features/common: cover &lt;stdint.h&gt;, move to int_(bits)_t
+07-02-14 include/int.h: drop
+07-02-14 include/sfio.h: add SF_WCWIDTH
+07-02-12 comp/conf.sh: fix CONF_LIMIT bug that missed ULONG_MAX etc.
+07-02-12 comp/conf.tab: *LONGLONG* =&gt; *LLONG* to match posix
+07-02-12 features/float: *LONGLONG* =&gt; *LLONG* to match posix
+07-02-12 port/astconf.c: handle CONF_LIMITS_DEF with no deferral
+07-02-12 stdio/vasprintf.c: add trailing '&nbsp;' -- doh
+07-02-04 string/fmtelapsed.c: fix naive multi month/year logic
+07-02-02 misc/optget.c: add --??posix for getopts(1)/getopt(3)
+07-01-26 string/chresc.c: use mbchar()
+07-01-26 misc/optget.c: handle "o:-:" usage for old-style long options
+07-01-22 sfio/sfdisc.c,sfpool.c: handle push on streams with pending peek
+07-01-22 include/sfio.h: mv Sfieee_t to sfio/sfhdr.h
+07-01-17 tm/tmxfmt.c: fix terminating nil logic which clobbered size-1
 07-01-11 misc/stk.c: a 2 day marathon bug fix (can we release now dr ek?)
 07-01-05 comp/spawnveg.c: posix_spawnattr_setflags(POSIX_SPAWN_SETPGROUP)
 07-01-05 misc/error.c: fix multibyte vs. printable logic
@@ -3022,6 +3074,18 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+07-03-28 date.c: add --unelepsed=scale, -U: fmtelapsed() =&gt; strelapsed()
+07-03-25 wclib.h: iswspace() requires &lt;wctype.h&gt;!
+07-03-11 tty.c: add sysV --line-number, -l
+07-02-26 Makefile: sumlib.o: direct extract from +lsum (vcodex someday)
+07-02-24 Makefile: tweak cmdext.h action for --mam bootstrap
+07-02-09 Makefile: { cmdext.h cmdlist.h } depend on *.c list!
+07-02-09 Makefile: +lsum to bring in static -lsum (no dynamic right now)
+07-02-07 cksum.c: move from src/cmd/std with ftwalk =&gt; fts
+07-02-07 getconf.c: handle /bin == /usr/bin in defer logic
+07-01-26 chmod.c: don't FTS_FOLLOW if !FTS_PHYSICAL
+07-01-23 cut.c: Cut_t variable dimension list&#0091;&#0093; must be last member
+07-01-22 uname.c: fix -h typo that clobbered astconf() state -- ouch
 07-01-02 fmt.c: fix buffer splice off by one bug -- what else
 06-11-23 cmd.h: because of proto cmdinit cannot be a function like macro
 06-11-21 cp.c: fix 06-10-31 const dot&#0091;&#0093; readonly assignment
@@ -3230,6 +3294,20 @@ All recorded changes follow.
 
 </PRE>
 <P>
+<P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libsum changes">libsum changes</A></H3></FONT></FONT></CENTER>
+<PRE>
+
+05-02-14 sumlib.c: split into sum-*.c
+	 sum-sha2.c: add SHA { 256 384 512 }
+04-02-29 Makefile: compile with $(CC.PIC) for codexlib/sum $(CC.DLL)
+03-12-16 add { crc prng } generic methods and maps&#0091;&#0093; to these methods
+03-12-16 sum.h,sumlib.c: add sumdata()
+03-09-29 sumlib.c: fix FNV to use ^ instead of +
+03-04-28 sumlib.c: drop md5 `zeroize' for performance
+	 sumlib.c: add FIPS 180-1 SHA-1
+
+</PRE>
+<P>
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libdll changes">libdll changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
@@ -3280,7 +3358,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>January 12, 2007</TD>
+<TD align=right>March 29, 2007</TD>
 </TR>
 </TABLE>
 <P>

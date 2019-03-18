@@ -32,9 +32,7 @@
 
 #include <ast.h>
 
-#define OPT_VERSION	20000401L
-
-#define opt_info	_opt_info_
+#define OPT_VERSION	20070319L
 
 #define OPT_USER	(1L<<16)	/* first user flag bit		*/
 
@@ -70,7 +68,7 @@ typedef struct Opt_s
 	char		option[8];	/* current flag {-,+} + option  */
 	char		name[64];	/* current long name or flag	*/
 	Optdisc_t*	disc;		/* user discipline		*/
-	_ast_intmax_t	number;		/* # numeric argument		*/
+	intmax_t	number;		/* # numeric argument		*/
 	unsigned char	assignment;	/* option arg assigment op	*/
 	unsigned char	pads[sizeof(void*)-1];
 	_OPT_PRIVATE_
@@ -83,7 +81,9 @@ typedef struct Opt_s
 #define extern		extern __IMPORT__
 #endif
 
-extern Opt_t		opt_info;
+extern Opt_t*		_opt_infop_;
+
+#define opt_info	(*_opt_infop_)
 
 #undef	extern
 

@@ -1,4 +1,4 @@
-USAGE_LICENSE="[-author?Glenn Fowler <gsf@research.att.com>][-copyright?Copyright (c) 1994-2008 AT&T][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?INIT]"
+USAGE_LICENSE="[-author?Glenn Fowler <gsf@research.att.com>][-copyright?Copyright (c) 1994-2009 AT&T][-license?http://www.opensource.org/licenses/cpl1.0.txt][--catalog?INIT]"
 # package - source and binary package control
 # this script is written to make it through all sh variants
 # Glenn Fowler <gsf@research.att.com>
@@ -26,6 +26,8 @@ package_use='=$HOSTTYPE=$PACKAGEROOT=$INSTALLROOT=$EXECROOT=$CC='
 
 PACKAGE_admin_tail_timeout=${PACKAGE_admin_tail_timeout:-"1m"}
 
+CROSS=0
+
 admin_db=admin.db
 admin_env=admin.env
 admin_ditto="ditto --checksum --delete --update --verbose"
@@ -44,7 +46,7 @@ all_types='*.*|sun4'		# all but sun4 match *.*
 case `(getopts '[-][123:xyz]' opt --xyz; echo 0$opt) 2>/dev/null` in
 0123)	USAGE=$'
 [-?
-@(#)$Id: package (AT&T Research) 2008-09-24 $
+@(#)$Id: package (AT&T Research) 2009-04-28 $
 ]'$USAGE_LICENSE$'
 [+NAME?package - source and binary package control]
 [+DESCRIPTION?The \bpackage\b command controls source and binary
@@ -1575,7 +1577,7 @@ int main()
 }
 !
 			for o in -lpthread ''
-			do	if	$CC $o -O -o $tmp.exe $tmp.c $o >/dev/null 2>&1
+			do	if	$CC $o -O -o $tmp.exe $tmp.c $o >/dev/null 2>&1 ||
 					gcc $o -O -o $tmp.exe $tmp.c $o >/dev/null 2>&1
 				then	./$tmp.exe
 					break
@@ -1695,8 +1697,8 @@ int main()
 		_hostinfo_="$_hostinfo_ $rating"
 		;;
 	type|canon)
-		case $canon in
-		'')	case $cc in
+		case $CROSS:$canon in
+		0:)	case $cc in
 			cc)	case $KEEP_HOSTTYPE:$HOSTTYPE in
 				0:?*)	if	test -d $PACKAGEROOT/arch/$HOSTTYPE
 					then	KEEP_HOSTTYPE=1
@@ -2549,7 +2551,6 @@ cat $INITROOT/$i.sh
 
 	# check if $CC is a cross compiler
 
-	CROSS=0
 	if	test -f $INITROOT/hello.c
 	then	case $action in
 		make|test)	warn='' ;;
@@ -2567,7 +2568,7 @@ cat $INITROOT/$i.sh
 				fi
 				exit 2
 			}
-			if ./pkg$$.exe >/dev/null
+			if ./pkg$$.exe >/dev/null 2>&1
 			then	code=0
 			else	code=1
 			fi
@@ -2580,14 +2581,6 @@ cat $INITROOT/$i.sh
 		fi
 		case $code in
 		1)	CROSS=1
-			hostinfo type
-			case $HOSTTYPE in
-			$_hostinfo_)
-				echo "$command: $CC: seems to be a cross-compiler" >&2
-				echo "$command: set HOSTTYPE to something other than the native $HOSTTYPE" >&2
-				exit 1
-				;;
-			esac
 			;;
 		2)	case $warn in
 			'')	exit 1 ;;
@@ -2762,6 +2755,24 @@ cat $INITROOT/$i.sh
 				break
 			fi
 		done
+		case $HOSTTYPE in
+		$EXECTYPE)
+			OCC=$CC
+			CC=cc
+			hostinfo type
+			EXECTYPE=$_hostinfo_
+			case $HOSTTYPE in
+			$EXECTYPE)
+				echo "$command: $CC: seems to be a cross-compiler" >&2
+				echo "$command: set HOSTTYPE to something other than the native $EXECTYPE" >&2
+				exit 1
+				;;
+			esac
+			;;
+		esac
+		$show EXECTYPE=$EXECTYPE
+		$show export EXECTYPE
+		export EXECTYPE
 		;;
 	esac
 	$show EXECROOT=$EXECROOT
@@ -3751,13 +3762,13 @@ get() # host path [ file size ]
 				cat <&8 > get.tmp
 				got=`sed -e 1q get.tmp`
 				case $got in
-				*" 200 "*)
+				*" "200" "*)
 					got=`sed -e '1,/^.$/d' -e '/^[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWYZ]/!d' get.tmp`
 					: > get.err
 					code=0
 					break
 					;;
-				*" 302 "*)
+				*" "30[123]" "*)
 					got=`sed -e '/^Location: /!d' -e 's,^Location: \(.*\)://\([^/]*\)\(/.*\),prot='\''\1'\'' host='\''\2'\'' path='\''\3'\'',' get.tmp`
 					case $got in
 					'')	rm get.tmp
@@ -4009,6 +4020,21 @@ checksrc()
 	esac
 }
 
+# check for native ascii 0:yes 1:no
+
+__isascii__=
+
+isascii()
+{
+	case $__isascii__ in
+	'')	case `echo A | od -o | sed -e '/[ 	]/!d' -e 's/.*[ 	]//'` in
+		005101|040412)	__isascii__=0 ;;
+		*)		__isascii__=1 ;;
+		esac
+	esac
+	return $__isascii__
+}
+
 case $action in
 
 admin)	while	test ! -f $admin_db
@@ -4072,10 +4098,10 @@ admin)	while	test ! -f $admin_db
 	esac
 	trap 'kill $pids >/dev/null 2>&1' 1 2 3 15
 	index=0
-	while	read type host root date time make test write junk
+	while	read type host root date time make test write comment
 	do	case $type in
 		''|'#'*);;
-		*=*)	eval "$type $host $root $date $time $make $test $write $junk"
+		*=*)	eval "$type $host $root $date $time $make $test $write $comment"
 			;;
 		*)	case $admin_action in
 			make|test|write)
@@ -4498,7 +4524,7 @@ admin)	while	test ! -f $admin_db
 					case $admin_action in
 					make|view)
 						M=`grep -c ']: \*\*\*.* code ' $admin_log/$2` ;;
-					test)	T=`grep -ci 'fail' $admin_log/$2` ;;
+					test)	T=`grep -ci 'fail[es]' $admin_log/$2` ;;
 					*)	W=`grep '^[abcdefghijklmnopqrstuvwxyz][abcdefghijklmnopqrstuvwxyz]*:.' $admin_log/$2 | egrep -cv 'start at|done  at|output captured|warning:|: package not found|whence: command not found'` ;;
 					esac
 					case $1 in
@@ -4547,8 +4573,18 @@ admin)	while	test ! -f $admin_db
 					?)	W="  $W" ;;
 					'')	W="  0" ;;
 					esac
-					echo "$1$t1	$2$t2	$3$t3	$D	$E	$M $T $W"
-					echo "$1$t1	$2$t2	$3$t3	$D	$E	$M $T $W" >&9
+					A=$1$t1
+					H=$2$t2
+					R=$3$t3
+					case $# in
+					[0-8])	C=
+						;;
+					*)	shift 8
+						C=" $*"
+						;;
+					esac
+					echo "$A	$H	$R	$D	$E	$M $T $W$C"
+					echo "$A	$H	$R	$D	$E	$M $T $W$C" >&9
 					continue
 					;;
 				esac
@@ -5047,49 +5083,6 @@ make|view)
 		cmp -s $i $INSTALLROOT/$i 2>/dev/null ||
 		$exec cp $PACKAGEROOT/$i $INSTALLROOT/$i
 	done
-	case $exec in
-	'')	if	test ! -f $INSTALLROOT/bin/.paths -o -w $INSTALLROOT/bin/.paths
-		then	nl="
-"
-			o=`cat $INSTALLROOT/bin/.paths 2>/dev/null`
-			v=
-			n=
-			case $nl$o in
-			*${nl}FPATH=*|*#FPATH=*|*[Nn][Oo]FPATH=*)
-				;;
-			*)	case $n in
-				'')	;;
-				*)	n="$n$nl" v="$v|" ;;
-				esac
-				n="${n}FPATH=../fun"
-				v="${v}FPATH"
-				;;
-			esac
-			case $nl$o in
-			*${nl}BUILTIN_LIB=*|*#BUILTIN_LIB=*|*[Nn][Oo]BUILTIN_LIB=*)
-				;;
-			*)	case $n in
-				'')	;;
-				*)	n="$n$nl" v="$v|" ;;
-				esac
-				if	(probe -l C make cc | grep '^CC.DIALECT .* EXPORT=[AD]LL') >/dev/null 2>&1
-				then	x=
-				else	x='no'
-				fi
-				n="${n}${x}BUILTIN_LIB=cmd"
-				v="${v}BUILTIN_LIB"
-				;;
-			esac
-			case $n in
-			?*)	case $o in
-				?*)	o=`egrep -v "($v)=" $INSTALLROOT/bin/.paths`$nl ;;
-				esac
-				echo "# use { # no NO } prefix instead of XX to permanently disable #$nl$o$n" > $INSTALLROOT/bin/.paths
-				;;
-			esac
-		fi
-		;;
-	esac
 
 	# check $CC and { cc ld ldd } intercepts
 
@@ -5434,6 +5427,52 @@ cat $j $k
 		esac
 	fi
 
+	# mamprobe data should have been generated by this point
+
+	case $exec in
+	'')	if	test ! -f $INSTALLROOT/bin/.paths -o -w $INSTALLROOT/bin/.paths
+		then	nl="
+"
+			o=`cat $INSTALLROOT/bin/.paths 2>/dev/null`
+			v=
+			n=
+			case $nl$o in
+			*${nl}FPATH=*|*#FPATH=*|*[Nn][Oo]FPATH=*)
+				;;
+			*)	case $n in
+				'')	;;
+				*)	n="$n$nl" v="$v|" ;;
+				esac
+				n="${n}FPATH=../fun"
+				v="${v}FPATH"
+				;;
+			esac
+			case $nl$o in
+			*${nl}BUILTIN_LIB=*|*#BUILTIN_LIB=*|*[Nn][Oo]BUILTIN_LIB=*)
+				;;
+			*)	case $n in
+				'')	;;
+				*)	n="$n$nl" v="$v|" ;;
+				esac
+				if	grep '^setv mam_cc_DIALECT .* EXPORT=[AD]LL' $INSTALLROOT/lib/probe/C/mam/* >/dev/null 2>&1
+				then	x=
+				else	x='no'
+				fi
+				n="${n}${x}BUILTIN_LIB=cmd"
+				v="${v}BUILTIN_LIB"
+				;;
+			esac
+			case $n in
+			?*)	case $o in
+				?*)	o=`egrep -v "($v)=" $INSTALLROOT/bin/.paths`$nl ;;
+				esac
+				echo "# use { # no NO } prefix instead of XX to permanently disable #$nl$o$n" > $INSTALLROOT/bin/.paths
+				;;
+			esac
+		fi
+		;;
+	esac
+
 	# run from separate copies since nmake and ksh may be rebuilt
 
 	case $EXECROOT in
@@ -5684,7 +5723,7 @@ read)	case ${PWD:-`pwd`} in
 					code=1
 					continue
 				}
-			else	if	onpath gunzip && onpath $TAR
+			else	if	onpath gunzip && onpath $TAR && isascii
 				then	case $TARPROBE in
 					?*)	for i in $TARPROBE
 						do	if	$TAR ${i}f - /dev/null > /dev/null 2>&1
@@ -6114,7 +6153,7 @@ results)set '' $target
 				case $filter in
 				cat)	$exec cat $j
 					;;
-				errors)	$exec egrep -i '\*\*\*|FAIL|^TEST.* [123456789][0123456789]* error|core.*dump' $j | sed -e '/^TEST.\//s,/[^ ]*/,,'
+				errors)	$exec egrep -i '\*\*\*|FAIL[ES]|^TEST.* [123456789][0123456789]* error|core.*dump' $j | sed -e '/^TEST.\//s,/[^ ]*/,,'
 					;;
 				rt)	$exec rt - $j
 					;;

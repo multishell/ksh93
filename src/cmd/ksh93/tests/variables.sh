@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2008 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2009 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -28,11 +28,14 @@ alias err_exit='err_exit $LINENO'
 Command=${0##*/}
 integer Errors=0
 
+tmp=$(mktemp -dt) || { err_exit mktemp -dt failed; exit 1; }
+trap "cd /; rm -rf $tmp" EXIT
+
 [[ ${.sh.version} == "$KSH_VERSION" ]] || err_exit '.sh.version != KSH_VERSION'
 unset ss
-[[ ${@ss} ]] && err_exit '${@ss} should be empty string when ss is unset'  
-[[ ${!ss} == ss ]] ||  err_exit '${!ss} should be ss when ss is unset'  
-[[ ${#ss} == 0 ]] ||  err_exit '${#ss} should be 0 when ss is unset'  
+[[ ${@ss} ]] && err_exit '${@ss} should be empty string when ss is unset'
+[[ ${!ss} == ss ]] ||  err_exit '${!ss} should be ss when ss is unset'
+[[ ${#ss} == 0 ]] ||  err_exit '${#ss} should be 0 when ss is unset'
 # RANDOM
 if	(( RANDOM==RANDOM || $RANDOM==$RANDOM ))
 then	err_exit RANDOM variable not working
@@ -57,17 +60,19 @@ fi
 #fi
 # PWD
 if	[[ !  $PWD -ef . ]]
-then	err_exit PWD variable not working
+then	err_exit PWD variable failed, not equivalent to .
 fi
 # PPID
-if	[[ $($SHELL -c 'print $PPID')  != $$ ]]
-then	err_exit PPID variable not working
+exp=$$
+got=${ $SHELL -c 'print $PPID'; }
+if	[[ ${ $SHELL -c 'print $PPID'; } != $$ ]]
+then	err_exit "PPID variable failed -- expected '$exp', got '$got'"
 fi
 # OLDPWD
 old=$PWD
 cd /
 if	[[ $OLDPWD != $old ]]
-then	err_exit OLDPWD variable not working
+then	err_exit "OLDPWD variable failed -- expected '$old', got '$OLDPWD'"
 fi
 cd $old || err_exit cd failed
 # REPLY
@@ -90,7 +95,7 @@ LINENO=save+10
 IFS=:
 x=a::b::c
 if	[[ $x != a::b::c ]]
-then	err_exit "Word splitting on constants"
+then	err_exit "word splitting on constants"
 fi
 set -- $x
 if	[[ $# != 5 ]]
@@ -171,7 +176,7 @@ unset -n foo
 foo=junk
 function foo.get
 {
-	.sh.value=stuff 
+	.sh.value=stuff
 	unset -f foo.get
 }
 if	[[ $foo != stuff ]]
@@ -209,22 +214,19 @@ done
 kill $!
 unset x
 CDPATH=/
-x=$(cd tmp)
-if	[[ $x != /tmp ]]
+x=$(cd ${tmp#/})
+if	[[ $x != $tmp ]]
 then	err_exit 'CDPATH does not display new directory'
 fi
-mkdir /tmp/ksh$$
 CDPATH=/:
-x=$(cd /tmp;cd ksh$$)
+x=$(cd ${tmp%/*}; cd ${tmp##*/})
 if	[[ $x ]]
 then	err_exit 'CDPATH displays new directory when not used'
 fi
-x=$(cd tmp/ksh$$)
-if	[[ $x != /tmp/ksh$$ ]]
-then	err_exit "CDPATH tmp/ksh$$ does not display new directory"
+x=$(cd ${tmp#/})
+if	[[ $x != $tmp ]]
+then	err_exit "CDPATH ${tmp#/} does not display new directory"
 fi
-cd /
-rm -rf /tmp/ksh$$
 TMOUT=100
 (TMOUT=20)
 if	(( TMOUT !=100 ))
@@ -411,15 +413,15 @@ done
 unset IFS
 
 if	[[ $( (print ${12345:?}) 2>&1) != *12345* ]]
-then	err_exit 'Incorrect error message with ${12345?}'
+then	err_exit 'incorrect error message with ${12345?}'
 fi
 unset foobar
 if	[[ $( (print ${foobar:?}) 2>&1) != *foobar* ]]
-then	err_exit 'Incorrect error message with ${foobar?}'
+then	err_exit 'incorrect error message with ${foobar?}'
 fi
 unset bar
 if	[[ $( (print ${bar:?bam}) 2>&1) != *bar*bam* ]]
-then	err_exit 'Incorrect error message with ${foobar?}'
+then	err_exit 'incorrect error message with ${foobar?}'
 fi
 { $SHELL -c '
 function foo
@@ -427,14 +429,13 @@ function foo
 	typeset SECONDS=0
 	sleep 1.5
 	print $SECONDS
-	
+
 }
 x=$(foo)
-(( x >1 && x < 2 )) 
+(( x >1 && x < 2 ))
 '
 } 2> /dev/null   || err_exit 'SECONDS not working in function'
-trap 'rm -f /tmp/script$$ /tmp/out$$' EXIT
-cat > /tmp/script$$ <<-\!
+cat > $tmp/script <<-\!
 	posixfun()
 	{
 		unset x
@@ -451,12 +452,12 @@ cat > /tmp/script$$ <<-\!
 	else	print -r -- "${.sh.file}"
 	fi
 !
-chmod +x /tmp/script$$
-. /tmp/script$$  1
-[[ $file == /tmp/script$$ ]] || err_exit ".sh.file not working for dot scripts"
-[[ $($SHELL /tmp/script$$) == /tmp/script$$ ]] || err_exit ".sh.file not working for scripts"
-[[ $(posixfun .sh.file) == /tmp/script$$ ]] || err_exit ".sh.file not working for posix functions"
-[[ $(fun .sh.file) == /tmp/script$$ ]] || err_exit ".sh.file not working for functions"
+chmod +x $tmp/script
+. $tmp/script  1
+[[ $file == $tmp/script ]] || err_exit ".sh.file not working for dot scripts"
+[[ $($SHELL $tmp/script) == $tmp/script ]] || err_exit ".sh.file not working for scripts"
+[[ $(posixfun .sh.file) == $tmp/script ]] || err_exit ".sh.file not working for posix functions"
+[[ $(fun .sh.file) == $tmp/script ]] || err_exit ".sh.file not working for functions"
 [[ $(posixfun .sh.fun) == posixfun ]] || err_exit ".sh.fun not working for posix functions"
 [[ $(fun .sh.fun) == fun ]] || err_exit ".sh.fun not working for functions"
 [[ $(posixfun .sh.subshell) == 1 ]] || err_exit ".sh.subshell not working for posix functions"
@@ -483,22 +484,22 @@ function dave.unset
 unset dave
 [[ $(typeset +f) == *dave.* ]] && err_exit 'unset discipline not removed'
 
-print 'print ${VAR}' > /tmp/script$$
+print 'print ${VAR}' > $tmp/script
 unset VAR
-VAR=new /tmp/script$$ > /tmp/out$$
-got=$(</tmp/out$$)
+VAR=new $tmp/script > $tmp/out
+got=$(<$tmp/out)
 [[ $got == new ]] || err_exit "previously unset environment variable not passed to script, expected 'new', got '$got'"
 [[ ! $VAR ]] || err_exit "previously unset environment variable set after script, expected '', got '$VAR'"
 unset VAR
 VAR=old
-VAR=new /tmp/script$$ > /tmp/out$$
-got=$(</tmp/out$$)
+VAR=new $tmp/script > $tmp/out
+got=$(<$tmp/out)
 [[ $got == new ]] || err_exit "environment variable covering local variable not passed to script, expected 'new', got '$got'"
 [[ $VAR == old ]] || err_exit "previously set local variable changed after script, expected 'old', got '$VAR'"
 unset VAR
 export VAR=old
-VAR=new /tmp/script$$ > /tmp/out$$
-got=$(</tmp/out$$)
+VAR=new $tmp/script > $tmp/out
+got=$(<$tmp/out)
 [[ $got == new ]] || err_exit "environment variable covering environment variable not passed to script, expected 'new', got '$got'"
 [[ $VAR == old ]] || err_exit "previously set environment variable changed after script, expected 'old', got '$VAR'"
 
@@ -511,7 +512,7 @@ got=$(</tmp/out$$)
 	}
 	dave=foo; dave+=bar
 	[[ $dave == barfoo ]] || exit 2
-) 2> /dev/null  
+) 2> /dev/null
 case $? in
 0)	 ;;
 1)	 err_exit 'append discipline not implemented';;
@@ -522,8 +523,8 @@ esac
 	function .sh.foobar.get
 	{
 		.sh.value=world
-	} 
-} 2> /dev/null || err_exit "Can't add get discipline to .sh.foobar"
+	}
+} 2> /dev/null || err_exit "cannot add get discipline to .sh.foobar"
 [[ ${.sh.foobar} == world ]]  || err_exit 'get discipline for .sh.foobar not working'
 x='a|b'
 IFS='|'
@@ -557,12 +558,12 @@ function foo.set
 		;;
 	esac
 }
-foo[barrier_hit]=no 
+foo[barrier_hit]=no
 foo[bar]=1
 (( foo[bar] == 1 )) || err_exit 'foo[bar] should be 1'
 [[ ${foo[barrier_hit]} == no ]] || err_exit 'foo[barrier_hit] should be no'
 [[ ${foo[barrier_not_hit]} == yes ]] || err_exit 'foo[barrier_not_hit] should be yes'
-foo[barrier_hit]=no 
+foo[barrier_hit]=no
 foo[bar]=2
 (( foo[bar] == 5 )) || err_exit 'foo[bar] should be 5'
 [[ ${foo[barrier_hit]} == yes ]] || err_exit 'foo[barrier_hit] should be yes'

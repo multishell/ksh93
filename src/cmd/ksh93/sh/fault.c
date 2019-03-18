@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -98,7 +98,7 @@ void	sh_fault(register int sig)
 		}
 		return;
 	}
-	if(shp->subshell && sig!=SIGINT && sig!=SIGQUIT && sig!=SIGWINCH)
+	if(shp->subshell && sig!=SIGINT && sig!=SIGQUIT && sig!=SIGWINCH && sig!=SIGCONT)
 	{
 		shp->exitval = SH_EXITSIG|sig;
 		sh_subfork();
@@ -413,7 +413,10 @@ void	sh_chktrap(void)
 		{
 			sh.sigflag[sig] &= ~SH_SIGTRAP;
 			if(trap=sh.st.trapcom[sig])
+			{
+				sh.oldexit = SH_EXITSIG|sig;
 				sh_trap(trap,0);
+			}
 		}
 	}
 }
@@ -579,8 +582,8 @@ void sh_done(void *ptr, register int sig)
 	register int savxit = shp->exitval;
 	shp->trapnote = 0;
 	indone=1;
-	if(sig==0)
-		sig = shp->lastsig;
+	if(sig)
+		savxit = SH_EXITSIG|sig;
 	if(shp->userinit)
 		(*shp->userinit)(shp, -1);
 	if(t=shp->st.trapcom[0])
@@ -615,6 +618,8 @@ void sh_done(void *ptr, register int sig)
 	sfsync((Sfio_t*)sfstdin);
 	sfsync((Sfio_t*)shp->outpool);
 	sfsync((Sfio_t*)sfstdout);
+	if(savxit&SH_EXITSIG)
+		sig = savxit&SH_EXITMASK;
 	if(sig)
 	{
 		/* generate fault termination code */

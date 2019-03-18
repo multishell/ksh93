@@ -56,7 +56,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	LIBAST.3 ast.3 astsa.3 cdt.3 chr.3 compat.3 error.3 find.3 fmt.3 \
 	fmtls.3 fs3d.3 ftwalk.3 getcwd.3 hash.3 iblocks.3 int.3 \
 	magic.3 mem.3 mime.3 modecanon.3 optget.3 path.3 preroot.3 \
-	proc.3 re.3 setenviron.3 sfdisc.3 sfio.3 sig.3 spawnveg.3 \
+	proc.3 re.3 regex.3 setenviron.3 sfdisc.3 sfio.3 sig.3 spawnveg.3 \
 	stak.3 stk.3 strcopy.3 strdup.3 strelapsed.3 strerror.3 stresc.3 \
 	streval.3 strgid.3 strmatch.3 stropt.3 strperm.3 strsignal.3 \
 	strsort.3 strtape.3 strton.3 struid.3 swap.3 tab.3 tm.3 tmx.3  \
@@ -73,11 +73,13 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	chresc.c chrtoi.c streval.c strexpr.c strmatch.c strcopy.c \
 	modelib.h modei.c modex.c strmode.c \
 	strlcat.c strlcpy.c strlook.c strncopy.c strsearch.c strpsearch.c \
-	stresc.c stropt.c strtape.c tok.c tokline.c tokscan.c \
+	stresc.c stropt.c strtape.c strpcmp.c strnpcmp.c strvcmp.c strnvcmp.c \
+	tok.c tokline.c tokscan.c \
 	pathaccess.c pathcat.c pathcanon.c pathcheck.c pathpath.c \
 	pathexists.c pathfind.c pathkey.c pathprobe.c pathrepl.c \
 	pathnative.c pathposix.c pathtemp.c pathtmp.c pathstat.c \
 	pathgetlink.c pathsetlink.c pathbin.c pathshell.c pathcd.c \
+	pathprog.c \
 	fs3d.c ftwalk.c ftwflags.c fts.c \
 	astintercept.c getenv.c setenviron.c \
 	optget.c optjoin.c optesc.c optctx.c strsort.c struniq.c \
@@ -392,7 +394,7 @@ PAXFILTER = ;*.[ch];$(PROTO) $(PROTOFLAGS) -c "" -p
 ast_sa.h : .DONTCARE
 
 astsa.tgz : $$("astsa/astsa.manifest":T=F:T=I:/[[:space:]][[:space:]]*/ /G:C,^,astsa/,)
-	$(PAX) $(PAXFLAGS) -wvf $(<) -x $(<:/.*\.//) -s ',.*/,,' -A $(PAXFILTER:@Q) $(*)
+	$(PAX) $(PAXFLAGS) -wf $(<) -x $(<:/.*\.//) -s ',.*/,,' -A $(PAXFILTER:@Q) $(*)
 
 /* libmini.a is a bootstrap dll for uwin cc -D_BLD_ast that exports part of ast */
 

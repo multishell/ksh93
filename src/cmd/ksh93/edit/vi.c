@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -581,7 +581,11 @@ int ed_viread(void *context, int fd, register char *shbuf, int nchar, int reedit
 
 	vp->U_saved = 0;
 	if(reedit)
+	{
+		cur_phys = vp->first_wind;
+		vp->ofirst_wind = INVALID;
 		refresh(vp,INPUT);
+	}
 	if(viraw)
 		getline(vp,APPEND);
 	else if(last_virt>=0 && virtual[last_virt]==term_char)
@@ -2381,13 +2385,11 @@ addin:
 			if(vp->repeat_set==0)
 				vp->repeat = -1;
 			p = (genchar*)hist_word((char*)tmpbuf,MAXLINE,vp->repeat);
-#if !KSHELL
 			if(p==0)
 			{
 				ed_ringbell();
 				break;
 			}
-#endif	/* KSHELL */
 #if SHOPT_MULTIBYTE
 			ed_internal((char*)p,tmpbuf);
 			p = tmpbuf;

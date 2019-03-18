@@ -699,7 +699,7 @@ current ones provided that the types are compatible.
 The right hand side of a variable assignment undergoes all the expansion
 list below except word splitting, brace expansion, and file name generation.
 When the left hand side is an assignment is a compound variable and
-the right hand is the name of a compound variable, the coumpound variable
+the right hand is the name of a compound variable, the compound variable
 on the right will be copied or appended to the compound variable on the left.
 .SS Comments.
 .PD 0
@@ -764,6 +764,8 @@ but can be unset or redefined:
 .B "autoload=\(fmtypeset \-fu\(fm"
 .TP
 .B "command=\(fmcommand  \(fm"
+.TP
+.B "compound=\(fmtypeset \-C\(fm"
 .TP
 .B "fc=hist"
 .TP
@@ -1179,7 +1181,7 @@ elements between
 .I sub1\^
 and
 .I sub2\^
-inclusive (or all elments for
+inclusive (or all elements for
 .B \(**
 and
 .BR @ )
@@ -1914,6 +1916,12 @@ characters,
 then two adjacent
 .B tab
 characters delimit a null field.
+.TP
+.B
+.SM JOBMAX
+This variable defines the maximum number running background jobs
+that can run at a time.  When this limit is reached, the
+shell will wait for a job to complete before staring a new job.
 .TP
 .B
 .SM LANG
@@ -2856,8 +2864,8 @@ can be used within an arithmetic expression:
 .PP
 .if t .RS
 .B
-.if n abs acos acosh asin asinh atan atan2 atanh cbrt copysign cos cosh erf erfc exp exp2 expm1 fabs fdim finite floor fma fmax fmod hypot ilogb int isinf isnan lgamma log log2 logb nearbyint nextafter nexttoward pow remainder rint round sin sinh sqrt tan tanh tgamma trunc
-.if t abs   acos   acosh   asin   asinh   atan   atan2   atanh   cbrt   copysign   cos   cosh   erf  erfc   exp   exp2   expm1   fabs   fdim   finite   floor  fma   fmax   fmod   hypot   ilogb   int   isinf   isnan   lgamma   log   log2   logb   nearbyint   nextafter   nexttoward  pow   rint   round   sin   sinh   sqrt   tan   tanh   tgamma   trunc
+.if n abs acos acosh asin asinh atan atan2 atanh cbrt copysign cos cosh erf erfc exp exp2 expm1 fabs fdim finite floor fma fmax fmod hypot ilogb int isinf isnan j0 j1 jn lgamma log log2 logb nearbyint nextafter nexttoward pow remainder rint round sin sinh sqrt tan tanh tgamma trunc y0 y1 yn
+.if t abs   acos   acosh   asin   asinh   atan   atan2   atanh   cbrt   copysign   cos   cosh   erf  erfc   exp   exp2   expm1   fabs   fdim   finite   floor  fma   fmax   fmod   j0      j1      jn      hypot   ilogb   int   isinf   isnan   lgamma   log   log2   logb   nearbyint   nextafter   nexttoward  pow   rint   round   sin   sinh   sqrt   tan   tanh   tgamma   trunc   y0      y1      yn
 .if t .RE
 .PP
 An internal representation of a
@@ -3305,6 +3313,16 @@ except that it overrides the
 .B noclobber
 option.
 .TP
+.BI >; word
+Write output to a temporary file.  If the command completes
+successfully rename it to
+.IR word  ,
+otherwise, delete the temporary file.
+.BI >; word
+cannot be used with the
+.IR exec (2).
+built-in.
+.TP
 .BI >> word
 Use file
 .I word\^
@@ -3316,7 +3334,18 @@ otherwise, the file is created.
 Open file
 .I word\^
 for reading and writing
-as standard input.
+as standard output.
+.TP
+.BI <>; word
+The same as 
+.BI <> word
+except that if the command completes successfully,
+.I word\^
+is truncated to the offset at command completion.
+.BI <>; word
+cannot be used with the
+.IR exec (2).
+built-in.
 .TP
 \f3<<\fP\*(OK\f3\-\fP\*(CK\f2word\fP
 The shell input is read up to a line that is the same as
@@ -7145,7 +7174,7 @@ This is usually used to reference a variable inside
 a function whose name has been passed as an argument.
 .TP
 .B \-p
-The name, attributes and values for the give
+The name, attributes and values for the given
 .IR vname s
 are written on standard output in a form that can be
 used as shell input.

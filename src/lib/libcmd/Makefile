@@ -8,6 +8,10 @@ LICENSE = since=1992,author=gsf+dgk
 
 CCFLAGS = $(CC.OPTIMIZE) $(CC.DLL)
 
+/* 2009-04-15 ld.so experiment -- may become a default for all plugins */
+CC.DLL.ORIGIN = $(CC.LD.ORIGIN:C,/.*,,)
+LDFLAGS = $(CC.DLL.ORIGIN)
+
 CP = $(STDCP|"cp")
 CHMOD = $(STDCHMOD|"chmod")
 
@@ -18,9 +22,9 @@ cmd 1.2 :LIBRARY: RELEASE cmdinit.c \
 	basename.c cat.c chgrp.c chmod.c chown.c cksum.c cmp.c \
 	comm.c cp.c cut.c dirname.c date.c expr.c fds.c fmt.c fold.c \
 	getconf.c head.c id.c join.c ln.c logname.c md5sum.c mkdir.c \
-	mkfifo.c mv.c paste.c pathchk.c pids.c rev.c rm.c rmdir.c \
-	stty.c sum.c sync.c tail.c tee.c tty.c uname.c uniq.c wc.c \
-	revlib.c wclib.c sumlib.o \
+	mkfifo.c mktemp.c mv.c paste.c pathchk.c pids.c rev.c rm.c \
+	rmdir.c stty.c sum.c sync.c tail.c tee.c tty.c uname.c uniq.c \
+	wc.c revlib.c wclib.c sumlib.o \
 	-lfsg -lmd
 
 sumlib.o : +lsum

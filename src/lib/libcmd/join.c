@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1992-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1992-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -365,7 +365,7 @@ outfield(Join_t* jp, int index, register int n, int last)
 		size = cpmax-cp;
 	else
 		size = 0;
-	if (size==0)
+	if (size<=1)
 	{
 		if (!jp->nullfield)
 			sfputc(iop,n);

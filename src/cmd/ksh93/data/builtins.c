@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -138,6 +138,9 @@ const struct shtable3 shtab_builtins[] =
 	CMDLIST(uname)
 	CMDLIST(wc)
 	CMDLIST(sync)
+#endif
+#if SHOPT_REGRESS
+	"__regress__",		NV_BLTIN|BLT_ENV,	bltin(__regress__),
 #endif
 	"",		0, 0 
 };
@@ -677,6 +680,7 @@ USAGE_LICENSE
     "\aflags\a with optional \anumber\a values may be specified to control "
     "option parsing. "
     "The flags are:]{"
+      "[++?Arguments beginning with + are considered options.]"
       "[+c?Cache this \aoptstring\a for multiple passes. Used to optimize "
 	"builtins that may be called many times within the same process.]"
       "[+i?Ignore this \aoptstring\a when generating help. Used when "
@@ -737,9 +741,7 @@ USAGE_LICENSE
   "[+8.?A group of the form [-\aname\a?\atext\a]] specifies entries "
     "for the \bIMPLEMENTATION\b section.]"
 "}"
-"[+?If the leading character of \aoptstring\a is +, then arguments "
-  "beginning with + will also be considered options.]"
-"[+?A leading : character or a : following a leading + in \aoptstring\a "
+"[+?A leading : character in \aoptstring\a "
   "affects the way errors are handled.  If an option character or longname "
   "argument not specified in \aoptstring\a is encountered when processing "
   "options, the shell variable whose name is \aname\a will be set to the ? "
@@ -750,6 +752,8 @@ USAGE_LICENSE
   "Without the leading :, \aname\a will be set to the ? character, \bOPTARG\b "
   "will be unset, and an error message will be written to standard error "
   "when errors are encountered.]"
+"[+?A leading + character or a + following a leading : in \aoptstring\a "
+  "specifies that arguments beginning with + will also be considered options.]"
 "[+?The end of options occurs when:]{"
 	"[+1.?The special argument \b--\b is encountered.]"
 	"[+2.?An argument that does not begin with a \b-\b is encountered.]"
@@ -1115,7 +1119,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optprintf[] =
-"[-1c?\n@(#)$Id: printf (AT&T Research) 2006-10-26 $\n]"
+"[-1c?\n@(#)$Id: printf (AT&T Research) 2009-02-02 $\n]"
 USAGE_LICENSE
 "[+NAME?printf - write formatted output]"
 "[+DESCRIPTION?\bprintf\b writes each \astring\a operand to "
@@ -1163,7 +1167,7 @@ USAGE_LICENSE
 	"in the underlying code set of the character following the "
 	"\b\"\b or \b'\b.  Otherwise, \astring\a is treated like a shell "
 	"arithmetic expression and evaluated.]"
-"[+?If a \astring\a operand cannot be completed converted into a value "
+"[+?If a \astring\a operand cannot be completely converted into a value "
 	"appropriate for that format specifier, an error will occur, "
 	"but remaining \astring\a operands will continue to be processed.]"
 "[+?In addition to the format specifier extensions, the following "
@@ -1176,8 +1180,10 @@ USAGE_LICENSE
 	"[+-?The escape sequence \b\\x{\b\ahex\a\b}\b expands to the "
 		"character corresponding to the hexidecimal value \ahex\a.]"
 	"[+-?The format modifier flag \b=\b can be used to center a field to "
-		"a specified width.  When the output is a terminal, the "
-		"character width is used rather than the number of bytes.]"
+		"a specified width.]"
+	"[+-?The format modifier flag \bL\b can be used with the \bc\b and "
+		"\bs\b formats to treat precision as character width instead "
+		"of byte count.]"
 	"[+-?Each of the integral format specifiers can have a third "
 		"modifier after width and precision that specifies the "
 		"base of the conversion from 2 to 64.  In this case the "
@@ -1390,10 +1396,16 @@ USAGE_LICENSE
 	"in \afile\a that can be used a separate shell script browser.  The "
 	"-R option requires a script to be specified as the first operand.]"
 #endif /* SHOPT_KIA */
+#if SHOPT_REGRESS
+"[I:regress]:[intercept?Enable the regression test \aintercept\a. Must be "
+	"the first command line option(s).]"
+#endif
 #if SHOPT_BASH
    "\fbash2\f"
 #endif
 "\fabc\f"
+"?"
+"[T?Enable implementation specific test code defined by mask.]#[mask]"
 "\n"
 "\n[arg ...]\n"
 "\n"
@@ -1477,25 +1489,37 @@ USAGE_LICENSE
 ;
 
 const char sh_optsleep[] =
-"[-1c?\n@(#)$Id: sleep (AT&T Research) 2008-12-03 $\n]"
+"[-1c?\n@(#)$Id: sleep (AT&T Research) 2009-03-12 $\n]"
 USAGE_LICENSE
 "[+NAME?sleep - suspend execution for an interval]"
 "[+DESCRIPTION?\bsleep\b suspends execution for at least the time specified "
-	"by \aseconds\a or until a \bSIGALRM\b signal is received.  "
-	"\aseconds\a can be specified as a floating point number but the "
-	"actual granularity depends on the underlying system, normally "
-	"around 1 millisecond.]"
-"[s?Sleep until a signal is received or timeout is received.  If \aseconds\a "
-	"is omitted or 0, no timeout will be used.]"
+	"by \aduration\a or until a \bSIGALRM\b signal is received. "
+	"\aduration\a may be one of the following:]"
+"{"
+	"[+integer?The number of seconds to sleep.]"
+	"[+floating point?The number of seconds to sleep. The actual "
+		"granularity depends on the underlying system, normally "
+		"around 1 millisecond.]"
+	"[+P\an\a\bY\b\an\a\bM\b\an\a\bDT\b\an\a\bH\b\an\a\bM\b\an\a\bS?An ISO 8601 duration "
+		"where at least one of the duration parts must be specified.]"
+	"[+P\an\a\bW?An ISO 8601 duration specifying \an\a weeks.]"
+	"[+p\an\a\bY\b\an\a\bM\b\an\a\bDT\b\an\a\bH\b\an\a\bm\b\an\a\bS?A case insensitive "
+		"ISO 8601 duration except that \bM\b specifies months, \bm\b before \bs\b or \bS\b "
+		"specifies minutes and after specifies milliseconds, \bu\b or \bU\b specifies "
+		"microseconds, and \bn\b specifies nanoseconds.]"
+	"[+date/time?Sleep until the \bdate\b(1) compatible date/time.]"
+"}"
+"[s?Sleep until a signal or a timeout is received. If \aduration\a is omitted "
+	"or 0 then no timeout will be used.]"
 "\n"
-"\nseconds\n"
+"\n[ duration ]\n"
 "\n"
 "[+EXIT STATUS?]{"
-	"[+0?The execution was successfully suspended for at least \atime\a "
-	"seconds, or a \bSIGALRM\b signal was received.]"
+	"[+0?The execution was successfully suspended for at least \aduration\a "
+	"or a \bSIGALRM\b signal was received.]"
 	"[+>0?An error occurred.]"
 "}"
-"[+SEE ALSO?\btime\b(1), \bwait\b(1)]"
+"[+SEE ALSO?\bdate\b(1), \btime\b(1), \bwait\b(1)]"
 ;
 
 const char sh_opttrap[] =

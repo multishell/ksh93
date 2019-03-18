@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                     Copyright (c) 1994-2008 AT&T                     #
+#                     Copyright (c) 1994-2009 AT&T                     #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                               by AT&T                                #
@@ -32,7 +32,7 @@ case $(getopts '[-][123:xyz]' opt --xyz 2>/dev/null; echo 0$opt) in
 0123)	ARGV0="-a $command"
 	USAGE=$'
 [-?
-@(#)$Id: mktest (AT&T Labs Research) 2008-08-08 $
+@(#)$Id: mktest (AT&T Labs Research) 2009-03-31 $
 ]
 '$USAGE_LICENSE$'
 [+NAME?mktest - generate a regression test scripts]
@@ -66,7 +66,8 @@ unit.rt [ unit [ arg ... ] ]
             input of the first EXEC in a TEST group is an empty regular
             file.]
         [+EXPORT \aname\a=\avalue\a ...?Export list for subsequent
-            commands in the TEST group.]
+            commands in the TEST group or for all TEST groups if before
+	    the first TEST group.]
         [+IGNORESPACE [ 0 | 1 ]
             ?Ignore space differences when comparing expected output.]
         [+KEEP \apattern\a ...?File match patterns of files to retain
@@ -77,6 +78,14 @@ unit.rt [ unit [ arg ... ] ]
             optional arguments.]
         [+TEST [ \anumber\a ]] [ \adescription\a ... ]]?Define a new
             test group with optional \anumber\a and \adescripion\a.]
+        [+TWD [ \adir\a ... ]]?Set the temporary test dir to \adir\a.
+            The default is \aunit\a\b.tmp\b, where \aunit\a is the test
+            input file sans directory and suffix. If \adir\a matches \b/*\b
+            then it is the directory name; if \adir\a is non-null then the
+            prefix \b${TMPDIR:-/tmp}\b is added; otherwise if \adir\a is
+            omitted then
+            \b${TMPDIR:-/tmp}/tst-\b\aunit\a-$$-$RANDOM.\b\aunit\a is
+            used.]
         [+UMASK [ \amask\a ]]?Run subsequent tests with \bumask\b(1)
             \amask\a. If \amask\a is omitted then the original \bumask\b is
             used.]
@@ -197,9 +206,7 @@ function TEST
 		case $STYLE in
 		shell)	print -u$stdout -r -- unset ${!RESET[@]} ;;
 		esac
-		for i in ${!RESET[@]}
-		do	unset RESET[$i]
-		done
+		unset RESET
 	fi
 	if	(( ${#REMOVE[@]} ))
 	then	rm -f -- "${!REMOVE[@]}"
@@ -237,10 +244,22 @@ function TEST
 	CODE=0
 }
 
+function TWD
+{
+	case $STYLE in
+	regress)LINE
+		print -u$stdout -r -f $'TWD'
+		for ARG in "$@"
+		do	print -u$stdout -r -f " $QUOTE" -- "$ARG"
+		done
+		print -u$stdout
+		;;
+	esac
+}
+
 function RUN
 {
 	typeset i n p op unit sep output=1 error=1 exitcode=1
-	integer z
 	op=$1
 	shift
 	while	:
@@ -274,11 +293,12 @@ function RUN
 		done
 		print -u$stdout
 		[[ ${DATA[-]} || /dev/fd/0 -ef /dev/fd/$stdin ]] || cat > $TEMP.in
-		IO=$(<$TEMP.in)
-		(( z = $(wc -c < $TEMP.in) ))
-		if	(( z && z == ${#IO} ))
-		then	n=-n
-		else	n=
+		IO=$(cat $TEMP.in; print :)
+		if	[[ $IO == ?*$'\n:' ]]
+		then	IO=${IO%??}
+			n=
+		else	IO=${IO%?}
+			n=-n
 		fi
 		{
 			[[ $UMASK != $UMASK_ORIG ]] && umask $UMASK
@@ -315,11 +335,12 @@ function RUN
 				-)	p=$TEMP.in ;;
 				*)	p=$WORK/$i ;;
 				esac
-				IO=$(<$p)
-				(( z = $(wc -c < $p) ))
-				if	(( z && z == ${#IO} ))
-				then	n=-n
-				else	n=
+				IO=$(cat $p; print :)
+				if	[[ $IO == ?*$'\n:' ]]
+				then	IO=${IO%??}
+					n=
+				else	IO=${IO%?}
+					n=-n
 				fi
 				print -u$stdout -n -r -- $'\t\tINPUT' $n
 				print -u$stdout -r -f " $QUOTE" -- "$i"
@@ -328,11 +349,12 @@ function RUN
 			print -u$stdout
 			unset DATA[$i]
 		done
-		IO=$(<$TEMP.out)
-		(( z = $(wc -c < $TEMP.out) ))
-		if	(( z && z == ${#IO} ))
-		then	n=-n
-		else	n=
+		IO=$(cat $TEMP.out; print :)
+		if	[[ $IO == ?*$'\n:' ]]
+		then	IO=${IO%??}
+			n=
+		else	IO=${IO%?}
+			n=-n
 		fi
 		if	[[ $IO != "$OUTPUT" ]]
 		then	OUTPUT=$IO
@@ -348,12 +370,13 @@ function RUN
 				print -u$stdout
 			fi
 		fi
-		IO=$(<$TEMP.err)
+		IO=$(cat $TEMP.err; print :)
 		IO=${IO//$command\[*([0-9])\]:\ .\[*([0-9])\]:\ @(EXEC|PROG)\[*([0-9])\]:\ /}
-		(( z = $(wc -c < $TEMP.err) ))
-		if	(( z && z == ${#IO} ))
-		then	n=-n
-		else	n=
+		if	[[ $IO == ?*$'\n:' ]]
+		then	IO=${IO%??}
+			n=
+		else	IO=${IO%?}
+			n=-n
 		fi
 		if	[[ $IO != "$ERROR" ]]
 		then	ERROR=$IO
@@ -478,7 +501,7 @@ function EXPORT
 		v=${x#*=}
 		export "$x"
 		print -u$stdout -r -f " %s=$QUOTE" "$n" "$v"
-		RESET[$n]=1
+		(( TEST )) && RESET[$n]=1
 	done
 	print -u$stdout
 }

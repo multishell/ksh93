@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -114,7 +114,11 @@ native_locale(const char* locale, char* buf, size_t siz)
 					break;
 				}
 			if (!ctry)
+			{
+				if (!lang)
+					return 0;
 				ctry = SUBLANG_DEFAULT;
+			}
 		}
 		lcid = MAKELCID(MAKELANGID(lang, ctry), SORT_DEFAULT);
 	}
@@ -141,14 +145,15 @@ native_setlocale(int category, const char* locale)
 	char*		sys;
 	char		buf[256];
 
+	if (!(usr = native_locale(locale, buf, sizeof(buf))))
+		return 0;
+
 	/*
 	 * win32 doesn't have LC_MESSAGES
 	 */
 
 	if (category == LC_MESSAGES)
 		return (char*)locale;
-	if (!(usr = native_locale(locale, buf, sizeof(buf))))
-		return 0;
 	sys = uwin_setlocale(category, usr);
 	if (ast.locale.set & AST_LC_debug)
 		sfprintf(sfstderr, "locale uwin %17s %-24s %-24s\n", lc_categories[lcindex(category, 0)].name, usr, sys);
@@ -576,6 +581,19 @@ set_ctype(Lc_category_t* cp)
 		}
 #endif
 	}
+	if (ast.locale.set & (AST_LC_debug|AST_LC_setlocale))
+		sfprintf(sfstderr, "locale info %17s MB_CUR_MAX=%d%s%s%s%s\n"
+			, cp->name
+			, ast.mb_cur_max
+			, ast.mb_len == debug_mblen ? " debug_mblen" : ast.mb_len == mblen ? " mblen" : ""
+			, ast.mb_towc == debug_mbtowc ? " debug_mbtowc" : ast.mb_towc == mbtowc ? " mbtowc"
+#ifdef mb_state
+				: ast.mb_towc == sjis_mbtowc ? " sjis_mbtowc"
+#endif
+				: ""
+			, ast.mb_width == debug_wcwidth ? " debug_wcwidth" : ast.mb_width == wcwidth ? " wcwidth" : ast.mb_width == default_wcwidth ? " default_wcwidth" : ""
+			, ast.mb_conv == debug_wctomb ? " debug_wctomb" : ast.mb_conv == wctomb ? " wctomb" : ""
+			);
 	return 0;
 }
 

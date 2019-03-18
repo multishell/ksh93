@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -478,7 +478,7 @@ void nv_attribute(register Namval_t *np,Sfio_t *out,char *prefix,int noname)
 					}
 					else if(tp->sh_name[1]=='A')
 						continue;
-					if(ap && (ap->nelem&ARRAY_TREE))
+					if((ap && (ap->nelem&ARRAY_TREE)) || (!ap && nv_isattr(np,NV_NOFREE)))
 					{
 						if(prefix && *prefix)
 							sfwrite(out,"-C ",3);

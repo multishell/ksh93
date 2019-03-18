@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2008 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2009 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -150,6 +150,7 @@ struct limits
 	pid_t		bckpid;		/* background process id */ \
 	pid_t		cpid; \
 	pid_t		spid; 		/* subshell process id */ \
+	pid_t		pipepid; \
 	int32_t		ppid;		/* parent process id of shell */ \
 	int		topfd; \
 	int		sigmax;		/* maximum number of signals */ \
@@ -167,6 +168,8 @@ struct limits
 	char		winch; \
 	char		indebug; 	/* set when in debug trap */ \
 	unsigned char	lastsig;	/* last signal received */ \
+	char		subshare;	/* set when in ${..} comsub */ \
+	char		toomany;	/* set when out of fd's */ \
 	char		*readscript;	/* set before reading a script */ \
 	int		*inpipe;	/* input pipe pointer */ \
 	int		*outpipe;	/* output pipe pointer */ \
@@ -226,10 +229,12 @@ struct limits
 	Shopt_t		glob_options; \
 	Namval_t	*typeinit; \
 	int		*stats; \
-	Namfun_t	nvfun;
+	Namfun_t	nvfun; \
+	struct Regress_s*regress;
 
 #include	<shell.h>
 
+#include	"regress.h"
 
 /* error exits from various parts of shell */
 #define	NIL(type)	((type)0)

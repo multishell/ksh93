@@ -1,3 +1,23 @@
+09-05-01 iffe.sh: fix output initialization *again*
+09-04-28 package.sh: handle admin.db contact field $9
+09-04-15 iffe.sh: add implicit "ini" op to initialize io for subsequent ops
+09-03-31 regress.sh: EXPORT before test => global ENVIRON[]
+09-03-26 package.sh: test fail pattern is 'fail[es]'
+09-03-26 UNIT - ... appends (options) to command line
+09-03-19 TEST.mk: x.tst => x only if x is command target
+09-03-15 regress.sh: add ${MAIN} for base name of main unit
+09-03-10 TEST.mk: add .SOURCE:tests if tests is a dir
+09-03-03 regress.sh: allow command line unit to override UNIT
+09-03-03 mktest.sh: handle IO == $'\n'
+09-02-02 package.sh: delay $INSTALLROOT/bin/.paths generation until mamprobe runs
+09-01-30 cc.mvs.390: c89 balks at [ ()] in -Dname="..."!
+09-01-27 package.sh: add isascii() to use ratz instead of tar
+09-01-20 hurl.sh: add --size=bytes option
+09-01-08 TEST.mk: add test.* prereqs, multiple arg lists with :T=*: binding
+09-01-03 regress.sh: fix UNIT to allow command line override
+09-01-03 mktest.sh: handle TWD
+08-12-24 package.sh: fix cross-compile HOSTTYPE logic
+08-12-15 package.sh,hurl.sh: handle http codes { 301 302 303 }
 08-10-16 make.probe '-fno-stack-protector -fno-stack-protector-all' to cop out!!
 08-09-30 rt.sh: fix ksh93 regression test signal count
 08-09-26 regress.sh: ignore SIGPIPE for SET pipe-input

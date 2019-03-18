@@ -1,7 +1,7 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <HTML>
 <HEAD>
-<META name="generator" content="mm2html (AT&T Research) 2009-07-01">
+<META name="generator" content="mm2html (AT&T Research) 2010-02-02">
 <META name="description" content="ast-ksh package">
 <META name="keywords" content="software, package">
 <TITLE> ast-ksh package </TITLE>
@@ -192,7 +192,21 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-09-12-24  --- Release ksh93t+  ---
+10-02-02  --- Release ksh93t+  ---
+10-02-02  A buffer overflow in read and another in binary type base64
+	  encoding were fixed.
+10-01-20  A bug in the evaluation of arithmetic expression in which the
+	  subscript was evaluated twice for $((foo&#0091;x++&#0093;++)) has been fixed.
+10-01-19  A workaround for a double-free of a trap in both a subshell and its
+	  parent has been added.
+10-01-18  A bug in type handling of typeset -H has been fixed.
+10-01-15  The "adding empty subscript" warning now only emitted with -x set.
+10-01-01  A bug in the parser in which '$((case i in i):;esac);:))' was not
+	  parsed correctly was fixed.
+10-01-01  A bug in the parser in which '$(( 2 , 3.6 ))' dumped core for locales
+	  with radix char , and thousands separator . has been fixed.
+09-12-28  A bug in the handling of SIGCLD on systems that generated SIGCLD
+	  while blocked waiting for process to complete has been fixed.
 09-12-24  ast setlocale() reworked to differentiate env var changes from user
 	  override.
 09-12-18  A bug with the SHOPT_BGX option set which disabled traps for signals
@@ -224,7 +238,7 @@ All recorded changes follow.
 	  local variable.
 09-11-17  "read -n1" from the terminal has been fixed to read exactly one character.
 09-11-11  Job control now works for subshell commands, (...).
-09-11-11  If set -e is on for an interractive shell errors in special builtins
+09-11-11  If set -e is on for an interactive shell errors in special builtins
 	  now cause the shell to exit.
 09-11-11  A bug in which an interrupt handler processed during the read builtin
 	  when IFS did not contain a new line has been fixed.
@@ -348,7 +362,7 @@ All recorded changes follow.
 09-05-01  A bug that caused a core dump when SIGWINCH was received and
 	  both vi and emacs mode were off has been fixed.
 09-04-22  Default alias compound='typeset -C' added.
-09-04-15  A bug that caused ${...;} to hang for large files has ben fixed.
+09-04-15  A bug that caused ${...;} to hang for large files has been fixed.
 09-04-08  A change was made in the -n option which printed out an incorrect
 	  warning with &lt;&gt;.
 09-04-07  The emacs edit command M-_ and M_. and the vi command _ was fixed
@@ -2380,8 +2394,22 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+10-02-02 string/base64.c: fix corner case output buffer overflow
+10-02-02 features/fs: sys/mnttab.h requires stdio.h on some systems!!
+10-02-01 misc/optget.c: uppercase --html heading -- doh
+10-01-29 misc/optget.c: &#0091;+NAME?...&#0093; overrides error_info.id for &gt;= STYLE_man
+10-01-25 vmalloc/vmprivate.c: fix seg ptr initialization bug (24 years old!!)
+10-01-20 misc/optget.c: handle nested {...} rendering
+10-01-20 misc/state.c: add ast.version for runtime api version
+10-01-20 port/astconf.c: "_AST_VERSION" now returns ast.version
+10-01-20 include/ast_std.h: add ast.version for runtime api version
+10-01-19 astlicense.c: add epl
+10-01-01 vmalloc: VMALLOC_OPTIONS env var for all runtime options
+10-01-01 include: change some &lt;ast.h&gt; refs to less intrusive &lt;ast_*.h&gt;
+10-01-01 setlocale.c,translate.c,fmterror.c: AST_LC_internal retains prev state
+10-01-01 comp/setlocale.c: AST_LC_setenv defers to LC_ALL (for sh)
+10-01-01 ast_std.h: add { AST_LC_internal AST_LC_setenv }
 09-12-24 comp/setlocale.c: fix setlocale(LC_ALL,"") when already initialized
-09-12-21 comp/setlocale.c: locale name "?" prefix defers to LC_ALL (for sh)
 09-12-17 misc/optget.c: handle mixed solaris usage="x:f:(in)yo:(out)"
 09-12-11 regex/regcomp.c: posix semantics for &#0091;z-a&#0093;
 09-12-11 regex/regcomp.c: fix BRE/ERE ^^ logic
@@ -2469,7 +2497,7 @@ All recorded changes follow.
 08-08-19 strn?tol?d: handle long double with smaller exponent range than double
 08-08-18 sfio/sfcvt.c: eliminate excessive multiplies and integral overprecision
 08-08-11 tm/tmxfmt.c: handle %10N and %010N
-08-08-06 include/shcmd.h: add 'int invariant;' for builtin invarinat arg count
+08-08-06 include/shcmd.h: add 'int invariant;' for builtin invariant arg count
 08-08-05 features/ndbm: favor sleepycat ndbm compatibility
 08-07-21 include/glob.h,misc/glob.c: GLOB_STARSTAR only forces lstat on chdir
 08-07-17 sfio: sync with kpv
@@ -3982,6 +4010,9 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcmd changes">libcmd changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+10-01-26 tail.c: -f sleep(1) only if no progress from last round of checks
+10-01-20 fts_fix.&#0091;ch&#0093;: use &lt;fts_fix.h&gt; instead of &lt;fts.h&gt; (see fts_fix.c)
+10-01-20 cp.c: free(state) if called from old shell
 09-12-10 join.c: &lt;wctype.h&gt; for iswspace()!
 09-12-04 cmd.h: fix CMD_DYNAMIC logic
 09-12-04 cut.c: handle -d mb
@@ -4351,7 +4382,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>December 24, 2009</TD>
+<TD align=right>February 06, 2010</TD>
 </TR>
 </TABLE>
 <P>

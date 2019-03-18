@@ -192,7 +192,15 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-09-12-11  --- Release ksh93t+  ---
+09-12-24  --- Release ksh93t+  ---
+09-12-24  ast setlocale() reworked to differentiate env var changes from user
+	  override.
+09-12-18  A bug with the SHOPT_BGX option set which disabled traps for signals
+	  &lt; SIGCHLD when a trap for a signal &gt; SIGCHLD was set has been fixed.
+09-12-18  A bug where &#0091;&#0091; -v var &#0093;&#0093; was incorrect for some variables (including
+	  LC_* vars) has been fixed.
+09-12-15  A bug that produced a syntax error when a multibyte character
+	  straddled a buffer boundary has been fixed.
 09-12-11  A bug where the subscript of an unset variable was not evaluated has
 	  been fixed.
 09-12-09  A bug where shcomp dumped core on certain syntax errors has been fixed.
@@ -271,7 +279,7 @@ All recorded changes follow.
 	  did not display an error message has been fixed.
 09-08-24  When processing profiles, ksh93 now violates the POSIX standard and
 	  treats &amp;&gt; as a redirection operator similar to bash.
-09-08-23  A bug in the handling of the trap on SIGPIPE that could lead to am
+09-08-23  A bug in the handling of the trap on SIGPIPE that could lead to a
 	  memory fault has been fixed.
 09-08-21  A bug in the handling of the comma operator in arithmetic expressions
 	  that could cause a core dump on some systems has been fixed.
@@ -2372,6 +2380,9 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+09-12-24 comp/setlocale.c: fix setlocale(LC_ALL,"") when already initialized
+09-12-21 comp/setlocale.c: locale name "?" prefix defers to LC_ALL (for sh)
+09-12-17 misc/optget.c: handle mixed solaris usage="x:f:(in)yo:(out)"
 09-12-11 regex/regcomp.c: posix semantics for &#0091;z-a&#0093;
 09-12-11 regex/regcomp.c: fix BRE/ERE ^^ logic
 09-12-11 regex/regcomp.c: fix regcomb() for REG_LEFT|REG_RIGHT
@@ -4340,7 +4351,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>December 14, 2009</TD>
+<TD align=right>December 24, 2009</TD>
 </TR>
 </TABLE>
 <P>

@@ -51,7 +51,7 @@ esac
 exec < $table
 while	read type args name aka comment
 do	case $type in
-	[fi])	names="$names $name"
+	[fix])	names="$names $name"
 		tests="$tests,$name"
 		case $_typ_long_double in
 		1)	tests="$tests,${name}l" ;;
@@ -135,6 +135,7 @@ do	eval x='$'_lib_${name}l y='$'_lib_${name} r='$'TYPE_${name} a='$'ARGS_${name}
 	eval n='$'_npt_$f m='$'_mac_$f d='$'_dat_$f
 	case $r in
 	i)	L=int r=int R=1 ;;
+	x)	L=Sfdouble_t r=$t R=4;;
 	*)	L=Sfdouble_t r=$t R=0 ;;
 	esac
 	case $d:$m:$n in

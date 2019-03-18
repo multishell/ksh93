@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -52,8 +52,12 @@ fmtbuf(size_t n)
 			{
 				bigsiz = roundof(n, 8 * 1024);
 				if (!(big = newof(big, char, bigsiz, 0)))
+				{
+					lck--;
 					return 0;
+				}
 			}
+			lck--;
 			return big;
 		}
 		nxt = buf;

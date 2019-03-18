@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -36,9 +36,8 @@ reg int		rc;	/* record separator	*/
 int		type;
 #endif
 {
-	reg ssize_t	n;
+	reg ssize_t	n, un;
 	reg uchar	*s, *ends, *us;
-	reg ssize_t	un;
 	reg int		found;
 	reg Sfrsrv_t*	rsrv;
 
@@ -95,7 +94,7 @@ int		type;
 				break;
 #endif
 	do_copy:
-		if(s < ends)
+		if(s < ends) /* found separator */
 		{	s += 1;		/* include the separator */
 			found = 1;
 
@@ -112,6 +111,11 @@ int		type;
 
 		/* amount to be read */
 		n = s - f->next;
+
+		if(!found && _Sfmaxr > 0 && un+n+1 >= _Sfmaxr) /* already exceed limit */
+		{	us = NIL(uchar*);
+			goto done;
+		}
 
 		/* get internal buffer */
 		if(!rsrv || rsrv->size < un+n+1)

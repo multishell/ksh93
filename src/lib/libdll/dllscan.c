@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1997-2005 AT&T Corp.                  *
+*                  Copyright (c) 1997-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -250,7 +250,7 @@ dllsopen(const char* lib, const char* name, const char* version)
 	scan->vm = vm;
 	info = dllinfo();
 	scan->flags = info->flags;
-	if (!name)
+	if (!name || !*name || *name == '-' && !*(name + 1))
 	{
 		name = (const char*)"?*";
 		scan->flags |= DLL_MATCH_NAME;
@@ -266,8 +266,9 @@ dllsopen(const char* lib, const char* name, const char* version)
 		memcpy(scan->pb, name, t - (char*)name);
 		name = (const char*)(t + 1);
 	}
-	if (!version)
+	if (!version || !*version || *version == '-' && !*(version + 1))
 	{
+		version = 0;
 		scan->flags |= DLL_MATCH_VERSION;
 		sfsprintf(scan->nam, sizeof(scan->nam), "%s%s%s", info->prefix, name, info->suffix);
 	}

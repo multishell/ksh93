@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -244,7 +244,7 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 		return(r);
 	    }
 
-	    case ERRMSG:
+	    case MESSAGE:
 		sfsync(NIL(Sfio_t*));
 #if 0
 		if(warn)

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -28,6 +28,8 @@
  */
 
 #include <tmx.h>
+
+#include "FEATURE/tmlib"
 
 /*
  * convert Tm_t to Time_t
@@ -92,7 +94,7 @@ tmxtime(register Tm_t* tm, int west)
 				tm->tm_year = tmequiv(tm) - 1900;
 				now = tmxsec(tmxtime(tm, tm_info.zone->west));
 				tm->tm_year = y;
-				if (!(tl = localtime(&now)))
+				if (!(tl = tmlocaltime(&now)))
 					return TMX_NOTIME;
 				if (tm->tm_isdst = tl->tm_isdst)
 					t += tm_info.zone->dst * 60;
@@ -110,7 +112,7 @@ tmxtime(register Tm_t* tm, int west)
 				tm->tm_isdst = 0;
 				now = tmxsec(tmxtime(tm, tm_info.zone->west));
 				tm->tm_year = y;
-				if (!(tl = localtime(&now)))
+				if (!(tl = tmlocaltime(&now)))
 					return TMX_NOTIME;
 				tm->tm_isdst = tl->tm_isdst;
 			}

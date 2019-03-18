@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                  Copyright (c) 1982-2005 AT&T Corp.                  #
+#                  Copyright (c) 1982-2006 AT&T Corp.                  #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                            by AT&T Corp.                             #
@@ -20,7 +20,7 @@
 function err_exit
 {
 	print -u2 -n "\t"
-	print -u2 -r $Command[$1]: "${@:2}"
+	print -u2 -r ${Command}[$1]: "${@:2}"
 	let Errors+=1
 }
 alias err_exit='err_exit $LINENO'
@@ -41,6 +41,16 @@ getopts :r:s var -r
 if	[[ $var != : || $OPTARG != r ]]
 then	err_exit "'getopts :r:s var -r' not working"
 fi
+OPTIND=1
+getopts :d#u var -d 100
+if	[[ $var != d || $OPTARG != 100 ]]
+then	err_exit "'getopts :d#u var -d 100' not working var=$var"
+fi
+OPTIND=1
+while getopts 'ab' option -a -b
+do	[[ $OPTIND == $((OPTIND)) ]] || err_exit "OPTIND optimization bug"
+done
+
 false ${foo=bar} &&  err_exit "false failed"
 read <<!
 hello world
@@ -258,7 +268,10 @@ if	[[ $(printf '%..*s\n' : abc def) != abc:def ]]
 then	err_exit	"printf '%..*s' not working"
 fi
 [[ $(printf '%q\n') == '' ]] || err_exit 'printf "%q" with missing arguments'
-[[ $(printf '%T\n' now) == "$(date)" ]] || err_exit 'printf "%T" now'
+# we won't get hit by the one second boundary twice, right?
+[[ $(printf '%T\n' now) == "$(date)" ]] ||
+[[ $(printf '%T\n' now) == "$(date)" ]] ||
+err_exit 'printf "%T" now'
 behead()
 {
 	read line
@@ -307,6 +320,22 @@ getopts 'n#num' opt  -n 3
 if	[[ $($SHELL -c $'printf \'%2$s %1$s\n\' world hello') != 'hello world' ]]
 then	err_exit 'printf %2$s %1$s not working'
 fi
+((n=0))
+((n++)); ARGC[$n]=1 ARGV[$n]=""
+((n++)); ARGC[$n]=2 ARGV[$n]="-a"
+((n++)); ARGC[$n]=4 ARGV[$n]="-a -v 2"
+((n++)); ARGC[$n]=4 ARGV[$n]="-a -v 2 x"
+((n++)); ARGC[$n]=4 ARGV[$n]="-a -v 2 x y"
+for ((i=1; i<=n; i++))
+do	set -- ${ARGV[$i]}
+	OPTIND=0
+	while	getopts -a tst "av:" OPT
+	do	:
+	done
+	if	[[ $OPTIND != ${ARGC[$i]} ]]
+	then	err_exit "\$OPTIND after getopts loop incorrect -- got $OPTIND, expected ${ARGC[$i]}"
+	fi
+done
 unset a
 { read -N3 a; read -N1 b;}  <<!
 abcdefg
@@ -375,5 +404,7 @@ fi
 	trap 'print $i' DEBUG
 	while (( i <2))
 	do	(( i++))
-	done) == $'0\n0\n1\n1\n2' ]]  || print -r "DEBUG trap not working"
+	done) == $'0\n0\n1\n1\n2' ]]  || err_exit  "DEBUG trap not working"
+getconf UNIVERSE - ucb
+[[ $($SHELL -c 'echo -3') == -3 ]] || err_exit "echo -3 not working in ucb universe"
 exit $((Errors))

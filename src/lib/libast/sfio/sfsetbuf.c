@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -219,11 +219,9 @@ reg size_t	size;	/* buffer size, -1 for default size */
 		else
 		{
 #if _sys_stat && _stat_blksize	/* preferred io block size */
-			if((bufsize = (ssize_t)st.st_blksize) > 0)
-				while((bufsize + (ssize_t)st.st_blksize) <= SF_PAGE)
-					bufsize += (ssize_t)st.st_blksize;
 			f->blksz = (size_t)st.st_blksize;
 #endif
+			bufsize = 64 * 1024;
 			if(S_ISDIR(st.st_mode) || (Sfoff_t)st.st_size < (Sfoff_t)SF_GRAIN)
 				okmmap = 0;
 			if(S_ISREG(st.st_mode) || S_ISDIR(st.st_mode))

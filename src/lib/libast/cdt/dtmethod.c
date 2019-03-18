@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -44,6 +44,8 @@ Dtmethod_t*	meth;
 	if(disc->eventf &&
 	   (*disc->eventf)(dt,DT_METH,(Void_t*)meth,disc) < 0)
 		return NIL(Dtmethod_t*);
+
+	dt->data->minp = 0;
 
 	/* get the list of elements */
 	list = dtflatten(dt);

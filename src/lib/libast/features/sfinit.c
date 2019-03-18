@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -23,7 +23,8 @@
  * generate sfio _Sftable static initializers
  */
 
-#include "iffeio.h"
+#include <stdio.h>
+
 #include "FEATURE/common"
 #include "FEATURE/float"
 

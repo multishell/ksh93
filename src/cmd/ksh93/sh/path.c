@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -40,6 +40,9 @@
 #   ifdef _hdr_exec_attr
 #	include	<exec_attr.h>
 #   endif
+#endif
+#ifndef ARG_MAX
+#   define ARG_MAX	4096
 #endif
 
 #define RW_ALL	(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH)
@@ -106,8 +109,8 @@ static pid_t path_xargs(const char *path, char *argv[],char *const envp[], int s
 	long size, left;
 	int nlast=1,n,exitval=0;
 	pid_t pid;
-	if(!argmax)
-		argmax = sysconf(_SC_ARG_MAX);
+	if(!argmax && (argmax = sysconf(_SC_ARG_MAX)) < 0)
+		argmax = ARG_MAX;
 	if(sh.xargmin < 0)
 		return((pid_t)-1);
 	size = argmax-1024;
@@ -515,6 +518,7 @@ static void funload(Shell_t *shp,int fno, const char *name)
 	sh_onstate(SH_NOALIAS);
 	shp->readscript = (char*)name;
 	shp->st.filename = path_fullname(stakptr(PATH_OFFSET));
+	error_info.line = 0;
 	sh_eval(sfnew(NIL(Sfio_t*),buff,IOBSIZE,fno,SF_READ),0);
 	shp->readscript = 0;
 	free((void*)shp->st.filename);
@@ -624,14 +628,17 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 			if(oldpp->bltin_lib)
 			{
 				typedef int (*Fptr_t)(int, char*[], void*);
+				Namval_t *np;
 				Fptr_t addr;
 				int n = staktell();
 				stakputs("b_");
 				stakputs(name);
 				stakputc(0);
-				if(addr=(Fptr_t)dlllook(oldpp->bltin_lib,stakptr(n)))
+				if((addr=(Fptr_t)dlllook(oldpp->bltin_lib,stakptr(n))) &&
+				   (!(np = sh_addbuiltin(stakptr(PATH_OFFSET),NiL,NiL)) || np->nvalue.bfp!=addr) &&
+				   (np = sh_addbuiltin(stakptr(PATH_OFFSET),addr,NiL)))
 				{
-					sh_addbuiltin(stakptr(PATH_OFFSET),addr,(void*)0)->nvenv = oldpp->bltin_lib;
+					np->nvenv = oldpp->bltin_lib;
 					return(oldpp);
 				}
 			}
@@ -770,11 +777,10 @@ void	path_exec(register const char *arg0,register char *argv[],struct argnod *lo
 	sfsync(NIL(Sfio_t*));
 	timerdel(NIL(void*));
 	/* find first path that has a library component */
-	for(libpath=pp; libpath && !libpath->lib ; libpath=libpath->next);
 	if(pp || slash) do
 	{
 		sh_sigcheck();
-		if(pp)
+		if(libpath=pp)
 		{
 			pp = path_nextcomp(pp,arg0,0);
 			opath = stakfreeze(1)+PATH_OFFSET;
@@ -811,7 +817,9 @@ pid_t path_spawn(const char *opath,register char **argv, char **envp, Pathcomp_t
 	stakputs(opath);
 	opath = stakfreeze(1)+PATH_OFFSET;
 	np=nv_search(argv[0],shp->track_tree,0);
-	if(!np || nv_size(np)>0)
+	while(libpath && !libpath->lib)
+		libpath=libpath->next;
+	if(libpath && (!np || nv_size(np)>0))
 	{
 		/* check for symlink and use symlink name */
 		char buff[PATH_MAX+1];
@@ -1269,6 +1277,8 @@ static int path_chkpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int 
 	int k,m,n,fd;
 	char *sp,*cp,*ep;
 	stakseek(offset+pp->len);
+	if(pp->len==1 && *stakptr(offset)=='/')
+		stakseek(offset);
 	stakputs("/.paths");
 	if((fd=open(stakptr(offset),O_RDONLY))>=0)
 	{
@@ -1320,11 +1330,13 @@ static int path_chkpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int 
 							sfsprintf(sp, k, "%s/%s", pp->name, ep);
 						else
 							sp = ep;
-						pp->bltin_lib = dllplug("ksh", sp, NiL, RTLD_LAZY, NiL, 0);
+						if (pp->bltin_lib = dllplug("ksh", sp, NiL, RTLD_LAZY, NiL, 0))
+							sh_addlib(pp->bltin_lib);
 						if (sp != ep)
 							free(sp);
 #else
-						pp->bltin_lib = dllfind(ep, NiL, RTLD_LAZY, NiL, 0);
+						if (pp->bltin_lib = dllfind(ep, NiL, RTLD_LAZY, NiL, 0))
+							sh_addlib(pp->bltin_lib);
 #endif
 					}
 				}

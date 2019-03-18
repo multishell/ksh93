@@ -144,12 +144,8 @@ tst	ast_LL note{ LL numeric suffix supported }end compile{
 tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 output{
 	#define _BYTESEX_H
 
+	#include <string.h>
 	#include <sys/types.h>
-
-	_BEGIN_EXTERNS_
-	extern int	sprintf _ARG_((const char*, ...));
-	extern int	strcmp _ARG_((const char*, const char*));
-	_END_EXTERNS_
 
 	#if _STD_
 	#if N == 1
@@ -280,12 +276,9 @@ tst	- -DN=1 - -DN=2 - -DN=3 - -DN=4 - -DN=5 - -DN=6 - -DN=7 - -DN=8 - -DN=0 outp
 tst	- -DN=1 - -DN=0 output{
 	#define _BYTESEX_H
 
+	#include <stdio.h>
+	#include <string.h>
 	#include <sys/types.h>
-
-	_BEGIN_EXTERNS_
-	extern int	sprintf _ARG_((const char*, ...));
-	extern int	strcmp _ARG_((const char*, const char*));
-	_END_EXTERNS_
 
 	#if !N || !_STD_
 	#undef	_typ_long_double
@@ -485,4 +478,20 @@ cat{
 	#	define _typ_ssize_t	1
 		typedef int ssize_t;
 	#endif
+}end
+
+run{
+	grep __NO_INCLUDE_WARN__ /usr/include/stat.h >/dev/null 2>&1 &&
+	grep '<name.h>' /usr/include/sys/stat.h >/dev/null 2>&1 &&
+	grep __name_h /usr/include/name.h >/dev/null 2>&1 &&
+	cat <<!
+	/* disable ${HOSTTYPE} <sys/foo.h> vs. <foo.h> clash warnings */
+	#ifndef __NO_INCLUDE_WARN__
+	#define __NO_INCLUDE_WARN__	1
+	#endif
+	/* disable ${HOSTTYPE} <sys/stat.h> <name.h> hijack */
+	#ifndef __name_h
+	#define __name_h		1
+	#endif
+	!
 }end

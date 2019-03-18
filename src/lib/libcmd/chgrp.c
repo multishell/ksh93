@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1992-2005 AT&T Corp.                  *
+*                  Copyright (c) 1992-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -28,7 +28,7 @@
  */
 
 static const char usage_1[] =
-"[-?@(#)$Id: chgrp (AT&T Labs Research) 2002-11-14 $\n]"
+"[-?@(#)$Id: chgrp (AT&T Labs Research) 2005-04-14 $\n]"
 USAGE_LICENSE
 ;
 
@@ -49,8 +49,8 @@ static const char usage_own_1[] =
 ;
 
 static const char usage_2[] =
-"[c:changes?Describe only files whose ownership actually change.]"
-"[f:quiet|silent?Do not report files whose permissioins fail to change.]"
+"[c:changes?Describe only files whose ownership actually changes.]"
+"[f:quiet|silent?Do not report files whose ownership fails to change.]"
 "[l|h:symlink?Change the ownership of the symbolic links on systems that"
 "	support this.]"
 "[m:map?The first operand is interpreted as a file that contains a map"
@@ -59,8 +59,8 @@ static const char usage_2[] =
 "	\ato\a part of the pair. The process stops at the first match for"
 "	each file. Unmatched files are silently ignored.]"
 "[n:show?Show actions but don't execute.]"
-"[r:reference?The explicit ownership operand is omitted and the ownership of"
-"	\afile\a is used instead.]:[file]"
+"[r:reference?Omit the explicit ownership operand and use the ownership of"
+"	\afile\a instead.]:[file]"
 "[v:verbose?Describe changed permissions of all files.]"
 "[H:metaphysical?Follow symbolic links for command arguments; otherwise don't"
 "	follow symbolic links when traversing directories.]"
@@ -436,7 +436,7 @@ b_chgrp(int argc, char** argv, void* context)
 					}
 					sfprintf(sfstdout, "%s uid:%05d->%05d gid:%05d->%05d %s\n", op, ent->fts_statp->st_uid, uid, ent->fts_statp->st_gid, gid, ent->fts_accpath);
 				}
-				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, uid, gid))
+				if (!(options & OPT_SHOW) && (*chownf)(ent->fts_accpath, uid, gid) && !(options & OPT_FORCE))
 					error(ERROR_system(0), "%s: cannot change%s", ent->fts_accpath, s);
 			}
 			break;

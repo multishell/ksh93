@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -17,6 +17,7 @@
 *                  David Korn <dgk@research.att.com>                   *
 *                                                                      *
 ***********************************************************************/
+#pragma prototyped
 /*
  * bash style history expansion
  *
@@ -30,11 +31,17 @@
  * <K.Fleischer@omnium.de>
  */
 
-#include <ctype.h>
 
 #include "defs.h"
 #include "edit.h"
 
+#if ! SHOPT_HISTEXPAND
+
+NoN(hexpand)
+
+#else
+
+#include <ctype.h>
 
 static char *modifiers = "htrepqxs&";
 static int mod_flags[] = { 0, 0, 0, 0, HIST_PRINT, HIST_QUOTE, HIST_QUOTE|HIST_QUOTE_BR, 0, 0 };
@@ -143,7 +150,7 @@ int hist_expand(const char *ln, char **xp)
 		*str,	/* search string */
 		*evp,	/* event/word designator string, for error msgs */
 		*cc=0,	/* copy of current line up to cp; temp ptr */
-		hc[3]={'!','^','\0'},	/* default histchars */
+		hc[3],	/* default histchars */
 		*qc="\'\"`";	/* quote characters */
 	Sfio_t	*ref=0,	/* line referenced by event designator */
 		*tmp=0,	/* temporary line buffer */
@@ -156,6 +163,9 @@ int hist_expand(const char *ln, char **xp)
 	if(!wm)
 		wm = sfopen(NULL, NULL, "swr");
 
+	hc[0] = '!';
+	hc[1] = '^';
+	hc[2] = 0;
 	if((np = nv_open("histchars",sh.var_tree,0)) && (cp = nv_getval(np)))
 	{
 		if(cp[0])
@@ -721,3 +731,4 @@ done:
 	return (flag & HIST_ERROR ? HIST_ERROR : flag & HIST_FLAG_RETURN_MASK);
 }
 
+#endif

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -22,7 +22,7 @@
 #ifndef _SFIO_H
 #define _SFIO_H	1
 
-#define SFIO_VERSION	20040101L
+#define SFIO_VERSION	20050202L
 
 /*	Public header file for the sfio library
 **
@@ -31,6 +31,7 @@
 
 typedef struct _sfio_s		Sfio_t;
 typedef struct _sfdisc_s	Sfdisc_t;
+typedef struct _sfieee_s	Sfieee_t;
 
 #if defined(_AST_STD_H) || defined(_PACKAGE_ast) && defined(_SFIO_PRIVATE)
 #include	<ast_std.h>
@@ -56,6 +57,16 @@ struct _sfdisc_s
 	Sfseek_f	seekf;		/* seek function		*/
 	Sfexcept_f	exceptf;	/* to handle exceptions		*/
 	Sfdisc_t*	disc;		/* the continuing discipline	*/
+};
+
+/* IEEE constants structure */
+struct _sfieee_s
+{	float		fltnan;		/* float NAN			*/
+	float		fltinf;		/* float INF			*/
+	double		dblnan;		/* double NAN			*/
+	double		dblinf;		/* double INF			*/
+	Sfdouble_t	ldblnan;	/* Sfdouble_t NAN		*/
+	Sfdouble_t	ldblinf;	/* Sfdouble_t INF		*/
 };
 
 #include <sfio_s.h>
@@ -193,8 +204,6 @@ struct _sffmt_s
 
 _BEGIN_EXTERNS_
 
-extern ssize_t		_Sfi;
-
 /* standard in/out/err streams */
 
 #if _BLD_sfio && defined(__EXPORT__)
@@ -203,6 +212,9 @@ extern ssize_t		_Sfi;
 #if !_BLD_sfio && defined(__IMPORT__)
 #define extern		extern __IMPORT__
 #endif
+
+extern ssize_t		_Sfi;
+extern ssize_t		_Sfmaxr;
 
 extern Sfio_t*		sfstdin;
 extern Sfio_t*		sfstdout;
@@ -271,6 +283,8 @@ extern Sfoff_t		sfsk _ARG_((Sfio_t*, Sfoff_t, int, Sfdisc_t*));
 extern ssize_t		sfpkrd _ARG_((int, Void_t*, size_t, int, long, int));
 
 /* portable handling of primitive types */
+extern Sfieee_t*	sfieee _ARG_((void));
+
 extern int		sfdlen _ARG_((Sfdouble_t));
 extern int		sfllen _ARG_((Sflong_t));
 extern int		sfulen _ARG_((Sfulong_t));
@@ -308,6 +322,7 @@ extern int		sffileno _ARG_((Sfio_t*));
 extern int		sfstacked _ARG_((Sfio_t*));
 extern ssize_t		sfvalue _ARG_((Sfio_t*));
 extern ssize_t		sfslen _ARG_((void));
+extern ssize_t		sfmaxr _ARG_((ssize_t, int));
 
 #undef extern
 _END_EXTERNS_
@@ -353,6 +368,7 @@ _END_EXTERNS_
 #define __sf_stacked(f)	(_SF_(f)->_push != (Sfio_t*)0)
 #define __sf_value(f)	(_SF_(f)->_val)
 #define __sf_slen()	(_Sfi)
+#define __sf_maxr(n,s)	((s)?((_Sfi=_Sfmaxr),(_Sfmaxr=(n)),_Sfi):_Sfmaxr)
 
 #if defined(__INLINE__) && !_BLD_sfio
 
@@ -375,6 +391,8 @@ __INLINE__ int sferror(Sfio_t* f)		{ return __sf_error(f); }
 __INLINE__ int sfclrerr(Sfio_t* f)		{ return __sf_clrerr(f); }
 __INLINE__ int sfstacked(Sfio_t* f)		{ return __sf_stacked(f); }
 __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
+__INLINE__ ssize_t sfslen()			{ return __sf_slen(); }
+__INLINE__ ssize_t sfmaxr(ssize_t n, int s)	{ return __sf_maxr(n,s); }
 
 #else
 
@@ -397,6 +415,7 @@ __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
 #define sfstacked(f)				( __sf_stacked(f) )
 #define sfvalue(f)				( __sf_value(f) )
 #define sfslen()				( __sf_slen() )
+#define sfmaxr(n,s)				( __sf_maxr(n,s) )
 
 #endif /*__INLINE__*/
 

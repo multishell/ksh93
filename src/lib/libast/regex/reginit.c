@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -150,6 +150,12 @@ State_t		state =
 		'~',		T_BAD,		T_BAD,
 		'~',		'~',		T_BAD,
 		T_TILDE,	'~',		T_BAD,
+	'%',
+		'%',		T_BAD,		T_BAD,
+		'%',		T_BAD,		T_BAD,
+		'%',		T_BAD,		T_BAD,
+		'%',		'%',		T_BAD,
+		T_PERCENT,	'%',		T_BAD,
 	'<',
 		'<',		T_LT,		T_BAD,
 		'<',		T_LT,		T_BAD,

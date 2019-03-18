@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                  Copyright (c) 1985-2005 AT&T Corp.                  #
+#                  Copyright (c) 1985-2006 AT&T Corp.                  #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                            by AT&T Corp.                             #
@@ -21,7 +21,7 @@
 ########################################################################
 : generate conf info
 #
-# @(#)conf.sh (AT&T Research) 2004-08-11
+# @(#)conf.sh (AT&T Research) 2005-02-04
 #
 # this script generates these files from the table file in the first arg
 # the remaining args are the C compiler name and flags
@@ -1175,6 +1175,7 @@ esac
 cat <<!
 #pragma prototyped
 #include <ast.h>
+#include <time.h>
 #include "${base}.h"
 
 ${generated}

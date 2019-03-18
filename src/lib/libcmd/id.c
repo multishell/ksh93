@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1992-2005 AT&T Corp.                  *
+*                  Copyright (c) 1992-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -48,7 +48,7 @@ USAGE_LICENSE
 "[u:user?Writes only the user ID.]"
 "[G:groups?Writes only the supplementary group IDs.]"
 "[s:fair-share?Writes fair share scheduler IDs and groups on systems that "
-	"support fair share scheduling.] ]"
+	"support fair share scheduling.]"
 "\n"
 "\n[user]\n"
 "\n"
@@ -58,7 +58,6 @@ USAGE_LICENSE
 "}"
 "[+SEE ALSO?\blogname\b(1), \bwho\b(1), \bgetgroups\b(2)]"
 ;
-
 
 #include <cmdlib.h>
 

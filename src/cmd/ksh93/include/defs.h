@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -32,13 +32,17 @@
 #include	"FEATURE/options"
 #include	<cdt.h>
 #include	<history.h>
-#ifdef SHOPT_ENV
-#   include	<env.h>
-#else
-#   define Env_t	void
-#endif
 #include	"fault.h"
 #include	"argnod.h"
+
+#define	env_change()		(++ast.env_serial)
+#if SHOPT_ENV
+#   include	<env.h>
+#else
+#   define Env_t		void
+#   define sh_envput(e,p)	env_change()
+#   define env_delete(e,p)	env_change()
+#endif
 
 /*
  * note that the first few fields have to be the same as for
@@ -215,6 +219,8 @@ struct limits
 #define SH_BASH			41
 #define SH_BRACEEXPAND		42
 #define SH_POSIX		46
+#define SH_MULTILINE    	47
+
 #define SH_NOPROFILE		78
 #define SH_NOUSRPROFILE		79
 #define SH_LOGIN_SHELL		67
@@ -265,6 +271,7 @@ struct limits
 
 #define MATCH_MAX		64
 
+extern int		sh_addlib(void*);
 extern void 		*sh_argopen(Shell_t*);
 extern Namval_t		*sh_assignok(Namval_t*,int);
 extern char		*sh_checkid(char*,char*);
@@ -272,7 +279,7 @@ extern int		sh_debug(const char*,const char*,const char*,char *const[],int);
 extern int 		sh_echolist(Sfio_t*, int, char**);
 extern struct argnod	*sh_endword(int);
 extern char 		**sh_envgen(void);
-#ifdef SHOPT_ENV
+#if SHOPT_ENV
 extern void 		sh_envput(Env_t*, Namval_t*);
 #endif
 extern void 		sh_envnolocal(Namval_t*,void*);
@@ -283,6 +290,7 @@ extern char 		*sh_mactrim(char*,int);
 extern int 		sh_macexpand(struct argnod*,struct argnod**,int);
 extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
 extern void 		*sh_macopen(Shell_t*);
+extern char 		*sh_macpat(struct argnod*,int);
 extern char 		*sh_mactry(char*);
 extern void		sh_printopts(Shopt_t,int,Shopt_t*);
 extern int 		sh_readline(Shell_t*,char**,int,int,long);
@@ -327,14 +335,10 @@ extern int 		sh_whence(char**,int);
 extern time_t		sh_mailchk;
 extern const char	e_dict[];
 
-/* flags for sh_printopts mode parameter
-   PRINT_VERBOSE: print "option on|off" format, "set -o option" otherwise
-   PRINT_ALL: also print unset options as "set +o option"
-   PRINT_NO_HEADER: don't print "Current option settings"
-   PRINT_SHOPT: use "shopt -s|-u" instead of "set -o|+o"
-*/
-#define PRINT_VERBOSE	0x01
-#define PRINT_ALL	0x02
-#define PRINT_NO_HEADER	0x04
-#define PRINT_SHOPT	0x08
+/* sh_printopts() mode flags -- set --[no]option by default */
 
+#define PRINT_VERBOSE	0x01	/* option on|off list		*/
+#define PRINT_ALL	0x02	/* list unset iptions too	*/
+#define PRINT_NO_HEADER	0x04	/* omit listing header		*/
+#define PRINT_SHOPT	0x08	/* shopt -s|-u			*/
+#define PRINT_TABLE	0x10	/* table of all options		*/

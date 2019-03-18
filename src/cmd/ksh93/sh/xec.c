@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -59,7 +59,6 @@
 
 static void	sh_funct(Namval_t*, int, char*[], struct argnod*,int);
 static int	trim_eq(const char*, const char*);
-static char	*word_trim(struct argnod*, int);
 static void	coproc_init(int pipes[]);
 
 static void	*timeout;
@@ -141,7 +140,7 @@ static int p_time(Sfio_t *out, const char *format, clock_t *tm)
 			errormsg(SH_DICT,ERROR_exit(0),e_badtformat,c);
 			return(0);
 		}
-		d = (double)tm[n]/60;
+		d = (double)tm[n]/sh.lim.clk_tck;
 	skip:
 		if(l)
 			l_time(stkstd, tm[n], p);
@@ -254,7 +253,7 @@ static void p_arg(register struct argnod *arg,int flag)
 {
 	while(arg)
 	{
-		if(strlen(arg->argval) || (flag==0 && (arg->argflag&~ARG_APPEND)))
+		if(strlen(arg->argval) || (flag==0 && (arg->argflag&~(ARG_APPEND|ARG_EXP))))
 			arg->argchn.ap = 0;
 		else
 			sh_tclear(((struct fornod*)arg->argchn.ap)->fortre);
@@ -295,12 +294,14 @@ static void out_pattern(Sfio_t *iop, register const char *cp, int n)
 			sfputr(iop,"$'\\n",'\'');
 			continue;
 		    case '\\':
-			if(c= *cp)
-				cp++;
+			if (!(c = *++cp))
+				c = '\\';
+			/*FALLTHROUGH*/
 		    case ' ':
 		    case '<': case '>': case ';':
 		    case '$': case '`': case '\t':
 			sfputc(iop,'\\');
+			break;
 		}
 		sfputc(iop,c);
 	}
@@ -541,6 +542,7 @@ static void free_list(struct openlist *olist)
 	}
 }
 
+
 int sh_exec(register const Shnode_t *t, int flags)
 {
 	sh_sigcheck();
@@ -725,6 +727,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					int scope=0, jmpval, save_prompt,share;
 					struct checkpt buff;
 					unsigned long was_vi=0, was_emacs=0, was_gmacs=0;
+					struct stat statb;
 					if(strchr(nv_name(np),'/'))
 					{
 						/*
@@ -760,9 +763,14 @@ int sh_exec(register const Shnode_t *t, int flags)
 						}
 						if(!(nv_isattr(np,BLT_ENV)))
 						{
+							if(!sh.pwd)
+								path_pwd(0);
+							if(sh.pwd)
+								stat(".",&statb);
 							share = sfset(sfstdin,SF_SHARE,0);
 							sh_onstate(SH_STOPOK);
 							sfpool(sfstderr,NIL(Sfio_t*),SF_WRITE);
+							sfset(sfstderr,SF_LINE,1);
 							save_prompt = sh.nextprompt;
 							sh.nextprompt = 0;
 						}
@@ -786,6 +794,15 @@ int sh_exec(register const Shnode_t *t, int flags)
 							bdata.data = t->com.comstate;
 							bdata.flags = (OPTIMIZE!=0);
 							context = (void*)&bdata;
+						}
+						if(execflg && !sh.subshell &&
+							!sh.st.trapcom[0] && !sh.st.trap[SH_ERRTRAP] && sh.fn_depth==0 && !nv_isattr(np,BLT_ENV))
+						{
+							/* do close-on-exec */
+							int fd;
+							for(fd=0; fd < sh.lim.open_max; fd++)
+								if((sh.fdstatus[fd]&IOCLEX)&&fd!=sh.infd)
+									sh_close(fd);
 						}
 						sh.exitval = (*sh.bltinfun)(argn,com,context);
 						if(error_info.flags&ERROR_INTERACTIVE)
@@ -812,9 +829,18 @@ int sh_exec(register const Shnode_t *t, int flags)
 					}
 					if(!(nv_isattr(np,BLT_ENV)))
 					{
+						if(sh.pwd)
+						{
+							struct stat stata;
+							stat(".",&stata);
+							/* restore directory changed */
+							if(statb.st_ino!=stata.st_ino || statb.st_dev!=stata.st_dev)
+								chdir(sh.pwd);
+						}
 						sh_offstate(SH_STOPOK);
 						if(share&SF_SHARE)
 							sfset(sfstdin,SF_PUBLIC|SF_SHARE,1);
+						sfset(sfstderr,SF_LINE,0);
 						sfpool(sfstderr,sh.outpool,SF_WRITE);
 						sfpool(sfstdin,NIL(Sfio_t*),SF_WRITE);
 						sh.nextprompt = save_prompt;
@@ -948,7 +974,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 				if(type&FCOOP)
 					coproc_init(pipes);
 				nv_getval(RANDNOD);
-#ifdef SHOPT_AMP
+#if SHOPT_AMP
 				if((type&(FAMP|FINT)) == (FAMP|FINT))
 					parent = sh_ntfork(t,com,&jobid,ntflag);
 				else
@@ -1457,7 +1483,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			static char *arg[4]=  {"((", 0, "))"};
 			error_info.line = t->ar.arline-sh.st.firstline;
 			if(!(t->ar.arexpr->argflag&ARG_RAW))
-				arg[1] = word_trim(t->ar.arexpr,OPTIMIZE|ARG_ARITH);
+				arg[1] = sh_macpat(t->ar.arexpr,OPTIMIZE|ARG_ARITH);
 			else
 				arg[1] = t->ar.arexpr->argval;
 			if(trap=sh.st.trap[SH_DEBUGTRAP])
@@ -1486,7 +1512,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 		    case TSW:
 		    {
 			Shnode_t *tt = (Shnode_t*)t;
-			char *trap, *r = word_trim(tt->sw.swarg,OPTIMIZE);
+			char *trap, *r = sh_macpat(tt->sw.swarg,OPTIMIZE);
 			error_info.line = t->sw.swline-sh.st.firstline;
 			t= (Shnode_t*)(tt->sw.swlst);
 			if(trap=sh.st.trap[SH_DEBUGTRAP])
@@ -1503,7 +1529,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					register char *s;
 					if(rex->argflag&ARG_MAC)
 					{
-						s = word_trim(rex,OPTIMIZE|ARG_EXP);
+						s = sh_macpat(rex,OPTIMIZE|ARG_EXP);
 						while(*s=='\\' && s[1]==0)
 							s+=2;
 					}
@@ -1665,7 +1691,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 				int offset = staktell();
 				stakwrite(fname,cp-fname);
 				stakputc(0);
-				npv = nv_open(stakptr(offset),sh.var_base,NV_NOASSIGN|NV_ARRAY|NV_VARNAME);
+				npv = nv_open(stakptr(offset),sh.var_tree,NV_NOASSIGN|NV_ARRAY|NV_VARNAME);
 				offset = staktell();
 				stakputs(nv_name(npv));
 				stakputs(cp);
@@ -1750,9 +1776,9 @@ int sh_exec(register const Shnode_t *t, int flags)
 				register char *trap;
 				char *argv[6];
 				n = type>>TSHIFT;
-				left = word_trim(&(t->lst.lstlef->arg),OPTIMIZE);
+				left = sh_macpat(&(t->lst.lstlef->arg),OPTIMIZE);
 				if(type&TBINARY)
-					right = word_trim(&(t->lst.lstrit->arg),((n==TEST_PEQ||n==TEST_PNE)?ARG_EXP:0)|OPTIMIZE);
+					right = sh_macpat(&(t->lst.lstrit->arg),((n==TEST_PEQ||n==TEST_PNE)?ARG_EXP:0)|OPTIMIZE);
 				if(trap=sh.st.trap[SH_DEBUGTRAP])
 					argv[0] = (type&TNEGATE)?((char*)e_tstbegin):"[[";
 				if(sh_isoption(SH_XTRACE))
@@ -1810,6 +1836,8 @@ int sh_exec(register const Shnode_t *t, int flags)
 					sfwrite(sfstderr,e_tstend,4);
 			}
 			sh.exitval = ((!n)^negate); 
+			if(!skipexitset)
+				exitset();
 			break;
 		    }
 		}
@@ -1926,28 +1954,6 @@ int sh_trace(register char *argv[], register int nl)
 	}
 	return(0);
 }
-
-
-static char *word_trim(register struct argnod *arg, int flags)
-{
-	register char *sp = arg->argval;
-	if((arg->argflag&ARG_RAW))
-		return(sp);
-	if(flags&ARG_OPTIMIZE)
-		arg->argchn.ap=0;
-	if(!(sp=arg->argchn.cp))
-	{
-		sh_macexpand(arg,NIL(struct argnod**),flags);
-		sp = arg->argchn.cp;
-		if(!OPTIMIZE || !(arg->argflag&ARG_MAKE))
-			arg->argchn.cp = 0;
-		arg->argflag &= ~ARG_MAKE;
-	}
-	else
-		sh.optcount++;
-	return(sp);
-}
-
 
 /*
  * This routine creates a subshell by calling fork() or vfork()
@@ -2345,6 +2351,7 @@ int cmdrecurse(int argc, char* argv[], int ac, char* av[])
  */
 static void coproc_init(int pipes[])
 {
+	int outfd;
 	if(sh.coutpipe>=0 && sh.cpid)
 		errormsg(SH_DICT,ERROR_exit(1),e_pexists);
 	sh.cpid = 0;
@@ -2353,6 +2360,17 @@ static void coproc_init(int pipes[])
 		/* first co-process */
 		sh_pclose(sh.cpipe);
 		sh_pipe(sh.cpipe);
+		if((outfd=sh.cpipe[1]) < 10) 
+		{
+		        int fd=fcntl(sh.cpipe[1],F_DUPFD,10);
+			if(fd>=10)
+			{
+			        sh.fdstatus[fd] = (sh.fdstatus[outfd]&~IOCLEX);
+				close(outfd);
+			        sh.fdstatus[outfd] = IOCLOSE;
+				sh.cpipe[1] = fd;
+			}
+		}
 		if(fcntl(*sh.cpipe,F_SETFD,FD_CLOEXEC)>=0)
 			sh.fdstatus[sh.cpipe[0]] |= IOCLEX;
 		sh.fdptrs[sh.cpipe[0]] = sh.cpipe;
@@ -2371,7 +2389,7 @@ static void coproc_init(int pipes[])
 #if SHOPT_SPAWN
 
 
-#if defined(SHOPT_AMP) || !defined(_lib_fork)
+#if SHOPT_AMP || !defined(_lib_fork)
 /*
  * print out function definition
  */
@@ -2497,7 +2515,7 @@ static pid_t sh_ntfork(const Shnode_t *t,char *argv[],int *jobid,int flag)
 		otype = savetype;
 		savetype=0;
 	}
-#   if defined(SHOPT_AMP) || !defined(_lib_fork)
+#   if SHOPT_AMP || !defined(_lib_fork)
 	if(!argv)
 	{
 		register Shnode_t *tchild = t->fork.forktre;

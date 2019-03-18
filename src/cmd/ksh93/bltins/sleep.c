@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -90,7 +90,7 @@ static void completed(void * handle)
 	*expired = 1;
 }
 
-unsigned sleep(unsigned sec)
+unsigned int sleep(unsigned int sec)
 {
 	pid_t newpid, curpid=getpid();
 	void *tp;
@@ -106,7 +106,13 @@ unsigned sleep(unsigned sec)
 		if((newpid=getpid()) != curpid)
 		{
 			curpid = newpid;
-			alarm(1);
+			sh.lastsig = 0;
+			sh.trapnote &= ~SH_SIGSET;
+			if(expired)
+				expired = 0;
+			else
+				timerdel(tp);
+			tp = (void*)sh_timeradd(1000*sec, 0, completed, (void*)&expired);
 		}
 	}
 	while(!expired && sh.lastsig==0);

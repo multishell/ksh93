@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -180,6 +180,7 @@ extern int		sh_main(int, char*[], void(*)(int));
 extern void		sh_menu(Sfio_t*, int, char*[]);
 extern Namval_t		*sh_addbuiltin(const char*, int(*)(int, char*[],void*), void*);
 extern char		*sh_fmtq(const char*);
+extern char		*sh_fmtqf(const char*, int, int);
 extern Sfdouble_t	sh_strnum(const char*, char**, int);
 extern int		sh_access(const char*,int);
 extern int 		sh_close(int);

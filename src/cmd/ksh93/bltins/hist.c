@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -31,6 +31,8 @@
 #if SHOPT_HISTEXPAND
 #   include	"edit.h"
 #endif
+
+#define HIST_RECURSE	5
 
 static void hist_subst(const char*, int fd, char*);
 
@@ -261,7 +263,10 @@ int	b_hist(int argc,char *argv[], void *extra)
 		char buff[IOBSIZE+1];
 		Sfio_t *iop = sfnew(NIL(Sfio_t*),buff,IOBSIZE,fdo,SF_READ);
 		/* read in and run the command */
+		if(shp->dot_depth++ > HIST_RECURSE)
+			errormsg(SH_DICT,ERROR_exit(1),e_toodeep,"history");
 		sh_eval(iop,1);
+		shp->dot_depth--;
 	}
 	else
 	{

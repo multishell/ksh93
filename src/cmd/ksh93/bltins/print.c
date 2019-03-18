@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -119,9 +119,24 @@ static int outexceptf(Sfio_t* iop, int mode, void* data, Sfdisc_t* dp)
 		return(b_print(0,argv,&prdata));
 	prdata.options = sh_optecho;
 	prdata.raw = 1;
-	if(argv[1] && strcmp(argv[1],"-n")==0)
-		prdata.echon = 1;
-	return(b_print(0,argv+prdata.echon,&prdata));
+	while(argv[1] && *argv[1]=='-')
+	{
+		if(strcmp(argv[1],"-n")==0)
+			prdata.echon = 1;
+#if !SHOPT_ECHOE
+		else if(strcmp(argv[1],"-e")==0)
+			prdata.raw = 0;
+		else if(strcmp(argv[1],"-ne")==0 || strcmp(argv[1],"-en")==0)
+		{
+			prdata.raw = 0;
+			prdata.echon = 1;
+		}
+#endif /* SHOPT_ECHOE */
+		else
+			break;
+		argv++;
+	}
+	return(b_print(0,argv,&prdata));
    }
 #endif /* SHOPT_ECHOPRINT */
 
@@ -198,7 +213,8 @@ int    b_print(int argc, char *argv[], void *extra)
 				fd = -1;
 			else if(fd<0 || fd >= shp->lim.open_max)
 				fd = -1;
-			else if(sh_inuse(fd) || (shp->hist_ptr && fd==sffileno(shp->hist_ptr->histfp)))
+			else if(!(sh.inuse_bits&(1<<fd)) && (sh_inuse(fd) || (shp->hist_ptr && fd==sffileno(shp->hist_ptr->histfp))))
+
 				fd = -1;
 			break;
 		case ':':
@@ -505,6 +521,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 	Sfdouble_t	longmax = LDBL_LONGLONG_MAX;
 	int		format = fe->fmt;
 	int		n;
+	int		fold = fe->base;
 	union types_t*	value = (union types_t*)v;
 	struct printf*	pp = (struct printf*)fe;
 	register char*	argp = *pp->nextarg;
@@ -721,7 +738,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		value->s = fmthtml(value->s);
 		break;
 	case 'q':
-		value->s = sh_fmtq(value->s);
+		value->s = sh_fmtqf(value->s, !!(fe->flags & SFFMT_ALTER), fold);
 		break;
 	case 'P':
 		value->s = fmtmatch(value->s);

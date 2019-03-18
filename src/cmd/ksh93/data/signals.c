@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -78,6 +78,9 @@ const struct shtable2 shtab_signals[] =
 	"EMT",		VAL(SIGEMT,SH_SIGDONE),		S("EMT trap"),
 #endif	/* SIGEMT */
 	"ERR",		VAL(TRAP(SH_ERRTRAP),0),	"",
+#ifdef SIGERR
+	"ERR",		VAL(SIGERR,0),			"",
+#endif /* SIGERR */
 	"EXIT",		VAL(0,0),			"",
 	"FPE",		VAL(SIGFPE,SH_SIGDONE),		S("Floating exception"),
 #ifdef SIGFREEZE

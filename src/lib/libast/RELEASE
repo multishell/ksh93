@@ -1,3 +1,64 @@
+06-01-06 features/lib: change _UNIV_DEFAULT probe to use cross{...}
+06-01-04 misc/stk.c: fix n**2 realloc behavior
+06-01-01 include/sfio.h: export { _Sfi _Sfmaxr }
+05-12-13 string/chresc.c: handle \C-X => control-X, \M- => ESC
+05-11-22 regex/regcache.c: add, convert string/strmatch.c to regcache()
+05-10-06 string/ccmap.c: update ebcdic-u to be idempotent
+05-09-28 vmalloc: snarf from kpv; fixes large block brk() thrashing
+05-09-26 misc/magic.c,misc/magic.tab: handle latest vcodex header
+05-09-12 misc/optget.c: reset opt_info.offset on error
+	 string/strtoi.h: strton() '.' multiplier only if m>1
+	 string/fmtesc.c: add unadvertized FMT_PARM for FMT_SHELL
+05-09-09 string/fmtesc.c: fix FMT_SHELL logic w.r.t. [$`]
+05-08-11 string/strerror.c: fix { sys_errlist sys_nerr } prototypes
+05-08-03 sfio: snarf sfvaprints sfaprints
+05-07-21 port/astconf.c: retain most recent synthesized lookup
+05-07-20 sfio/sfsetbuf.c: default file io size now 64K on all systems
+05-07-17 ccmap*: add microfocus cobol EBCDIC_U
+05-06-29 regex/regcomp.c: fix the A & B inline flag logic
+05-06-15 include/recfmt.h: add fs format flag to fmtrec()
+05-06-14 error.c: add ERROR_OPTIONS { break count match }
+05-06-07 features/stdio: drop FEATURE/limits to fix bootstrap circular dep
+05-06-02 features/*,Makefile: drop vestigel iffeio.h bootstrap workaround
+05-05-31 string/fmtbuf.c: unlock (spin) before each return -- doh
+05-05-30 sfio/sfpkrd.c: work around macos 10.4 recv(MSG_PEEK) bug
+05-05-27 regex: add REX_NEST (?%[S.][T.][OT])
+	 magic.tab: ammend bsd db magic
+05-05-23 regex: REX_NEST (?%[D.][E.][L.][Q.][oc]...)
+05-05-21 regex: state.fold[] is now locale specific -- doh
+05-05-19 regex: add REX_NEST (?%\\()<>[]""...) %(...) nested match
+05-05-15 recfmt.h: add recstr() reclen() fmtrec()
+05-05-13 optget.c: allow boolean options to take numeric values
+05-05-12 recfmt.c: add to recfmt.h, adjust Recfmt_t encodings
+05-04-30 sfio: add sfmaxr(), default 64K
+05-04-22 comp/omitted.c: fix magic() logic for files < 512 bytes
+05-04-20 cdt: snarf update from kpv; void* Dt_t.user added
+	 misc/error.c: library => ERROR_LIBRARY
+05-04-19 regex/regcomp.c: handle REG_SHELL [^...] == [!...]
+05-04-11 tm/tmxscan.c: handle yyy.mm.dd[-+.]hh.mm.ss.nnnnnn
+05-04-07 regex/regnexec.c: fix out of bounds boundary check -- ouch
+	 features/align.c: add jmp_buf to the alignment mix (ia64)
+	 vmalloc/vmhdr.h: add jmp_buf to the alignment mix (ia64)
+05-03-31 misc/optget.c: fix option { - _ } separator matching
+05-03-30 misc/glob.c: eliminate superfluous GLOB_NOMATCH stat() calls
+05-03-24 port/astwinsize.c: include <sys/ioctl.h> if possible
+05-03-23 string/ccmap.c: add ebcdic-m mvs cobol table
+05-03-11 comp/omitted.c: handle utime[s](const,const)
+	 comp/conf.tab: fix linux PID_MAX probe
+05-03-10 comp/setlocale.c: LC_* value "" => unset -- doh
+	 misc/optget.c: reorder _PACKAGE_astsa code for msgcc
+05-03-08 misc/optget.c: delete leading space in STYLE_nroff output
+05-03-07 sfio/sfhdr.h: drop extern _sfdscan -- clashes with sfvscanf.c static
+05-03-01 tm/tminit.c: add tmlocaltime() for tzset() getenv() override workaround
+05-02-20 features/tvlib: tmsettimeofday only for systems that have settimeofday
+	 features/float: fix mvs.s390 NaN tests
+05-02-18 tm/tmxmake.c: fix <0 west of GMT bug that warped to 1800's -- wow
+05-02-11 port/mnt.c: handle lynxos MOUNTED=/etc/fstab
+05-02-08 features/float,sfio.h,sfcvt.c,sftable.c: add INF and fix NAN
+05-02-04 features/lib: add _std_strtol (for lynxos)
+	 include/ast_std.h: add _std_strtol tests
+	 comp/strtod.c: #define S2F_function strtod
+	 misc/signal.c: fix ancient bsd SV_INTERRUPT vs. SV_ABORT clash
 05-01-11 sfio/sfmove.c: try to seek(fr) when fw==0
 	 comp/omitted.c: intercept utimes() too
 	 comp/omitted.c: add DOSPATHVARS env var path value conversions

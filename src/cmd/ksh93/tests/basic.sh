@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                  Copyright (c) 1982-2005 AT&T Corp.                  #
+#                  Copyright (c) 1982-2006 AT&T Corp.                  #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                            by AT&T Corp.                             #
@@ -155,14 +155,19 @@ if	[[ $x != $'foo\nbar' ]]
 then	err_exit " ( (/bin/echo);(/bin/echo bar ) failed"
 fi
 cat > /tmp/ksh$$ <<\!
-builtin cat
-cat - > /dev/null
-test -p /dev/fd/0 && print yes
+if	[[ -p /dev/fd/0 ]]
+then	builtin cat
+	cat - > /dev/null
+	[[ -p /dev/fd/0 ]] && print ok
+else	print no
+fi
 !
 chmod +x /tmp/ksh$$
-if	[[ $( (print) | /tmp/ksh$$;:) != yes ]]
-then	err_exit "standard input no longer a pipe"
-fi
+case $( (print) | /tmp/ksh$$;:) in
+ok)	;;
+no)	err_exit "[[ -p /dev/fd/0 ]] fails for standard input pipe" ;;
+*)	err_exit "builtin replaces standard input pipe" ;;
+esac
 print 'print $0' > /tmp/ksh$$
 print ". /tmp/ksh$$" > /tmp/ksh$$x
 chmod +x /tmp/ksh$$x
@@ -279,7 +284,7 @@ foo()
 }
 : $(jobs -p)
 foo
-[[ $( (trap 'print alarm' ALRM; sleep 4) & sleep 2; kill -ALRM $!) == alarm ]] || print -u2 'ALRM signal not working'
+[[ $( (trap 'print alarm' ALRM; sleep 4) & sleep 2; kill -ALRM $!) == alarm ]] || err_exit 'ALRM signal not working'
 [[ $($SHELL -c 'trap "" HUP; $SHELL -c "(sleep 2;kill -HUP $$)& sleep 4;print done"') != done ]] && err_exit 'ignored traps not being ignored'
 [[ $($SHELL -c 'o=foobar; for x in foo bar; do (o=save);print $o;done' 2> /dev/null ) == $'foobar\nfoobar' ]] || err_exit 'for loop optimization subshell bug'
 if	[[ -d /dev/fd ]]
@@ -290,4 +295,11 @@ fi
 print cat >  /tmp/ksh$$x
 chmod +x /tmp/ksh$$x
 [[ $($SHELL -c "print foo | /tmp/ksh$$x ;:" 2> /dev/null ) == foo ]] || err_exit 'piping into script fails'
+[[ $($SHELL -c 'X=1;print -r -- ${X:=$(expr "a(0)" : '"'a*(\([^)]\))')}'" 2> /dev/null) == 1 ]] || err_exit 'x=1;${x:=$(..."...")} failure'
+[[ $($SHELL -c 'print -r -- ${X:=$(expr "a(0)" : '"'a*(\([^)]\))')}'" 2> /dev/null) == 0 ]] || err_exit '${x:=$(..."...")} failure'
+if	[[ -d /dev/fd ]]
+then	[[ $(cat <(print hello) ) == hello ]] || err_exit "process substitution not working outside for or while loop"
+	[[ $(for i in 1;do cat <(print hello);done ) == hello ]] || err_exit "process substitution not working in for or while loop"
+fi
+rm -f /tmp/ksh$$x
 exit $((Errors))

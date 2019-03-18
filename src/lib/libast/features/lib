@@ -223,7 +223,6 @@ tst	real_vfork note{ vfork child shares data with parent }end execute{
 tst	lib_posix_spawn unistd.h stdlib.h spawn.h note{ posix_spawn exists and it works and its worth using }end execute{
 	#include <spawn.h>
 	#include <signal.h>
-	#include <stdio.h>
 	/* if it uses fork() why bother? */
 	int fork() { return -1; }
 	int _fork() { return -1; }
@@ -491,7 +490,7 @@ tst	lib_utime_now note{ utime works with 0 time vector }end execute{
 	}
 }end
 
-tst	run{
+tst	cross{
 	u=att
 	case `/bin/cat -s /dev/null/foo 2>&1` in
 	'')	;;
@@ -556,6 +555,19 @@ std	strtod note{ stuck with standard strtod }end nostatic{
 	int main() { printf(""); return strtod("1",0) != 0; }
 }end
 
+std	strtol note{ stuck with standard strtol }end nostatic{
+	_BEGIN_EXTERNS_
+	#if _STD_
+	extern long atol(const char*);
+	long strtol(const char* s, char** e) { return 0; }
+	#else
+	extern long atol();
+	long strtol(s, e) char* s; char** e; { return 0; }
+	#endif
+	_END_EXTERNS_
+	int main() { printf(""); return (atol("1") + strtol("1",0)) != 0; }
+}end
+
 tst	- output{
 	int
 	main()
@@ -585,8 +597,7 @@ tst	- output{
 
 }end
 
-tst	no64 note{ largefile 64 broken }end execute{
-	#define _LARGEFILE64_SOURCE 1
+tst	no64 -D_LARGEFILE64_SOURCE note{ largefile 64 broken }end execute{
 	#include <sys/types.h>
 	#include <sys/stat.h>
 	int

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -28,15 +28,15 @@
  */
 
 #if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide getpagesize getdtablesize printf
+__STDPP__directive pragma pp:hide getpagesize getdtablesize
 #else
 #define getpagesize	______getpagesize
 #define getdtablesize	______getdtablesize
-#define printf		______printf
 #endif
 
 #include "FEATURE/standards"
 
+#include <stdio.h>
 #include <sys/types.h>
 
 #include "FEATURE/lib"
@@ -44,15 +44,10 @@ __STDPP__directive pragma pp:hide getpagesize getdtablesize printf
 #include "FEATURE/unistd.lcl"
 
 #if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide getpagesize getdtablesize printf
+__STDPP__directive pragma pp:nohide getpagesize getdtablesize
 #else
 #undef  getpagesize
 #undef  getdtablesize
-#endif
-
-#if defined(__STDPP__hide) || defined(printf)
-#undef	printf
-extern int		printf(const char*, ...);
 #endif
 
 #include "conflib.h"

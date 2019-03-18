@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -54,7 +54,7 @@ static const Ccmap_t	maps[] =
 
 	{
 	"ebcdic-o",
-	"o|ebcdic?(-)[3o]|?(cp|ibm)1047|mvs|openedition",
+	"o|ebcdic?(-)[3o]|?(cp|ibm)1047|open?(-)edition",
 	"mvs OpenEdition ebcdic",
 	"EBCDIC-O",
 	0,
@@ -86,6 +86,24 @@ static const Ccmap_t	maps[] =
 	"EBCDIC-I",
 	0,
 	CC_EBCDIC_I,
+	},
+
+	{
+	"ebcdic-m",
+	"m|ebcdic?(-)m|mvs",
+	"mvs ebcdic",
+	"EBCDIC-M",
+	0,
+	CC_EBCDIC_M,
+	},
+
+	{
+	"ebcdic-u",
+	"u|ebcdic?(-)(u|mf)|microfocus",
+	"microfocus cobol ebcdic",
+	"EBCDIC-U",
+	0,
+	CC_EBCDIC_U,
 	},
 
 	{

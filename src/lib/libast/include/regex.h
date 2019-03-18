@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -163,7 +163,7 @@ typedef struct regstat_s
 	regflags_t	re_flags;	/* REG_LEFT|REG_RIGHT		*/
 	ssize_t		re_min;		/* min anchored match length	*/
 	ssize_t		re_max;		/* max anchored match length	*/
-	ssize_t		re_record;	/* regreexec() match length	*/
+	ssize_t		re_record;	/* regrexec() match length	*/
 } regstat_t;
 
 struct regex_s
@@ -208,6 +208,8 @@ extern void	regfatalpat(regex_t*, int, int, const char*);
 extern int	regrecord(const regex_t*);
 extern int	regrexec(const regex_t*, const char*, size_t, size_t, regmatch_t*, regflags_t, regflags_t, void*, regrecord_t);
 extern regstat_t* regstat(const regex_t*);
+
+extern regex_t*	regcache(const char*, regflags_t, int*);
 
 extern int	regsubcomp(regex_t*, const char*, const regflags_t*, int, regflags_t);
 extern int	regsubexec(const regex_t*, const char*, size_t, regmatch_t*);

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -25,12 +25,7 @@
 
 #include <ast.h>
 
-#if _std_strtod
-#define S2F_function	_ast_strtod
-#else
 #define S2F_function	strtod
-#endif
-
 #define S2F_type	1
 
 #include "sfstrtof.h"

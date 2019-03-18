@@ -83,7 +83,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	localeconv.c setlocale.c translate.c \
 	catopen.c iconv.c lc.c mc.c \
 	liberror.c libevent.c \
-	base64.c recfmt.c \
+	base64.c recfmt.c recstr.c reclen.c fmtrec.c \
 	fmtbase.c fmtbuf.c fmtclock.c fmtdev.c fmtelapsed.c fmterror.c \
 	fmtesc.c fmtfmt.c fmtfs.c fmtident.c fmtip4.c fmtls.c fmtmatch.c \
 	fmtmode.c fmtnum.c fmtperm.c fmtre.c fmttime.c fmtuid.c fmtgid.c \
@@ -135,7 +135,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	strptime.c swab.c syslog.c sysloglib.h tempnam.c \
 	wordexp.c mktime.c \
 	/* regex */ \
-	reglib.h regalloc.c regclass.c regcoll.c regcomp.c \
+	reglib.h regalloc.c regclass.c regcoll.c regcomp.c regcache.c \
 	regerror.c regexec.c regfatal.c reginit.c regnexec.c \
 	regsubcomp.c regsubexec.c regsub.c regrecord.c regrexec.c regstat.c \
 	/* cdt */ \
@@ -147,7 +147,7 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	sfclose.c sfclrlock.c sfdisc.c sfdlen.c sfexcept.c \
 	sfgetl.c sfgetu.c sfcvt.c sfecvt.c sffcvt.c \
 	sfextern.c sffilbuf.c sfflsbuf.c sfprints.c sfgetd.c \
-	sfgetr.c sfllen.c sfmode.c sfmove.c sfnew.c \
+	sfgetr.c sfieee.c sfllen.c sfmode.c sfmove.c sfnew.c \
 	sfpkrd.c sfnotify.c sfnputc.c sfopen.c sfpeek.c sfpoll.c \
 	sfpool.c sfpopen.c sfprintf.c sfputd.c sfputl.c sfputr.c \
 	sfputu.c sfrd.c sfread.c sfreserve.c sfscanf.c sfseek.c sfset.c \
@@ -215,8 +215,6 @@ $(ID) 5.4 :LIBRARY: README RELEASE \
 	CCFLAGS += -D_BLD_ast
 
 parameter	(_BLD_ast) (_AST_VERSION) ast_version.h
-ignore		iffeio.h
-scan.ignore	iffeio.h
 virtual		ast/stdio.h
 
 		:NOOPTIMIZE: spawnveg.c
@@ -244,8 +242,6 @@ confmap.c conftab.c confstr.c pathconf.c sysconf.c :JOINT: \
 $(INCLUDEDIR) :INSTALLPROTO: $(HEADERSRC) $(HEADERGEN)
 
 $(HEADERGEN) :COPY: FEATURE/$$(<:B:/$(ID)_//)
-
-iffeio.h :COPY: FEATURE/iffeio
 
 lcgen : lcgen.c
 	$(CC.NATIVE|CC) -o $(<) $(*)
@@ -294,7 +290,7 @@ $(INCLUDEDIR)/prototyped.h :INSTALL: $(INCLUDEDIR)
 	else	$(MV) 1.$(tmp).x $(<)
 	fi
 
-ast.req : astmath.exe .check.hdr .check.lib
+ast.req : .check.hdr .check.lib
 
 /*
  * atmain.C is the only C++ and only for a few systems
@@ -315,13 +311,12 @@ atmain.o : atmain.C
  * more stdio.h complications ...
  * prepare for compilation by generating these headers first;
  * this helps mam by catching headers that might be indirectly
- * included on other systems; it also catches iffeio.h early in
- * the process since the ast stdio.h is useless until -last is built
+ * included on other systems
  */
 
 .check.hdr : .IGNORE .VIRTUAL \
-		FEATURE/standards - ast_common.h - iffeio.h - \
-		ast_limits.h - ast_stdio.h ast_nl_types.h - ast_wchar.h
+		FEATURE/standards - ast_common.h - ast_limits.h - \
+		ast_stdio.h ast_nl_types.h - ast_wchar.h
 	rm -f $(HEADERSTD)	/* clean up pre-2002-03-17 headers */
 
 /*
@@ -330,20 +325,26 @@ atmain.o : atmain.C
  */
 
 .check.lib : .AFTER astmath.exe
-	if	test -x $(~)
+	if	test -f $(~)
 	then	touch $(<<)
 	else	echo ' -lm' >> $(<<)
 	fi
 
 astmath.exe : .DONTCARE astmath.c
-	if	$(CC) -DLD $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) 2>/dev/null
-	then	: implicit "{ frexpl ldexpl }"
-	elif	$(CC) -DLD $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) -lm 2>/dev/null
-	then	$(RM) -f $(*:N=*.c:B:S=.exe)
-	elif	$(CC) $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) 2>/dev/null
-	then	: implicit "{ frexp ldexp }"
-	else	$(RM) -f $(*:N=*.c:B:S=.exe)
-	fi
+	X=1
+	for N in 1 2 3 4 5 6
+	do	if	$(CC) -DN=$N -DIS $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) 2>/dev/null
+		then	: implicit math function N=$N :
+		elif	$(CC) -DN=$N -DIS $(CCFLAGS) -o $(*:N=*.c:B:S=.exe) $(*) -lm 2>/dev/null
+		then	: math function N=$N requires -lm :
+			X=0
+			break
+		fi
+	done
+	case $X in
+	0)	$(RM) -f $(*:N=*.c:B:S=.exe) ;;
+	*)	touch $(*:N=*.c:B:S=.exe) ;;
+	esac
 	$(RM) -f $(*:N=*.c:B:S=$(CC.SUFFIX.OBJECT))
 
 /* astsa is a subset of standalone functions that just needs sfio+cdt */

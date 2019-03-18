@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -243,6 +243,11 @@ static struct ionod *r_redirect(void)
 			sfmove(infile,sh.heredocs, iop->iosize, -1);
 		}
 		iopold = iop;
+		if(iop->iofile&IOVNM)
+			iop->iovname = r_string();
+		else
+			iop->iovname = 0;
+		iop->iofile &= ~IOVNM;
 	}
 	if(iop)
 		iop->ionxt = 0;

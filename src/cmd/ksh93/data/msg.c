@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -67,6 +67,10 @@ const char e_exists[]		= "%s: file already exists";
 const char e_pipe[]		= "cannot create pipe";
 const char e_alarm[]		= "cannot set alarm";
 const char e_open[]		= "%s: cannot open";
+const char e_notseek[]		= "%s: not seekable";
+const char e_badseek[]		= "%s: invalid seek offset";
+const char e_badpattern[]	= "%s: invalid shell pattern";
+const char e_noread[]		= "%s: pattern seek requires read access";
 const char e_logout[]		= "Use 'exit' to terminate this shell";
 const char e_exec[]		= "%s: cannot execute";
 const char e_pwd[]		= "cannot access parent directories";
@@ -155,9 +159,21 @@ const char e_devnull[]		= "/dev/null";
 const char e_traceprompt[]	= "+ ";
 const char e_supprompt[]	= "# ";
 const char e_stdprompt[]	= "$ ";
-const char e_profile[]		= "${HOME}/.profile";
+const char e_profile[]		= "$HOME/.profile";
 const char e_sysprofile[]	= "/etc/profile";
 const char e_suidprofile[]	= "/etc/suid_profile";
+#if SHOPT_SYSRC
+const char e_sysrc[]		= "/etc/ksh.kshrc";
+#endif
+#if SHOPT_BASH
+#if SHOPT_SYSRC
+const char e_bash_sysrc[]	= "/etc/bash.bashrc";
+#endif
+const char e_bash_rc[]		= "$HOME/.bashrc";
+const char e_bash_login[]	= "$HOME/.bash_login";
+const char e_bash_logout[]	= "$HOME/.bash_logout";
+const char e_bash_profile[]	= "$HOME/.bash_profile";
+#endif
 const char e_crondir[]		= "/usr/spool/cron/atjobs";
 const char e_prohibited[]	= "login setuid/setgid shells prohibited";
 #if SHOPT_SUID_EXEC

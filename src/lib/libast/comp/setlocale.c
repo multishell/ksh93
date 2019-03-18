@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -882,10 +882,10 @@ _ast_setlocale(int category, const char* locale)
 			 */
 
 			u = 0;
-			if (!(a = getenv("LC_ALL")))
+			if (!(a = getenv("LC_ALL")) || !*a)
 			{
 				for (i = 1; i < AST_LC_COUNT; i++)
-					if (s = getenv(categories[i].name))
+					if ((s = getenv(categories[i].name)) && *s)
 					{
 						if (streq(s, local) && (u || (u = native_locale(locale, tmp, sizeof(tmp)))))
 							s = u;
@@ -897,7 +897,7 @@ _ast_setlocale(int category, const char* locale)
 			{
 				if (streq(a, local) && (u || (u = native_locale(locale, tmp, sizeof(tmp)))))
 					a = u;
-				if (a && composite(a, 1))
+				if (composite(a, 1))
 					a = 0;
 			}
 			p = 0;

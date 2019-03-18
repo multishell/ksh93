@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -44,6 +44,11 @@ __STDPP__directive pragma pp:nohide signal
 #else
 #undef	signal
 #endif
+#endif
+
+#if defined(SV_ABORT)                                         
+#undef	SV_INTERRUPT
+#define SV_INTERRUPT	SV_ABORT
 #endif
 
 #if !_std_signal && (_lib_sigaction && defined(SA_NOCLDSTOP) || _lib_sigvec && defined(SV_INTERRUPT))

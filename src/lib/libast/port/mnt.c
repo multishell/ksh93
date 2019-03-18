@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -484,6 +484,12 @@ extern struct mntent*	getmntent(FILE*);
 #endif
 #endif
 
+#ifdef __Lynx__
+#undef	MOUNTED 
+#define MOUNTED		"/etc/fstab"
+#define SEP		':'
+#endif
+
 #if _lib_getmntent
 
 typedef struct
@@ -698,8 +704,12 @@ mntread(void* handle)
 		else if (!q)
 			q = c;
 		break;
+#ifdef SEP
+	case SEP:
+#else
 	case ' ':
 	case '\t':
+#endif
 		if (s != b && !q) switch (++x)
 		{
 		case 1:

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -276,7 +276,7 @@ typedef Sfdouble_t (*mathf)(Sfdouble_t,...);
 #   define fmodl local_fmodl
 #else
 #   if defined(_npt_fmodl)
-	protodef(fmodl)
+	protodef2(fmodl)
 #   endif
 #endif 
 

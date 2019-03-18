@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -52,7 +52,7 @@
 #	include	"national.h"
 #   endif /* ESS_MAXCHAR */
     typedef wchar_t genchar;
-#   define CHARSIZE	3
+#   define CHARSIZE	(sizeof(wchar_t)<=2?3:sizeof(wchar_t))
 #else
     typedef char genchar;
 #   define CHARSIZE	1
@@ -62,17 +62,23 @@
 #define PRSIZE	160
 #define MAXLINE	502		/* longest edit line permitted */
 
+typedef struct _edit_pos
+{
+	unsigned short line;
+	unsigned short col;
+} Edpos_t;
+
 typedef struct edit
 {
+	sigjmp_buf e_env;
 	int	e_kill;
 	int	e_erase;
 	int	e_werase;
 	int	e_eof;
 	int	e_lnext;
 	int	e_fchar;
-	char	e_plen;		/* length of prompt string */
-	char	e_crlf;		/* zero if cannot return to beginning of line */
-	sigjmp_buf e_env;
+	int	e_plen;		/* length of prompt string */
+	int	e_crlf;		/* zero if cannot return to beginning of line */
 	int	e_llimit;	/* line length limit */
 	int	e_hline;	/* current history line number */
 	int	e_hloff;	/* line number offset for command */
@@ -138,6 +144,9 @@ typedef struct edit
 	int	e_stkoff;	/* saved stack offset */
 	char	**e_clist;	/* completion list after <ESC>= */
 	int	e_nlist;	/* number of elements on completion list */
+	int	e_multiline;	/* allow multiple lines for editing */
+	int	e_winsz;	/* columns in window */ 
+	Edpos_t	e_curpos;	/* cursor line and column */
 } Edit_t;
 
 #undef MAXWINDOW
@@ -190,6 +199,8 @@ extern void	ed_ungetchar(Edit_t*,int);
 extern int	ed_viread(void*, int, char*, int, int);
 extern int	ed_read(void*, int, char*, int, int);
 extern int	ed_emacsread(void*, int, char*, int, int);
+extern Edpos_t	ed_curpos(Edit_t*, genchar*, int, int, Edpos_t);
+extern int	ed_setcursor(Edit_t*, genchar*, int, int, int);
 #if KSHELL
 	extern int	ed_macro(Edit_t*,int);
 	extern int	ed_expand(Edit_t*, char[],int*,int*,int,int);

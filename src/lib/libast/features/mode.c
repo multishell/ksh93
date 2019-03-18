@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -27,13 +27,13 @@
  * generate mode features
  */
 
+#include <stdio.h>
+
 #include "limits.h"
 
 #include "FEATURE/param"
 
 #include <modecanon.h>
-
-extern int		printf(const char*, ...);
 
 int
 main()

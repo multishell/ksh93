@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -95,7 +95,7 @@ static const _ast_iconv_list_t	codes[] =
 {
 	{
 	"utf",
-	"u|unicode|utf",
+	"un|unicode|utf",
 	"multibyte 8-bit unicode",
 	"UTF-%s",
 	"8",
@@ -104,7 +104,7 @@ static const _ast_iconv_list_t	codes[] =
 
 	{
 	"ume",
-	"m|ume|utf?(-)7",
+	"um|ume|utf?(-)7",
 	"multibyte 7-bit unicode",
 	"UTF-7",
 	0,

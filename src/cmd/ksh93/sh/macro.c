@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -80,13 +80,13 @@ typedef struct  _mac_
 
 /* type of macro expansions */
 #define M_BRACE		1	/* ${var}	*/
-#define M_TREE		2	/* ${var.)	*/
+#define M_TREE		2	/* ${var.}	*/
 #define M_SIZE		3	/* ${#var}	*/
 #define M_VNAME		4	/* ${!var}	*/
 #define M_SUBNAME	5	/* ${!var[sub]}	*/
-#define M_NAMESCAN	6	/* ${!var*)	*/
-#define M_NAMECOUNT	7	/* ${#var*)	*/
-#define M_CLASS		8	/* ${-var)	*/
+#define M_NAMESCAN	6	/* ${!var*}	*/
+#define M_NAMECOUNT	7	/* ${#var*}	*/
+#define M_CLASS		8	/* ${-var}	*/
 
 static int	substring(const char*, const char*, int[], int);
 static void	copyto(Mac_t*, int, int);
@@ -349,6 +349,29 @@ void sh_machere(Sfio_t *infile, Sfio_t *outfile, char *string)
 }
 
 /*
+ * expand argument but do not trim pattern characters
+ */
+char *sh_macpat(register struct argnod *arg, int flags)
+{
+	register char *sp = arg->argval;
+	if((arg->argflag&ARG_RAW))
+		return(sp);
+	if(flags&ARG_OPTIMIZE)
+		arg->argchn.ap=0;
+	if(!(sp=arg->argchn.cp))
+	{
+		sh_macexpand(arg,NIL(struct argnod**),flags);
+		sp = arg->argchn.cp;
+		if(!(flags&ARG_OPTIMIZE) || !(arg->argflag&ARG_MAKE))
+			arg->argchn.cp = 0;
+		arg->argflag &= ~ARG_MAKE;
+	}
+	else
+		sh.optcount++;
+	return(sp);
+}
+
+/*
  * Process the characters up to <endch> or end of input string 
  */
 static void copyto(register Mac_t *mp,int endch, int newquote)
@@ -391,7 +414,7 @@ static void copyto(register Mac_t *mp,int endch, int newquote)
 					stakputc(ESCAPE);
 				break;
 			}
-			else if(sh_isoption(SH_BRACEEXPAND) && mp->pattern==4 && (*cp==',' || *cp==LBRACE || *cp==RBRACE))
+			else if(sh_isoption(SH_BRACEEXPAND) && mp->pattern==4 && (*cp==',' || *cp==LBRACE || *cp==RBRACE || *cp=='.'))
 				break;
 			else if(mp->split && endch && !mp->quote && !mp->lit)
 			{
@@ -559,7 +582,7 @@ static void copyto(register Mac_t *mp,int endch, int newquote)
 		    case S_BRACE:
 			if(!(mp->quote || mp->lit))
 			{
-				mp->patfound = mp->pattern;
+				mp->patfound = mp->split && sh_isoption(SH_BRACEEXPAND);
 				brace = 1;
 			}
 		    pattern:
@@ -932,7 +955,7 @@ retry1:
 #endif /* SHOPT_COMPOUND_ARRAY */
 		do
 			stakputc(c);
-		while((c=fcget()),isaname(c)||(c=='.' && type));
+		while(((c=fcget()),isaname(c))||type && c=='.');
 		if(type && (c==LBRACT||c==RBRACE) && fcpeek(-2)=='.')
 		{
 			if(c==RBRACE)
@@ -1205,13 +1228,23 @@ retry1:
 				int newquote = mp->quote;
 				int split = mp->split;
 				int quoted = mp->quoted;
+				int arith = mp->arith;
+				int zeros = mp->zeros;
 				if(newops)
 				{
 					type = fcget();
+					if(type=='%' || type=='#')
+					{
+						int d = fcget();
+						fcseek(-1);
+						if(d=='(')
+							type = 0;
+					}
 					fcseek(-1);
 					mp->pattern = 1+(c=='/');
 					mp->split = 0;
 					mp->quoted = 0;
+					mp->arith = mp->zeros = 0;
 					newquote = 0;
 				}
 				else if(c=='?' || c=='=')
@@ -1222,6 +1255,8 @@ retry1:
 				mp->pattern = oldpat;
 				mp->split = split;
 				mp->quoted = quoted;
+				mp->arith = arith;
+				mp->zeros = zeros;
 				/* add null byte */
 				stakputc(0);
 				stakseek(staktell()-1);
@@ -1522,6 +1557,7 @@ nosub:
  */
 static void comsubst(Mac_t *mp,int type)
 {
+	Sfdouble_t		num;
 	register int		c;
 	register char		*str;
 	Sfio_t			*sp;
@@ -1545,19 +1581,19 @@ static void comsubst(Mac_t *mp,int type)
 		t = sh_dolparen();
 		if(t && t->tre.tretyp==TARITH)
 		{
-			double num;
 			char numbuf[20];
-			char *cp =  t->ar.arexpr->argval;
+			str =  t->ar.arexpr->argval;
 			fcsave(&save);
 			if(!(t->ar.arexpr->argflag&ARG_RAW))
-				cp = sh_mactrim(cp,3);
-			num = sh_arith(cp);
+				str = sh_mactrim(str,3);
+			num = sh_arith(str);
+		out_offset:
 			stakset(savptr,savtop);
 			*mp = savemac;
-			if((long)num==num)
-				str = ltos(num);
+			if((Sflong_t)num==num)
+				sfsprintf(str=numbuf,sizeof(numbuf),"%lld\0",(Sflong_t)num);
 			else
-				sfsprintf(str=numbuf,sizeof(numbuf),"%.*g\0",12,num);
+				sfsprintf(str=numbuf,sizeof(numbuf),"%.*Lg\0",12,num);
 			mac_copy(mp,str,strlen(str));
 			sh.st.staklist = saveslp;
 			fcrestore(&save);
@@ -1597,16 +1633,27 @@ static void comsubst(Mac_t *mp,int type)
 		sfclose(sp);
 		if(t->tre.tretyp==0 && !t->com.comarg)
 		{
-			/* special case $( < file) */
+			/* special case $(<file) and $(<#file) */
 			register int fd;
+			int r;
 			struct checkpt buff;
+			struct ionod *ip;
 			sh_pushcontext(&buff,SH_JMPIO);
-			if(t->tre.treio && !(((t->tre.treio)->iofile)&IOUFD) &&
-				sigsetjmp(buff.buff,0)==0)
-				fd = sh_redirect(t->tre.treio,3);
+			if((ip=t->tre.treio) && 
+				((ip->iofile&IOLSEEK) || !(ip->iofile&IOUFD)) &&
+				(r=sigsetjmp(buff.buff,0))==0)
+				fd = sh_redirect(ip,3);
 			else
 				fd = sh_chkopen((char*)"/dev/null");
 			sh_popcontext(&buff);
+			if(r==0 && ip && (ip->iofile&IOLSEEK))
+			{
+				if(sp=sh.sftable[fd])
+					num = sftell(sp);
+				else
+					num = lseek(fd, (off_t)0, SEEK_CUR);
+				goto out_offset;
+			}
 			sp = sfnew(NIL(Sfio_t*),(char*)malloc(IOBSIZE+1),IOBSIZE,fd,SF_READ|SF_MALLOC);
 		}
 		else
@@ -1689,6 +1736,15 @@ static void comsubst(Mac_t *mp,int type)
 			str[c] = 0;
 		}
 		mac_copy(mp,str,c);
+	}
+	if(--newlines>0 && sh.ifstable['\n']==S_DELIM)
+	{
+		if(mp->sp)
+			sfnputc(mp->sp,'\n',newlines);
+		else if(!mp->quote && mp->split && sh.ifstable['\n'])
+			endfield(mp,0);
+		else	while(newlines--)
+				stakputc('\n');
 	}
 	if(lastc)
 		mac_copy(mp,&lastc,1);
@@ -1792,8 +1848,6 @@ static void mac_copy(register Mac_t *mp,register const char *str, register int s
 					n= S_DELIM;
 				}
 #endif /* SHOPT_MULTIBYTE */
-				endfield(mp,n==S_DELIM||mp->quoted);
-				mp->patfound = 0;
 				if(n==S_SPACE || n==S_NL)
 				{
 					while(size>0 && ((n=state[c= *(unsigned char*)cp++])==S_SPACE||n==S_NL))
@@ -1808,8 +1862,13 @@ static void mac_copy(register Mac_t *mp,register const char *str, register int s
 						size -= n;
 						n=S_DELIM;
 					}
+					else
 #endif /* SHOPT_MULTIBYTE */
+					if(n==S_DELIM)
+						size--;
 				}
+				endfield(mp,n==S_DELIM||mp->quoted);
+				mp->patfound = 0;
 				if(n==S_DELIM)
 					while(size>0 && ((n=state[c= *(unsigned char*)cp++])==S_SPACE||n==S_NL))
 						size--;
@@ -2015,7 +2074,10 @@ static void tilde_expand2(register int offset)
 		Sfoff_t n = sfvalue(iop);
 		while(ptr[n-1]=='\n')
 			n--;
-		stakwrite(ptr,n);
+		if(n==1 && fcpeek(0)=='/' && ptr[n-1])
+			n--;
+		if(n)
+			stakwrite(ptr,n);
 	}
 	else
 		stakputs(av[1]);

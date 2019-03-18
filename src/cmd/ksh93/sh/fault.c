@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -68,7 +68,7 @@ void	sh_fault(register int sig)
 		signal(sig, sh_fault);
 	sig &= ~SH_TRAP;
 #ifdef SIGWINCH
-	if(sig==SIGWINCH && !sh_isoption(SH_POSIX))
+	if(sig==SIGWINCH)
 	{
 		int rows=0, cols=0;
 		astwinsize(2,&rows,&cols);

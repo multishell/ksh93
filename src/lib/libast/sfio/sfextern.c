@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -59,8 +59,12 @@ Sfextern_t _Sfextern =
 	&Sfmutex					/* _Sfmutex	*/
 };
 
-/* accessible to application code for a few fast macro functions */
-ssize_t	_Sfi = -1;
+ssize_t	_Sfi = -1;		/* value for a few fast macro functions	*/
+#if INT_MAX == LONG_MAX
+ssize_t _Sfmaxr = 64*1024;	/* default maximum size for a record	*/
+#else
+ssize_t _Sfmaxr = 16*1024;	/* default maximum size for a record	*/
+#endif
 
 #if vt_threaded
 static Vtmutex_t	_Sfmtxin, _Sfmtxout, _Sfmtxerr;

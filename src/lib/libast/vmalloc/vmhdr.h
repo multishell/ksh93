@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -74,6 +74,8 @@
 #endif /*_PACKAGE_ast*/
 
 #include	"FEATURE/vmalloc"
+
+#include	<setjmp.h>
 
 /* the below macros decide which combinations of sbrk() or mmap() to used */
 #if defined(_WIN32)
@@ -239,6 +241,7 @@ union _align_u
 	Block_t*	block;
 	Vmuchar_t	a[ALIGNB];
 	_ast_fltmax_t	ld, *ldp;
+	jmp_buf		jmp;
 };
 struct _a_s
 {	char		c;

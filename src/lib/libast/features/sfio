@@ -4,11 +4,13 @@ lib	qfrexp,qldexp
 key	signed
 
 tst	tmp_rmfail note{ open files cannot be removed }end execute{
-	#include "iffeio.h"
+	#include <stdio.h>
 	#include <string.h>
+	#include <time.h>
 	int
 	main()
-	{	
+	{
+	#if !_UWIN
 		int		n;
 		char*		s;
 		FILE*		fr;
@@ -20,7 +22,7 @@ tst	tmp_rmfail note{ open files cannot be removed }end execute{
 		*s++ = 'F';
 		*s++ = 'F';
 		*s++ = '3';
-		n = (int)&fr;
+		n = (int)time(0);
 		*s++ = (n & 0xF) + 'A';
 		*s++ = ((n >> 4) & 0xF) + 'A';
 		*s++ = ((n >> 8) & 0xF) + 'A';
@@ -33,7 +35,13 @@ tst	tmp_rmfail note{ open files cannot be removed }end execute{
 		remove(file);
 		if (!(fw = fopen(file, "w")))
 			return 0;
-		if (!(fr = fopen(file, "r")) || remove(file) < 0)
+		if (!(fr = fopen(file, "r")))
+		{
+			fclose(fw);
+			remove(file);
+			return 0;
+		}
+		if (remove(file) < 0)
 		{
 			fclose(fr);
 			fclose(fw);
@@ -45,8 +53,10 @@ tst	tmp_rmfail note{ open files cannot be removed }end execute{
 		fclose(fw);
 		if (fread(file, sizeof(data), 1, fr) != 1)
 			return 0;
+		fclose(fr);
 		if (strcmp(file, data) != 0)
 			return 0;
+	#endif
 		return 1;
 	}
 }end
@@ -106,7 +116,7 @@ tst	lib_cvt note{ native floating point conversions ok }end link{
 }end
 
 tst	xopen_stdio note{ Stdio fseek/fflush are X/Open-compliant }end execute{
-	#include	"iffeio.h"
+	#include <stdio.h>
 	#define Failed(file)	(unlink(file),1)
 	int
 	main(argc, argv)

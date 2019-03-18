@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -36,6 +36,7 @@ struct ionod
 	char		*iodelim;
 	off_t		iooffset;
 	long		iosize;
+	char		*iovname;
 };
 
 struct comnod

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -65,9 +65,9 @@ const struct shtable3 shtab_builtins[] =
 #if SHOPT_BASH
 	"local",	NV_BLTIN|BLT_ENV|BLT_SPC|BLT_DCL,bltin(typeset),
 #endif
-#ifdef _bin_newgrp
+#if _bin_newgrp || _usr_bin_newgrp
 	"newgrp",	NV_BLTIN|BLT_ENV|BLT_SPC,	Bltin(login),
-#endif	/* _bin_newgrp */
+#endif	/* _bin_newgrp || _usr_bin_newgrp */
 	".",		NV_BLTIN|BLT_ENV|BLT_SPC,	bltin(dot_cmd),
 	"alias",	NV_BLTIN|BLT_SPC|BLT_DCL,	bltin(alias),
 	"hash",		NV_BLTIN|BLT_SPC|BLT_DCL,	bltin(alias),
@@ -105,7 +105,7 @@ const struct shtable3 shtab_builtins[] =
 	"print",	NV_BLTIN|BLT_ENV,		bltin(print),
 	"printf",	NV_BLTIN|NV_NOFREE,		bltin(printf),
 	"pwd",		NV_BLTIN|NV_NOFREE,		bltin(pwd),
-	"read",		NV_BLTIN,			bltin(read),
+	"read",		NV_BLTIN|BLT_ENV,		bltin(read),
 	"sleep",	NV_BLTIN|NV_NOFREE,		bltin(sleep),
 	"alarm",	NV_BLTIN,			bltin(alarm),
 	"ulimit",	NV_BLTIN|BLT_ENV,		bltin(ulimit),
@@ -121,41 +121,11 @@ const struct shtable3 shtab_builtins[] =
 	"type",		NV_BLTIN|BLT_ENV,		bltin(whence),
 	"whence",	NV_BLTIN|BLT_ENV,		bltin(whence),
 #if SHOPT_CMDLIB_BLTIN
-	BDIR "basename",NV_BLTIN|NV_NOFREE,	 	bltin(basename),
-	BDIR "cat",	NV_BLTIN|NV_NOFREE,	 	bltin(cat),
-	BDIR "chgrp",	NV_BLTIN|NV_NOFREE,	 	bltin(chgrp),
-	BDIR "chmod",	NV_BLTIN|NV_NOFREE,	 	bltin(chmod),
-	BDIR "chown",	NV_BLTIN|NV_NOFREE,	 	bltin(chown),
-	BDIR "cmp",	NV_BLTIN|NV_NOFREE,	 	bltin(cmp),
-	BDIR "comm",	NV_BLTIN|NV_NOFREE,	 	bltin(comm),
-	BDIR "cp",	NV_BLTIN|NV_NOFREE,	 	bltin(cp),
-	BDIR "cut",	NV_BLTIN|NV_NOFREE,	 	bltin(cut),
-	BDIR "date",	NV_BLTIN|NV_NOFREE,	 	bltin(date),
-	BDIR "dirname",	NV_BLTIN|NV_NOFREE,	 	bltin(dirname),
-	BDIR "expr",	NV_BLTIN|NV_NOFREE,	 	bltin(expr),
-	BDIR "fmt",	NV_BLTIN|NV_NOFREE,	 	bltin(fmt),
-	BDIR "fold",	NV_BLTIN|NV_NOFREE,	 	bltin(fold),
-	BDIR "getconf",	NV_BLTIN|NV_NOFREE,	 	bltin(getconf),
-	BDIR "head",	NV_BLTIN|NV_NOFREE,	 	bltin(head),
-	BDIR "id",	NV_BLTIN|NV_NOFREE,	 	bltin(id),
-	BDIR "join",	NV_BLTIN|NV_NOFREE,	 	bltin(join),
-	BDIR "ln",	NV_BLTIN|NV_NOFREE,	 	bltin(ln),
-	BDIR "logname",	NV_BLTIN|NV_NOFREE,	 	bltin(logname),
-	BDIR "mkdir",	NV_BLTIN|NV_NOFREE,	 	bltin(mkdir),
-	BDIR "mkfifo",	NV_BLTIN|NV_NOFREE,	 	bltin(mkfifo),
-	BDIR "mv",	NV_BLTIN|NV_NOFREE,	 	bltin(mv),
-	BDIR "paste",	NV_BLTIN|NV_NOFREE,	 	bltin(paste),
-	BDIR "pathchk",	NV_BLTIN|NV_NOFREE,	 	bltin(pathchk),
-	BDIR "rev",	NV_BLTIN|NV_NOFREE,	 	bltin(rev),
-	BDIR "rm",	NV_BLTIN|NV_NOFREE,	 	bltin(rm),
-	BDIR "rmdir",	NV_BLTIN|NV_NOFREE,	 	bltin(rmdir),
-	BDIR "stty",	NV_BLTIN|NV_NOFREE,	 	bltin(stty),
-	BDIR "tail",	NV_BLTIN|NV_NOFREE,	 	bltin(tail),
-	BDIR "tee",	NV_BLTIN|NV_NOFREE,	 	bltin(tee),
-	BDIR "tty",	NV_BLTIN|NV_NOFREE,	 	bltin(tty),
-	BDIR "uname",	NV_BLTIN|NV_NOFREE,	 	bltin(uname),
-	BDIR "uniq",	NV_BLTIN|NV_NOFREE,	 	bltin(uniq),
-	BDIR "wc",	NV_BLTIN|NV_NOFREE,	 	bltin(wc),
+#define Q(f)		#f	/* libpp cpp workaround -- fixed 2005-04-11 */
+#define CMDLIST(f)	BDIR Q(f), NV_BLTIN|NV_NOFREE, bltin(f),
+#include <cmdlist.h>
+#undef	CMDLIST
+#undef	Q
 #else
 	"/bin/basename",NV_BLTIN|NV_NOFREE,		bltin(basename),
 	"/bin/chmod",	NV_BLTIN|NV_NOFREE,		bltin(chmod),
@@ -221,11 +191,8 @@ const char sh_set[] =
 	"This option can be repeated to enable/disable multiple options. "
 	"The value of \aoption\a must be one of the following:]{"
 		"[+allexport?Equivalent to \b-a\b.]"
-#if SHOPT_BASH
-		"[+braceexpand?Equivalent to \b-B\b. Available in bash "
-		"compatibility mode only.]"
-#endif
 		"[+bgnice?Runs background jobs at lower priorities.]"
+		"[+braceexpand?Equivalent to \b-B\b.] "
 		"[+emacs?Enables/disables \bemacs\b editing mode.]"
 		"[+errexit?Equivalent to \b-e\b.]"
 		"[+globstar?Equivalent to \b-G\b.]"
@@ -248,6 +215,8 @@ const char sh_set[] =
 		"[+markdirs?A trailing \b/\b is appended to directories "
 			"resulting from pathname expansion.]"
 		"[+monitor?Equivalent to \b-m\b.]"
+		"[+multiline?Use multiple lines when editing lines that are "
+			"longer than the window width.]"
 		"[+noclobber?Equivalent to \b-C\b.]"
 		"[+noexec?Equivalent to \b-n\b.]"
 		"[+noglob?Equivalent to \b-f\b.]"
@@ -294,6 +263,9 @@ const char sh_set[] =
 	"of the \bPS4\b parameter.]"
 #if SHOPT_BASH
 	"\fbash1\f"
+#endif
+#if SHOPT_BRACEPAT
+"[B?Enable {...} group expansion. On by default.]"
 #endif
 "[C?Prevents existing regular files from being overwritten using the \b>\b "
 	"redirection operator.  The \b>|\b redirection overrides this "
@@ -713,7 +685,7 @@ USAGE_LICENSE
     "specifies the interface version, currently \b1\b. The latest version is "
     "assumed if \aversion\a is omitted. Future enhancements "
     "may increment \aversion\a, but all versions will be supported. \atext\a "
-    "typcally specifies an SCCS or CVS identification string. Zero or more "
+    "typically specifies an SCCS or CVS identification string. Zero or more "
     "\aflags\a with optional \anumber\a values may be specified to control "
     "option parsing. "
     "The flags are:]{"
@@ -770,7 +742,7 @@ USAGE_LICENSE
   "[+6.?A group of the form [+\\n...]] will display the characters "
     "representing ... in fixed with font without adding line breaks.]"
   "[+7.?A group of the form [+\aname\a?\atext\a]] specifies a section "
-    "\aname\a with descriptiove \atext\a. If \aname\a is omitted then "
+    "\aname\a with descriptive \atext\a. If \aname\a is omitted then "
     "\atext\a is placed in a new paragraph.]"
   "[+8.?A group of the form [-\aname\a?\atext\a]] specifies entries "
     "for the \bIMPLEMENTATION\b section.]"
@@ -794,7 +766,7 @@ USAGE_LICENSE
 	"[+3.?A help argument is specified.]"
 	"[+4.?An error is encountered.]"
 "}"
-"[+?If \bOPTARG\b is set to the value \b1\b, a new set of arguments "
+"[+?If \bOPTIND\b is set to the value \b1\b, a new set of arguments "
   "can be used.]"
 "[+?\bgetopts\b can also be used to generate help messages containing command "
   "usage and detailed descriptions.  Specify \aargs\a as:]"
@@ -1000,7 +972,7 @@ USAGE_LICENSE
 #endif
 "[r?Reverse the order of the commands.]"
 "[s?Reexecute the command without invoking an editor.  In this case "
-	"an operand of the form \aold\a\b-\b\anew\a can be specified "
+	"an operand of the form \aold\a\b=\b\anew\a can be specified "
 	"to change the first occurrence of the string \aold\a in the "
 	"command to \anew\a before reexecuting the command.]"
 

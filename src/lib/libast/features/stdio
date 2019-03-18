@@ -196,8 +196,7 @@ cat{
 	#endif
 }end
 output{
-	#include "iffeio.h"
-	#include "FEATURE/limits"
+	#include <stdio.h>
 	#ifndef FILENAME_MAX
 	#ifndef NAME_MAX
 	#ifndef _POSIX_NAME_MAX
@@ -208,6 +207,9 @@ output{
 	#define FILENAME_MAX	NAME_MAX
 	#endif
 	#ifndef FOPEN_MAX
+	#ifdef STREAM_MAX
+	#define FOPEN_MAX	STREAM_MAX
+	#else
 	#ifndef OPEN_MAX
 	#ifndef _POSIX_OPEN_MAX
 	#define _POSIX_OPEN_MAX	20
@@ -215,6 +217,7 @@ output{
 	#define OPEN_MAX	_POSIX_OPEN_MAX
 	#endif
 	#define FOPEN_MAX	OPEN_MAX
+	#endif
 	#endif
 	#ifndef TMP_MAX
 	#define TMP_MAX		33520641
@@ -317,7 +320,7 @@ output{
 	}
 }end
 macro{
-	#include "iffeio.h"
+	#include <stdio.h>
 	<<"#if defined(__STDPP__directive) && defined(__STDPP__initial)">>
 	<<"__STDPP__directive pragma pp:initial">>
 	<<"#endif">>

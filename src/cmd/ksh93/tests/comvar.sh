@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                  Copyright (c) 1982-2005 AT&T Corp.                  #
+#                  Copyright (c) 1982-2006 AT&T Corp.                  #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                            by AT&T Corp.                             #
@@ -20,7 +20,7 @@
 function err_exit
 {
 	print -u2 -n "\t"
-	print -u2 -r $Command[$1]: "${@:2}"
+	print -u2 -r ${Command}[$1]: "${@:2}"
 	let Errors+=1
 }
 alias err_exit='err_exit $LINENO'
@@ -78,6 +78,7 @@ unset x
 	x.foo.bar=7
 	[[ ${x.foo.bar} == 7 ]] || err_exit '[[ ${x.foo.bar} != 7 ]]'
 	(( x.foo.bar == 7  ))|| err_exit '(( x.foo.bar != 7 ))'
+	[[ ${x.foo} == *bar=7*  ]] || err_exit '[[ ${x.foo} != *bar=7* ]]'
 )
 foo=(integer x=3)
 if	[[ ${foo} != *x=3* ]]
@@ -181,5 +182,14 @@ suitable=(
 [[ "${suitable}" == *entrylist=* ]] || err_exit 'compound variable expansion omitting fields'
 foo=( bar=foo  barbar=bar)
 [[ $foo == *bar=foo* ]] || err_exit 'no prefix elements in compound variable output'
+function localvar
+{
+	typeset point=(typeset -i x=3 y=4)
+	(( (point.x*point.x + point.y*point.y) == 25 )) || err_exit "local compound variable not working"
+}
+point=(integer x=6 y=8)
+localvar
+	(( (point.x*point.x + point.y*point.y) == 100 )) || err_exit "global compound variable not preserved"
+[[ $($SHELL -c 'foo=( [x]=(y z) ); print ${foo.x[@]}') == 'y z' ]] 2> /dev/null || err_exit 'foo=( [x]=(y z)  not working'
 exit $((Errors))
 

@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#                  Copyright (c) 1982-2005 AT&T Corp.                  #
+#                  Copyright (c) 1982-2006 AT&T Corp.                  #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                            by AT&T Corp.                             #
@@ -17,13 +17,16 @@
 #                  David Korn <dgk@research.att.com>                   #
 #                                                                      #
 ########################################################################
+# test the behavior of return and exit with functions
+
 function err_exit
 {
 	print -u2 -n "\t"
-	print -u2 -r $Command: "$@"
+	print -u2 -r ${Command}[$1]: "${@:2}"
 	let Errors+=1
 }
-# test the behavior of return and exit with functions
+alias err_exit='err_exit $LINENO'
+
 Command=$0
 integer Errors=0
 foo=NOVAL bar=NOVAL

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -82,6 +82,7 @@ extern void 	sh_iounsave(void);
 extern int	sh_chkopen(const char*);
 extern int	sh_ioaccess(int,int);
 extern int	sh_devtofd(const char*);
+extern int	sh_source(Shell_t*, Sfio_t*, const char*);
 
 /* the following are readonly */
 extern const char	e_pexists[];
@@ -95,12 +96,28 @@ extern const char	e_file[];
 extern const char	e_formspec[];
 extern const char	e_badregexp[];
 extern const char	e_open[];
+extern const char	e_notseek[];
+extern const char	e_noread[];
+extern const char	e_badseek[];
+extern const char	e_badpattern[];
 extern const char	e_toomany[];
 extern const char	e_pipe[];
 extern const char	e_unknown[];
 extern const char	e_devnull[];
 extern const char	e_profile[];
 extern const char	e_sysprofile[];
+#if SHOPT_SYSRC
+extern const char	e_sysrc[];
+#endif
+#if SHOPT_BASH
+#if SHOPT_SYSRC
+extern const char	e_bash_sysrc[];
+#endif
+extern const char	e_bash_rc[];
+extern const char	e_bash_login[];
+extern const char	e_bash_logout[];
+extern const char	e_bash_profile[];
+#endif
 extern const char	e_stdprompt[];
 extern const char	e_supprompt[];
 extern const char	e_ambiguous[];

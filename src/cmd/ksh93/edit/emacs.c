@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1982-2005 AT&T Corp.                  *
+*                  Copyright (c) 1982-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -189,7 +189,7 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 	char backslash;
 	genchar *kptr;
 	char prompt[PRSIZE];
-	genchar Screen[MAXWINDOW];
+	genchar Screen[MAXLINE];
 	if(!ep)
 	{
 		ep = ed->e_emacs = newof(0,Emacs_t,1,0);
@@ -197,18 +197,8 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 		ep->prevdirection =  1;
 		location.hist_command =  -5;
 	}
-#if KSHELL && (2*CHARSIZE*MAXLINE)<IOBSIZE
-	kstack = (genchar*)(buff + MAXLINE*sizeof(genchar));
-#else
-	if(kstack==0)
-	{
-		kstack = (genchar*)malloc(sizeof(genchar)*(MAXLINE));
-		kstack[0] = '\0';
-	}
-#endif
 	Prompt = prompt;
 	ep->screen = Screen;
-	drawbuff = out = (genchar*)buff;
 	if(tty_raw(ERRIO,0) < 0)
 	{
 		 return(reedit?reedit:ed_read(context, fd,buff,scend,0));
@@ -217,9 +207,17 @@ int ed_emacsread(void *context, int fd,char *buff,int scend, int reedit)
 	/* This mess in case the read system call fails */
 	
 	ed_setup(ep->ed,fd,reedit);
+	out = (genchar*)buff;
 #if SHOPT_MULTIBYTE
+	out = (genchar*)roundof((char*)out-(char*)0,sizeof(genchar));
 	ed_internal(buff,out);
 #endif /* SHOPT_MULTIBYTE */
+	if(!kstack)
+	{
+		kstack = (genchar*)malloc(CHARSIZE*MAXLINE);
+		kstack[0] = '\0';
+	}
+	drawbuff = out;
 #ifdef ESH_NFIRST
 	if (location.hist_command == -5)		/* to be initialized */
 	{
@@ -1361,6 +1359,8 @@ static void draw(register Emacs_t *ep,Draw_t option)
 	}
 	i = (ncursor-nscreen) - ep->offset;
 	setcursor(ep,i,0);
+	if(option==FINAL && ep->ed->e_multiline)
+		setcursor(ep,nscend-nscreen,0);
 	ep->scvalid = 1;
 	return;
 }
@@ -1374,23 +1374,7 @@ static void draw(register Emacs_t *ep,Draw_t option)
 static void setcursor(register Emacs_t *ep,register int newp,int c)
 {
 	register int oldp = ep->cursor - ep->screen;
-	if (oldp > newp)
-	{
-		if (!ep->cr_ok || (2*(newp+plen)>(oldp+plen)))
-		{
-			while (oldp > newp)
-			{
-				putchar(ep->ed,'\b');
-				oldp--;
-			}
-			goto skip;
-		}
-		putstring(ep,Prompt);
-		oldp = 0;
-	}
-	while (newp > oldp)
-		putchar(ep->ed,ep->screen[oldp++]);
-skip:
+	newp  = ed_setcursor(ep->ed, ep->screen, oldp, newp, 0);
 	if(c)
 	{
 		putchar(ep->ed,c);

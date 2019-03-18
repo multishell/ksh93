@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -56,7 +56,7 @@
 #define DT_MINP		(sizeof(size_t)*8 - 2)
 
 /* hash start size and load factor */
-#define HSLOT		(32)
+#define HSLOT		(256)
 #define HRESIZE(n)	((n) << 1)
 #define HLOAD(s)	((s) << 1)
 #define HINDEX(n,h)	((h)&((n)-1))

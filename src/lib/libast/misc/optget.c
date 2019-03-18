@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*                  Copyright (c) 1985-2005 AT&T Corp.                  *
+*                  Copyright (c) 1985-2006 AT&T Corp.                  *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                            by AT&T Corp.                             *
@@ -151,17 +151,7 @@ static const Font_t	fonts[] =
 
 static char		native[] = "";
 
-#if _PACKAGE_astsa
-
-static char		ID[] = "ast";
-
-#define C(s)		s
-#define D(s)		(opt_info.state->msgdict && dtmatch(opt_info.state->msgdict, (s)))
-#define T(i,c,m)	m
-#define X(c)		0
-#define Z(x)		C(x),sizeof(x)-1
-
-#else
+#if !_PACKAGE_astsa
 
 #define ID		ast.id
 
@@ -184,6 +174,16 @@ translate(const char* cmd, const char* cat, const char* msg)
 		cat = (const char*)ID;
 	return errorx(NiL, cmd, cat, msg);
 }
+
+#else
+
+static char		ID[] = "ast";
+
+#define C(s)		s
+#define D(s)		(opt_info.state->msgdict && dtmatch(opt_info.state->msgdict, (s)))
+#define T(i,c,m)	m
+#define X(c)		0
+#define Z(x)		C(x),sizeof(x)-1
 
 #endif
 
@@ -524,17 +524,18 @@ match(char* s, char* t, int version, const char* catalog)
 {
 	register char*	w;
 	register char*	x;
-	register char*	q;
-	char*		b;
+	char*		xw;
+	char*		ww;
 	int		n;
 	int		v;
 	int		j;
 
 	for (n = 0; n < 2; n++)
 	{
-		switch (n)
+		if (n)
+			x = t;
+		else
 		{
-		case 0:
 			if (catalog)
 			{
 				w = skip(t, ':', '?', 0, 1, 0, 0, version);
@@ -546,18 +547,18 @@ match(char* s, char* t, int version, const char* catalog)
 			x = T(NiL, ID, t);
 			if (x == t)
 				continue;
-			break;
-		case 1:
-			x = t;
-			break;
 		}
-		b = x--;
 		do
 		{
 			v = 0;
-			w = s;
-			while (*++x && *w)
+			xw = x;
+			w = ww = s;
+			while (*x && *w)
 			{
+				if (isupper(*x))
+					xw = x;
+				if (isupper(*w))
+					ww = w;
 				if (*x == '*' && !v++ || *x == '\a')
 				{
 					if (*x == '\a')
@@ -574,30 +575,32 @@ match(char* s, char* t, int version, const char* catalog)
 						while (*w)
 							w++;
 				}
-				else if (*x == *w || sep(*x) && sep(*w))
-					w++;
-				else if (!sep(*x) || x == b)
+				else if (sep(*x))
+					xw = ++x;
+				else if (sep(*w) && w != s)
+					ww = ++w;
+				else if (*x == *w)
 				{
-					if (sep(*w))
-					{
-						if (sep(*s))
-							break;
-						if (*++w == *x)
-						{
-							w++;
-							continue;
-						}
-					}
-					else if (w == s || sep(*(w - 1)) || isupper(*(w - 1)) && islower(*w))
-						break;
-					for (q = x; *q && !sep(*q) && *q != '|' && *q != '?' && *q != ']'; q++);
-					if (!sep(*q))
-						break;
-					for (x = q; w > s && *w != *(x + 1); w--);
+					x++;
+					w++;
 				}
+				else if (w == ww && x == xw)
+					break;
 				else
-					while (*w && *w != *x)
-						w++;
+				{
+					if (x != xw)
+					{
+						while (*x && !sep(*x) && !isupper(*x))
+							x++;
+						if (!*x)
+							break;
+						if (sep(*x))
+							x++;
+						xw = x;
+					}
+					while (w > ww && *w != *x)
+						w--;
+				}
 			}
 			if (!*w)
 			{
@@ -624,7 +627,7 @@ match(char* s, char* t, int version, const char* catalog)
 				}
 				return 1;
 			}
-		} while (*(x = skip(x, '|', 0, 0, 1, 0, 0, version)) == '|');
+		} while (*(x = skip(x, '|', 0, 0, 1, 0, 0, version)) == '|' && x++);
 	}
 	return 0;
 }
@@ -3261,6 +3264,8 @@ opthelp(const char* oopts, const char* what)
 						tp = sfstrtell(mp);
 						pp = p;
 					}
+					if (style == STYLE_nroff && !co)
+						continue;
 				}
 				else if (style == STYLE_html)
 				{
@@ -4465,7 +4470,7 @@ optget(register char** argv, const char* oopts)
 
 	if (opt_info.num != LONG_MIN)
 		opt_info.num = opt_info.number = num;
-	if (*++s == ':' || *s == '#')
+	if ((n = *++s == '#') || *s == ':' || w && !nov && v && (strtonll(v, &e, NiL, 0), n = !*e))
 	{
 		if (w)
 		{
@@ -4481,7 +4486,10 @@ optget(register char** argv, const char* oopts)
 			else
 			{
 				if (!v && *(s + 1) != '?' && (v = argv[opt_info.index]))
+				{
 					opt_info.index++;
+					opt_info.offset = 0;
+				}
 				if (!(opt_info.arg = v) || (*v == '0' || *v == '1') && !*(v + 1))
 				{
 					if (*(s + 1) != '?')
@@ -4509,7 +4517,7 @@ optget(register char** argv, const char* oopts)
 								break;
 							}
 				}
-				if (opt_info.arg && *s == '#')
+				if (opt_info.arg && n)
 				{
 					opt_info.num = (long)(opt_info.number = strtonll(opt_info.arg, &e, NiL, 0));
 					if (e == opt_info.arg)
@@ -4534,7 +4542,10 @@ optget(register char** argv, const char* oopts)
 						opt_info.index--;
 					}
 					else
+					{
+						opt_info.offset = 0;
 						c = opterror(s, version, catalog);
+					}
 					pop(psp);
 					return c;
 				}
@@ -4568,6 +4579,7 @@ optget(register char** argv, const char* oopts)
 					else
 					{
 						pop(psp);
+						opt_info.offset = 0;
 						return opterror(s, version, catalog);
 					}
 				}

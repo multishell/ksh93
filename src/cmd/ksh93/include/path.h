@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -41,7 +41,7 @@
 #define PATH_BFPATH		0010
 #define PATH_SKIP		0020
 #define PATH_BUILTIN_LIB	0040
-#define PATH_BUILTIN_SH		0100
+#define PATH_STD_DIR		0100	/* directory is on  $(getconf PATH) */
 
 #define PATH_OFFSET	2		/* path offset for path_join */
 #define MAXDEPTH	(sizeof(char*)==2?64:4096) /* maximum recursion depth*/
@@ -57,6 +57,7 @@ typedef struct pathcomp
 	ino_t		ino;
 	char		*name;
 	char		*lib;
+	char		*blib;
 	void		*bltin_lib;
 	unsigned short	len;
 	unsigned short	flags;

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -35,7 +35,7 @@
 #include	"history.h"
 #include	"builtins.h"
 #include	"streval.h"
-#include	<tm.h>
+#include	<tmx.h>
 #include	<ctype.h>
 #include	<ccode.h>
 
@@ -144,6 +144,7 @@ int    b_printf(int argc, char *argv[],void *extra)
 {
 	struct print prdata;
 	NOT_USED(argc);
+	memset(&prdata,0,sizeof(prdata));
 	prdata.sh = (Shell_t*)extra;
 	prdata.options = sh_optprintf;
 	return(b_print(-1,argv,&prdata));
@@ -161,7 +162,7 @@ int    b_print(int argc, char *argv[], void *extra)
 	register Shell_t *shp = (Shell_t*)extra;
 	const char *options, *msg = e_file+4;
 	char *format = 0;
-	int sflag = 0, nflag, rflag;
+	int sflag = 0, nflag=0, rflag=0;
 	if(argc>0)
 	{
 		options = sh_optprint;
@@ -296,10 +297,8 @@ skip2:
 		/* printf style print */
 		Sfio_t *pool;
 		struct printf pdata;
-		pdata.sh = shp;
-		pdata.err = 0;
-		pdata.cescape = 0;
 		memset(&pdata, 0, sizeof(pdata));
+		pdata.sh = shp;
 		pdata.hdr.version = SFIO_VERSION;
 		pdata.hdr.extf = extend;
 		pdata.nextarg = argv;
@@ -384,6 +383,14 @@ static char strformat(char *s)
 			if(*s==0)
 				break;
                         c = chresc(s - 1, &p);
+                        s = p;
+#if SHOPT_MULTIBYTE
+			if(c>UCHAR_MAX && mbwide())
+			{
+				t += wctomb(t, c);
+				continue;
+			}
+#endif /* SHOPT_MULTIBYTE */
 			if(c=='%')
 				*t++ = '%';
 			else if(c==0)
@@ -391,7 +398,6 @@ static char strformat(char *s)
 				*t++ = '%';
 				c = 'Z';
 			}
-                        s = p;
                         break;
                     case 0:
                         *t = 0;
@@ -570,7 +576,7 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			break;
 		case 'T':
 			fe->fmt = 'd';
-			value->ll = time(NIL(time_t*));
+			value->ll = tmxgettime();
 			break;
 		default:
 			if(!strchr("DdXxoUu",format))
@@ -585,12 +591,12 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		switch(format)
 		{
 		case 'p':
-			value->p = (char**)strtoll(argp,&lastchar,10);
+			value->p = (char**)strtol(argp,&lastchar,10);
 			break;
 		case 'n':
 		{
 			Namval_t *np;
-			np = nv_open(argp,sh.var_tree,NV_VARNAME|NV_NOASSIGN|NV_ARRAY);
+			np = nv_open(argp,sh.var_tree,NV_VARNAME|NV_NOASSIGN|NV_NOARRAY);
 			nv_unset(np);
 			nv_onattr(np,NV_INTEGER);
 			if (np->nvalue.lp = new_of(long,0))
@@ -688,14 +694,21 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		case 'A':
 		case 'E':
 		case 'G':
-			value->d = sh_strnum(*pp->nextarg,&lastchar,0);
 			fe->size = sizeof(value->d);
+			d = sh_strnum(*pp->nextarg,&lastchar,0);
+                        if(SFFMT_LDOUBLE)
+			{
+				value->ld = d;
+				fe->size = sizeof(value->ld);
+			}
+			else
+				value->d = d;
 			break;
 		case 'Q':
 			value->ll = (Sflong_t)strelapsed(*pp->nextarg,&lastchar,1);
 			break;
 		case 'T':
-			value->ll = (Sflong_t)tmdate(*pp->nextarg,&lastchar,NIL(time_t*));
+			value->ll = (Sflong_t)tmxdate(*pp->nextarg,&lastchar,TMX_NOW);
 			break;
 		default:
 			value->ll = 0;
@@ -741,10 +754,13 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		value->s = sh_fmtqf(value->s, !!(fe->flags & SFFMT_ALTER), fold);
 		break;
 	case 'P':
-		value->s = fmtmatch(value->s);
-		if(*value->s==0)
+	{
+		char *s = fmtmatch(value->s);
+		if(!s || *s==0)
 			errormsg(SH_DICT,ERROR_exit(1),e_badregexp,value->s);
+		value->s = s;
 		break;
+	}
 	case 'R':
 		value->s = fmtre(value->s);
 		if(*value->s==0)
@@ -768,10 +784,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 		{
 			n = fe->t_str[fe->n_str];
 			fe->t_str[fe->n_str] = 0;
-			value->s = fmttime(fe->t_str, value->ll);
+			value->s = fmttmx(fe->t_str, value->ll);
 			fe->t_str[fe->n_str] = n;
 		}
-		else value->s = fmttime(NIL(char*), value->ll);
+		else value->s = fmttmx(NIL(char*), value->ll);
 		fe->fmt = 's';
 		fe->size = -1;
 		break;

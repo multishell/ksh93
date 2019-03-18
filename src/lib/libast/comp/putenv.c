@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -21,7 +21,24 @@
 ***********************************************************************/
 #pragma prototyped
 
+#define putenv		______putenv
+
+#if _UWIN
+#define _STDLIB_H_	1
+#endif
+
 #include <ast.h>
+
+#undef	putenv
+
+#if _lib_putenv
+
+NoN(putenv)
+
+#else
+
+#undef	_def_map_ast
+#include <ast_map.h>
 
 #if defined(__EXPORT__)
 #define extern	__EXPORT__
@@ -33,23 +50,4 @@ putenv(const char* s)
 	return setenviron(s) ? 0 : -1;
 }
 
-extern int
-setenv(const char* name, const char* value, int overwrite)
-{
-	char*	s;
-
-	if (overwrite || !getenv(name))
-	{
-		if (!(s = sfprints("%s=%s", name, value)) || !(s = strdup(s)))
-			return -1;
-		return setenviron(s) ? 0 : -1;
-	}
-	return 0;
-}
-
-extern void
-unsetenv(const char *name)
-{
-	if (!strchr(name, '='))
-		setenviron(name);
-}
+#endif

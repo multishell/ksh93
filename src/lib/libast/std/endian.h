@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -19,22 +19,36 @@
 *                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
-#pragma prototyped
-
 /*
- * Glenn Fowler
- * AT&T Research
- *
- * character code map
+ * linux/gnu compatibility
  */
 
-#include <ast.h>
-#include <ccode.h>
+#ifndef _ENDIAN_H
+#define _ENDIAN_H
 
-#undef	ccmapc
+#include <bytesex.h>
 
-int
-ccmapc(int c, int in, int out)
-{
-	return CCMAPC(c, in, out);
-}
+#define	__LITTLE_ENDIAN	1234
+#define	__BIG_ENDIAN	4321
+#define	__PDP_ENDIAN	3412
+
+#if defined (__USE_BSD) && !defined(__STRICT_ANSI__)
+
+#ifndef LITTLE_ENDIAN
+#define	LITTLE_ENDIAN	__LITTLE_ENDIAN
+#endif
+
+#ifndef BIG_ENDIAN
+#define	BIG_ENDIAN	__BIG_ENDIAN
+#endif
+
+#ifndef PDP_ENDIAN
+#define	PDP_ENDIAN	__PDP_ENDIAN
+#endif
+
+#undef	BYTE_ORDER
+#define	BYTE_ORDER	__BYTE_ORDER
+
+#endif
+
+#endif

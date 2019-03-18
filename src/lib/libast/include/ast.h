@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -60,6 +60,9 @@ struct _sfio_s;
 #ifndef	__FILE_typedef
 #define __FILE_typedef	1
 #endif
+#ifndef _FILEDEFED
+#define _FILEDEFED	1
+#endif
 #endif
 
 /*
@@ -90,17 +93,20 @@ struct _sfio_s;
  * astconflist() flags
  */
 
-#define ASTCONF_parse		0x001
-#define ASTCONF_write		0x002
-#define ASTCONF_read		0x004
-#define ASTCONF_lower		0x008
-#define ASTCONF_base		0x010
-#define ASTCONF_defined		0x020
-#define ASTCONF_quote		0x040
-#define ASTCONF_table		0x080
-#define ASTCONF_matchcall	0x100
-#define ASTCONF_matchname	0x200
-#define ASTCONF_matchstandard	0x400
+#define ASTCONF_parse		0x0001
+#define ASTCONF_write		0x0002
+#define ASTCONF_read		0x0004
+#define ASTCONF_lower		0x0008
+#define ASTCONF_base		0x0010
+#define ASTCONF_defined		0x0020
+#define ASTCONF_quote		0x0040
+#define ASTCONF_table		0x0080
+#define ASTCONF_matchcall	0x0100
+#define ASTCONF_matchname	0x0200
+#define ASTCONF_matchstandard	0x0400
+#define ASTCONF_error		0x0800
+#define ASTCONF_system		0x1000
+#define ASTCONF_AST		0x2000
 
 /*
  * pathcanon() flags
@@ -158,6 +164,7 @@ typedef struct
 #define FMT_ESCAPED	0x02		/* already escaped		*/
 #define FMT_SHELL	0x04		/* escape $ ` too		*/
 #define FMT_WIDE	0x08		/* don't escape 8 bit chars	*/
+#define FMT_PARAM	0x10		/* disable FMT_SHELL ${$( quote	*/
 
 /*
  * multibyte macros
@@ -181,10 +188,13 @@ typedef struct
  */
 
 #define elementsof(x)	(sizeof(x)/sizeof(x[0]))
+#define integralof(x)	(((char*)(x))-((char*)0))
 #define newof(p,t,n,x)	((p)?(t*)realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)calloc(1,sizeof(t)*(n)+(x)))
 #define oldof(p,t,n,x)	((p)?(t*)realloc((char*)(p),sizeof(t)*(n)+(x)):(t*)malloc(sizeof(t)*(n)+(x)))
+#define pointerof(x)	((void*)((char*)0+(x)))
 #define roundof(x,y)	(((x)+(y)-1)&~((y)-1))
 #define ssizeof(x)	((int)sizeof(x))
+
 #define streq(a,b)	(*(a)==*(b)&&!strcmp(a,b))
 #define strneq(a,b,n)	(*(a)==*(b)&&!strncmp(a,b,n))
 #define strsignal(s)	fmtsignal(s)
@@ -223,7 +233,7 @@ typedef int (*Strcmp_f)(const char*, const char*);
 #define extern		__EXPORT__
 #endif
 
-extern char*		astgetconf(const char*, const char*, const char*, Error_f);
+extern char*		astgetconf(const char*, const char*, const char*, int, Error_f);
 extern char*		astconf(const char*, const char*, const char*);
 extern Ast_confdisc_f	astconfdisc(Ast_confdisc_f);
 extern void		astconflist(Sfio_t*, const char*, int, const char*);
@@ -346,51 +356,6 @@ extern char**		environ;
 
 #define VMFL	1
 #include <vmalloc.h>
-
-#if defined(__STDPP__directive) && defined(__STDPP__ignore)
-
-__STDPP__directive pragma pp:ignore "malloc.h"
-
-#else
-
-#ifndef _malloc_h
-#define _malloc_h
-#endif
-#ifndef _malloc_h_
-#define _malloc_h_
-#endif
-#ifndef __malloc_h
-#define __malloc_h
-#endif
-#ifndef __malloc_h__
-#define __malloc_h__
-#endif
-#ifndef _MALLOC_H
-#define _MALLOC_H
-#endif
-#ifndef _MALLOC_H_
-#define _MALLOC_H_
-#endif
-#ifndef __MALLOC_H
-#define __MALLOC_H
-#endif
-#ifndef __MALLOC_H__
-#define __MALLOC_H__
-#endif
-#ifndef _MALLOC_INCLUDED
-#define _MALLOC_INCLUDED
-#endif
-#ifndef __MALLOC_INCLUDED
-#define __MALLOC_INCLUDED
-#endif
-#ifndef _H_MALLOC
-#define _H_MALLOC
-#endif
-#ifndef __H_MALLOC
-#define __H_MALLOC
-#endif
-
-#endif
 
 #endif
 

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -133,6 +133,9 @@ struct _dtstat_s
 	int	dt_max;		/* max size of a chain or a level	*/
 	int*	dt_count;	/* counts of chains or levels by size	*/
 };
+
+/* flag set if the last search operation actually found the object */
+#define DT_FOUND	0100000
 
 /* supported storage methods */
 #define DT_SET		0000001	/* set with unique elements		*/
@@ -289,8 +292,10 @@ _END_EXTERNS_
 
 #define dtfirst(d)	(*(_DT(d)->searchf))((d),(Void_t*)(0),DT_FIRST)
 #define dtnext(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_NEXT)
+#define dtleast(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_SEARCH|DT_NEXT)
 #define dtlast(d)	(*(_DT(d)->searchf))((d),(Void_t*)(0),DT_LAST)
 #define dtprev(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_PREV)
+#define dtmost(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_SEARCH|DT_PREV)
 #define dtsearch(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_SEARCH)
 #define dtmatch(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_MATCH)
 #define dtinsert(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_INSERT)
@@ -298,6 +303,7 @@ _END_EXTERNS_
 #define dtattach(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_ATTACH)
 #define dtdetach(d,o)	(*(_DT(d)->searchf))((d),(Void_t*)(o),DT_DETACH)
 #define dtclear(d)	(*(_DT(d)->searchf))((d),(Void_t*)(0),DT_CLEAR)
+#define dtfound(d)	(_DT(d)->type & DT_FOUND)
 
 #define DT_PRIME	17109811 /* 2#00000001 00000101 00010011 00110011 */
 #define dtcharhash(h,c) (((unsigned int)(h) + (unsigned int)(c)) * DT_PRIME )

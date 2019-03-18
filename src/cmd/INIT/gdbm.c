@@ -1,10 +1,10 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*                     Copyright (c) 1994-2007 AT&T                     *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
-*                      by AT&T Knowledge Ventures                      *
+*                               by AT&T                                *
 *                                                                      *
 *                A copy of the License is available at                 *
 *            http://www.opensource.org/licenses/cpl1.0.txt             *
@@ -15,33 +15,21 @@
 *                           Florham Park NJ                            *
 *                                                                      *
 *                 Glenn Fowler <gsf@research.att.com>                  *
-*                  David Korn <dgk@research.att.com>                   *
-*                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
-#pragma prototyped
-
 /*
- * Glenn Fowler
- * AT&T Research
- *
- * character code string map
+ * small test for -lgdbm
  */
 
-#include <ast.h>
-#include <ccode.h>
+#define _hdr_gdbm_ndbm		1
 
-#undef	ccmaps
+#if _hdr_gdbm_ndbm
+#include <gdbm/ndbm.h>
+#endif
 
-void*
-ccmapcpy(void* b, const void* a, size_t n, int in, int out)
+int
+main()
 {
-	register unsigned char*		ub = (unsigned char*)b;
-	register unsigned char*		ue = ub + n;
-	register const unsigned char*	ua = (const unsigned char*)a;
-	register const unsigned char*	m = CCMAP(in, out);
-
-	while (ub < ue)
-		*ub++ = m[*ua++];
-	return b;
+	dbm_open();
+	return 0;
 }

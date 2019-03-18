@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,13 +27,14 @@
 
 #undef	remove
 
+#undef	_def_map_ast
+#include <ast_map.h>
+
 #if _std_remove || !_lib_unlink
 
 NoN(remove)
 
 #else
-
-#undef	remove
 
 #if defined(__EXPORT__)
 #define extern	__EXPORT__

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,6 +24,7 @@
  */
 
 #include	<ast.h>
+#include	<ast_wchar.h>
 #include	"defs.h"
 #include	<stak.h>
 #include	<ctype.h>
@@ -36,8 +37,12 @@
 #define mbchar(p)	(*(unsigned char*)p++)
 #endif
 
+#if _hdr_wctype
+#   include <wctype.h>
+#endif
+
 #if !_lib_iswprint && !defined(iswprint)
-#   define iswprint(c)		((c&~0377) || isprint(c))
+#   define iswprint(c)		(((c)&~0377) || isprint(c))
 #endif
 
 
@@ -245,8 +250,18 @@ void	sh_trim(register char *sp)
 	if(sp)
 	{
 		dp = sp;
-		while(c= *sp++)
+		while(c= *sp)
 		{
+#if SHOPT_MULTIBYTE
+			int len;
+			if(mbwide() && (len=mbsize(sp))>1)
+			{
+				dp += len;
+				sp += len;
+				continue;
+			}
+#endif /* SHOPT_MULTIBYTE */
+			sp++;
 			if(c == '\\')
 				c = *sp++;
 			if(c)

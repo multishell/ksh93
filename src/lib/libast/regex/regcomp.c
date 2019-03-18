@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -30,6 +30,8 @@
 #if _PACKAGE_ast
 #include "lclib.h"
 #endif
+
+#define serialize		re_serialize	/* hp.ia64 <unistd.h>! */
 
 #define C_ESC			(-1)
 #define C_MB			(-2)
@@ -115,6 +117,7 @@ typedef struct Cenv_s
 	int		type;		/* BRE,ERE,ARE,SRE,KRE		*/
 	unsigned char*	cursor;		/* curent point in re		*/
 	unsigned char*	pattern;	/* the original pattern		*/
+	unsigned char*	literal;	/* literal restart pattern	*/
 	int		parno;		/* number of last open paren	*/
 	int		parnest;	/* paren nest count		*/
 	int		posixkludge; 	/* to make * nonspecial		*/
@@ -2020,16 +2023,25 @@ grp(Cenv_t* env, int parno)
 	{
 	case '-':
 	case '+':
+	case 'a':
 	case 'g':
 	case 'i':
 	case 'l':
 	case 'm':
+	case 'p':
+	case 'r':
 	case 's':
 	case 'x':
 	case 'A':
 	case 'B':
 	case 'E':
+	case 'F':
+	case 'G':
+	case 'I':
 	case 'K':
+	case 'M':
+	case 'N':
+	case 'R':
 	case 'S':
 	case 'U':	/* pcre */
 	case 'X':	/* pcre */
@@ -2055,6 +2067,12 @@ grp(Cenv_t* env, int parno)
 			case '+':
 				i = 1;
 				break;
+			case 'a':
+				if (i)
+					env->flags |= (REG_LEFT|REG_RIGHT);
+				else
+					env->flags &= ~(REG_LEFT|REG_RIGHT);
+				break;
 			case 'g':
 				if (i)
 					env->flags &= ~REG_MINIMAL;
@@ -2069,25 +2087,35 @@ grp(Cenv_t* env, int parno)
 				break;
 			case 'l':
 				if (i)
-					env->flags |= REG_LENIENT;
+					env->flags |= REG_LEFT;
 				else
-					env->flags &= ~REG_LENIENT;
+					env->flags &= ~REG_LEFT;
 				break;
 			case 'm':
 				if (i)
 					env->flags |= REG_NEWLINE;
 				else
 					env->flags &= ~REG_NEWLINE;
-				if (env->type < SRE)
-					env->explicit = (env->flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE ? env->mappednewline : -1;
+				env->explicit = (env->flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE ? env->mappednewline : -1;
+				break;
+			case 'p':
+				if (i)
+					env->flags &= ~REG_LENIENT;
+				else
+					env->flags |= REG_LENIENT;
+				break;
+			case 'r':
+				if (i)
+					env->flags |= REG_RIGHT;
+				else
+					env->flags &= ~REG_RIGHT;
 				break;
 			case 's':
 				if (i)
 					env->flags |= REG_SPAN;
 				else
 					env->flags &= ~REG_SPAN;
-				if (env->type < SRE)
-					env->explicit = (env->flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE ? env->mappednewline : -1;
+				env->explicit = (env->flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE ? env->mappednewline : -1;
 				break;
 			case 'x':
 				if (i)
@@ -2096,27 +2124,43 @@ grp(Cenv_t* env, int parno)
 					env->flags &= ~REG_COMMENT;
 				break;
 			case 'A':
-				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_SHELL);
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
 				env->flags |= REG_AUGMENTED|REG_EXTENDED;
 				typ = ARE;
 				break;
 			case 'B':
-				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_SHELL);
+			case 'G':
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
 				typ = BRE;
 				break;
 			case 'E':
-				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_SHELL);
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
 				env->flags |= REG_EXTENDED;
 				typ = ERE;
 				break;
+			case 'F':
+			case 'L':
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
+				env->flags |= REG_LITERAL;
+				typ = ERE;
+				break;
 			case 'K':
-				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_SHELL);
-				env->flags |= REG_AUGMENTED|REG_SHELL;
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
+				env->flags |= REG_AUGMENTED|REG_SHELL|REG_LEFT|REG_RIGHT;
 				typ = KRE;
 				break;
+			case 'M':
+				/* used by caller to disable glob(3) GLOB_BRACE */
+				break;
+			case 'N':
+				/* used by caller to disable glob(3) GLOB_NOCHECK */
+				break;
+			case 'R':
+				/* used by caller to disable glob(3) GLOB_STARSTAR */
+				break;
 			case 'S':
-				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_SHELL);
-				env->flags |= REG_SHELL;
+				env->flags &= ~(REG_AUGMENTED|REG_EXTENDED|REG_LITERAL|REG_SHELL|REG_LEFT|REG_RIGHT);
+				env->flags |= REG_SHELL|REG_LEFT|REG_RIGHT;
 				typ = SRE;
 				break;
 			case 'U': /* PCRE_UNGREEDY */
@@ -2651,6 +2695,7 @@ seq(Cenv_t* env)
 				env->type = type;
 				break;
 			case T_GROUP:
+				p = env->cursor;
 				eat(env);
 				flags = env->flags;
 				type = env->type;
@@ -2658,6 +2703,8 @@ seq(Cenv_t* env)
 				{
 					if (env->error)
 						return 0;
+					if (env->literal == env->pattern && env->literal == p)
+						env->literal = env->cursor;
 					continue;
 				}
 				env->flags = flags;
@@ -3173,11 +3220,10 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	{
 		if (env.flags & REG_SHELL_PATH)
 			env.explicit = env.mappedslash;
-		env.flags &= ~REG_NEWLINE;
 		env.flags |= REG_LENIENT|REG_NULL;
 		env.type = env.type == BRE ? SRE : KRE;
 	}
-	else if ((env.flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE)
+	if ((env.flags & (REG_NEWLINE|REG_SPAN)) == REG_NEWLINE)
 		env.explicit = env.mappednewline;
 	p->env->leading = (env.flags & REG_SHELL_DOT) ? env.mappeddot : -1;
 	env.posixkludge = !(env.flags & (REG_EXTENDED|REG_SHELL));
@@ -3196,7 +3242,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 		}
 		env.terminator = '\n';
 	}
-	env.pattern = env.cursor = (unsigned char*)pattern;
+	env.literal = env.pattern = env.cursor = (unsigned char*)pattern;
 	if (!(p->env->rex = alt(&env, 1, 0)))
 		goto bad;
 	if (env.parnest)
@@ -3293,6 +3339,7 @@ regcomp(regex_t* p, const char* pattern, regflags_t flags)
 	if (env.type >= SRE && env.error != REG_ESPACE && !(flags & REG_LITERAL))
 	{
 		flags |= REG_LITERAL;
+		pattern = (const char*)env.literal;
 		goto again;
 	}
 	return fatal(disc, env.error, pattern);

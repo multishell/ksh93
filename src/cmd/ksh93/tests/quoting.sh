@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,7 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
 integer Errors=0
 if	[[ 'hi there' != "hi there" ]]
 then	err_exit "single quotes not the same as double quotes"
@@ -323,4 +323,9 @@ string='\4'
 string='&foo'
 [[ ${subject/${re}/${string}} != '&foo' ]] && err_exit 'string replacement with $string not working with string=&foo'
 [[ ${subject/${re}/"${string}"} != '&foo' ]] && err_exit 'string replacement with "$string" not working with  string=&foo'
+{
+x=x
+x=${x:-`id | sed 's/^[^(]*(\([^)]*\)).*/\1/'`}
+} 2> /dev/null || err_exit 'skipping over `` failed' 
+[[ $x == x ]] || err_exit 'assignment ${x:=`...`} failed'
 exit $((Errors))

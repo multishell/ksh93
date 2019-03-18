@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -124,6 +124,7 @@ int path_expand(const char *pattern, struct argnod **arghead)
 #   endif
 #endif /* KSHELL */
 		flags |= GLOB_COMPLETE;
+		flags &= ~GLOB_NOCHECK;
 	}
 #if SHOPT_BASH
 	if(off = staktell())
@@ -186,6 +187,8 @@ int path_expand(const char *pattern, struct argnod **arghead)
 		gp->gl_suffix = sufstr;
 	gp->gl_intr = &sh.trapnote; 
 	suflen = 0;
+	if(memcmp(pattern,"~(N",3)==0)
+		flags &= ~GLOB_NOCHECK;
 	glob(pattern, flags, 0, gp);
 #if SHOPT_BASH
 	if(off)
@@ -200,7 +203,6 @@ int path_expand(const char *pattern, struct argnod **arghead)
 		if(!ap->argnxt.ap)
 			ap->argchn.ap = *arghead;
 	}
-	*arghead = (struct argnod*)gp->gl_list;
 	if(gp->gl_list)
 		*arghead = (struct argnod*)gp->gl_list;
 	return(gp->gl_pathc+extra);
@@ -382,15 +384,19 @@ again:
 			for(; ap; ap=apin)
 			{
 				apin = ap->argchn.ap;
-				if(!sh_isoption(SH_NOGLOB) && (brace = path_expand(ap->argval,arghead)))
-					count += brace;
+				if(!sh_isoption(SH_NOGLOB))
+					brace=path_expand(ap->argval,arghead);
 				else
 				{
 					ap->argchn.ap = *arghead;
 					*arghead = ap;
-					count++;
+					brace=1;
 				}
-				(*arghead)->argflag |= ARG_MAKE;
+				if(brace)
+				{
+					count += brace;
+					(*arghead)->argflag |= ARG_MAKE;
+				}
 			}
 			return(count);
 	}

@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -36,8 +36,8 @@ function home # id
 	fi
 }
 
+Command=${0##*/}
 integer Errors=0
-Command=$0
 OLDPWD=/bin
 if	[[ ~ != $HOME ]]
 then	err_exit '~' not $HOME
@@ -81,4 +81,7 @@ x=~:~
 if	[[ $x != "$HOME:$HOME" ]]
 then	err_exit x=~:~ not $HOME:$HOME
 fi
+HOME=/
+[[ ~ == / ]] || err_exit '~ should be /'
+[[ ~/foo == /foo ]] || err_exit '~/foo should be /foo when ~==/'
 exit $((Errors))

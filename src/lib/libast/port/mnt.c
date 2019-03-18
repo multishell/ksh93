@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -137,10 +137,17 @@ set(register Header_t* hp, const char* fs, const char* dir, const char* type, co
  * what a crappy interface
  * data returned in static buffer -- ok
  * big chunk of allocated memory that cannot be freed -- come on
+ * *and* netbsd changed the interface somewhere along the line
+ * private interface? my bad -- public interface? par for the bsd course
  */
 
 #include <sys/param.h>		/* expect some macro redefinitions here */
 #include <sys/mount.h>
+
+#if _lib_getmntinfo_statvfs
+#define statfs		statvfs
+#define f_flags		f_flag
+#endif
 
 typedef struct
 {

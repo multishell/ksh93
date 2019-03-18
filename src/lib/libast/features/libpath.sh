@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1985-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1985-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -39,12 +39,22 @@ do	case $i in
 done
 if	test "0" != "$ok"
 then	libpath=lib:LD_LIBRARY_PATH
-	if	test -d /lib32
-	then	libpath="lib32:LD_LIBRARYN32_PATH:sgi.mips3|sgi.*-n32,$libpath"
-	fi
-	if	test -d /lib64
-	then	libpath="lib64:LD_LIBRARY64_PATH:sgi.mips[4-9]|sgi.*-64,$libpath"
-	fi
+	case `package` in
+	sgi.*)	if	test -d /lib32
+		then	libpath="lib32:LD_LIBRARYN32_PATH:sgi.mips3|sgi.*-n32,$libpath"
+		fi
+		if	test -d /lib64
+		then	libpath="lib64:LD_LIBRARY64_PATH:sgi.mips[4-9]|sgi.*-64,$libpath"
+		fi
+		;;
+	sol*.*) if	test -d /lib/32
+		then	libpath="lib/32:LD_LIBRARY_PATH_32,$libpath"
+		fi
+		if	test -d /lib/64
+		then	libpath="lib/64:LD_LIBRARY_PATH_64:sol.*64*,$libpath"
+		fi
+		;;
+	esac
 elif	test -x /lib/dld.sl
 then	libpath=lib:SHLIB_PATH
 elif	test -x /usr/lib/dyld

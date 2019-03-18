@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -20,6 +20,15 @@
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
+
+#include "FEATURE/uwin"
+
+#if !_UWIN || _lib_crypt
+
+void _STUB_crypt(){}
+
+#else
+
 /*
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
@@ -56,10 +65,18 @@
 static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
+#define crypt		______crypt
+#define encrypt		______encrypt
+#define setkey		______setkey
+
 /* #include <unistd.h> */
 #include <stdio.h>
 #include <limits.h>
 #include <pwd.h>
+
+#undef	crypt
+#undef	encrypt
+#undef	setkey
 
 #ifndef _PASSWORD_EFMT1
 #define _PASSWORD_EFMT1 '-'
@@ -960,4 +977,6 @@ prtab(s, t, num_rows)
 	}
 	(void)printf("\n");
 }
+#endif
+
 #endif

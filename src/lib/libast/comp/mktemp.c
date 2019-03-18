@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,28 +24,21 @@
  * mktemp,mkstemp implementation
  */
 
-#define _def_map_ast	1
-
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide mktemp mkstemp
-#else
 #define mktemp		______mktemp
 #define mkstemp		______mkstemp
-#endif
 
 #include <ast.h>
 #include <stdio.h>
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide mktemp mkstemp
-#else
 #undef	mktemp
 #undef	mkstemp
-#endif
 
 #undef	_def_map_ast
-
 #include <ast_map.h>
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
 
 static char*
 temp(char* buf, int* fdp)
@@ -76,10 +69,6 @@ temp(char* buf, int* fdp)
 	}
 	return buf;
 }
-
-#if defined(__EXPORT__)
-#define extern	__EXPORT__
-#endif
 
 extern char*
 mktemp(char* buf)

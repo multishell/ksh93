@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -344,7 +344,8 @@ vsyslog(int priority, const char* format, va_list ap)
 		}
 		if ((s = sfstrseek(sp, 0, SEEK_CUR)) && *(s - 1) != '\n')
 			sfputc(sp, '\n');
-		sendlog(sfstruse(sp));
+		if (s = sfstruse(sp))
+			sendlog(s);
 		sfstrclose(sp);
 	}
 }

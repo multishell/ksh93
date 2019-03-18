@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,11 +27,11 @@
  * cat
  */
 
-#include <cmdlib.h>
+#include <cmd.h>
 #include <fcntl.h>
 
 static const char usage[] =
-"[-?\n@(#)$Id: cat (AT&T Labs Research) 2005-05-17 $\n]"
+"[-?\n@(#)$Id: cat (AT&T Research) 2006-05-17 $\n]"
 USAGE_LICENSE
 "[+NAME?cat - concatenate files]"
 "[+DESCRIPTION?\bcat\b copies each \afile\a in sequence to the standard"
@@ -48,13 +48,14 @@ USAGE_LICENSE
 "[t?Equivalent to \b-vT\b.]"
 "[u:unbuffer?The output is not delayed by buffering.]"
 "[v:show-nonprinting?Causes non-printing characters (whith the exception of"
-"	tabs, new-lines, and form-feeds) to be output is printable charater"
+"	tabs, new-lines, and form-feeds) to be output as printable charater"
 "	sequences. ASCII control characters are printed as \b^\b\an\a,"
 "	where \an\a is the corresponding ASCII character in the range"
 "	octal 100-137. The DEL character (octal 0177) is copied"
 "	as \b^?\b. Other non-printable characters are copied as \bM-\b\ax\a"
 "	where \ax\a is the ASCII character specified by the low-order seven"
-"	bits.]"
+"	bits.  Multibyte characters in the current locale are treated as"
+"	printable characters.]"
 "[A:show-all?Equivalent to \b-vET\b.]"
 "[B:squeeze-blank?Multiple adjacent new-line characters are replace by one"
 "	new-line.]"
@@ -94,26 +95,27 @@ USAGE_LICENSE
 
 #define printof(c)	((c)^0100)
 
-static char		states[UCHAR_MAX+1];
-
 /*
  * called for any special output processing
  */
 
 static int
-vcat(Sfio_t *fdin, Sfio_t *fdout, int flags)
+vcat(register char* states, Sfio_t *fdin, Sfio_t *fdout, int flags)
 {
 	register unsigned char*	cp;
 	register unsigned char*	cpold;
 	register int		n;
+	register int		m;
 	register int		line = 1;
 	register unsigned char*	endbuff;
 	unsigned char*		inbuff;
 	int			printdefer = (flags&(B_FLAG|N_FLAG));
 	int			lastchar;
 
-	static unsigned char	meta[4] = "M-";
+	unsigned char		meta[4];
 
+	meta[0] = 'M';
+	meta[1] = '-';
 	for (;;)
 	{
 		/* read in a buffer full */
@@ -133,8 +135,11 @@ vcat(Sfio_t *fdin, Sfio_t *fdout, int flags)
 		while (endbuff)
 		{
 			cpold = cp;
-			/* skip over ASCII characters */
-			while ((n = states[*cp++]) == 0);
+			/* skip over printable characters */
+			if (mbwide())
+				while ((n = (m = mbsize(cp)) < 2 ? states[*cp++] : (cp += m, states['a'])) == 0);
+			else
+				while ((n = states[*cp++]) == 0);
 			if (n==T_ENDBUF)
 			{
 				if (cp>endbuff)
@@ -228,9 +233,10 @@ b_cat(int argc, char** argv, void* context)
 	char*			mode;
 	int			att;
 	int			dovcat=0;
+	char			states[UCHAR_MAX+1];
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	att = !strcmp(astconf("UNIVERSE", NiL, NiL), "att");
 	mode = "r";
 	for (;;)
@@ -291,6 +297,7 @@ b_cat(int argc, char** argv, void* context)
 	argv += opt_info.index;
 	if (error_info.errors)
 		error(ERROR_usage(2), "%s", optusage(NiL));
+	memset(states, 0, sizeof(states));
 	if (flags&V_FLAG)
 	{
 		memset(states, T_CONTROL, ' ');
@@ -349,7 +356,7 @@ b_cat(int argc, char** argv, void* context)
 		if (flags&U_FLAG)
 			sfsetbuf(fp, (void*)fp, -1);
 		if (dovcat)
-			n = vcat(fp, sfstdout, flags);
+			n = vcat(states, fp, sfstdout, flags);
 		else if (sfmove(fp, sfstdout, SF_UNBOUND, -1) >= 0 && sfeof(fp))
 			n = 0;
 		else

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -60,29 +60,30 @@
 
 #define	MAXCHAR	MAXLINE-2		/* max char per line */
 
-#undef isblank
 #if SHOPT_MULTIBYTE
+#   include	"lexstates.h"
 #   define gencpy(a,b)	ed_gencpy(a,b)
 #   define genncpy(a,b,n)	ed_genncpy(a,b,n)
 #   define genlen(str)	ed_genlen(str)
 #   define digit(c)	((c&~STRIP)==0 && isdigit(c))
 #   define is_print(c)	((c&~STRIP) || isprint(c))
 #   if !_lib_iswprint && !defined(iswprint)
-#	define iswprint(c)	is_print((c))
+#	define iswprint(c)	((c&~0177) || isprint(c))
 #   endif
     static int _isalph(int);
     static int _ismetach(int);
     static int _isblank(int);
+#   undef  isblank
 #   define isblank(v)	_isblank(virtual[v])
 #   define isalph(v)	_isalph(virtual[v])
 #   define ismetach(v)	_ismetach(virtual[v])
-#   include	"lexstates.h"
 #else
     static genchar	_c;
 #   define gencpy(a,b)	strcpy((char*)(a),(char*)(b))
 #   define genncpy(a,b,n) strncpy((char*)(a),(char*)(b),n)
 #   define genlen(str)	strlen(str)
 #   define isalph(v)	((_c=virtual[v])=='_'||isalnum(_c))
+#   undef  isblank
 #   define isblank(v)	isspace(virtual[v])
 #   define ismetach(v)	ismeta(virtual[v])
 #   define digit(c)	isdigit(c)
@@ -239,6 +240,7 @@ int ed_viread(void *context, int fd, register char *shbuf, int nchar, int reedit
 	if(!vp)
 	{
 		ed->e_vi = vp =  newof(0,Vi_t,1,0);
+		vp->lastline = (genchar*)malloc(MAXLINE*CHARSIZE);
 		vp->direction = -1;
 		vp->ed = ed;
 	}
@@ -387,10 +389,7 @@ int ed_viread(void *context, int fd, register char *shbuf, int nchar, int reedit
 	window[0] = '\0';
 
 	if(!yankbuf)
-	{
 		yankbuf = (genchar*)malloc(MAXLINE*CHARSIZE);
-		vp->lastline = (genchar*)malloc(MAXLINE*CHARSIZE);
-	}
 	if( vp->last_cmd == '\0' )
 	{
 		/*** first time for this shell ***/
@@ -1476,10 +1475,20 @@ static void getline(register Vi_t* vp,register int mode)
 			return;
 
 		case '\t':		/** command completion **/
-			if(mode!=SEARCH && last_virt>=0 && cur_virt>=last_virt && !isblank(cur_virt) && vp->ed->sh->nextprompt)
+			if(mode!=SEARCH && last_virt>=0 && (vp->ed->e_tabcount|| !isblank(cur_virt)) && vp->ed->sh->nextprompt)
 			{
-				ed_ungetchar(vp->ed,'\\');
-				goto escape;
+				if(vp->ed->e_tabcount==0)
+				{
+					ed_ungetchar(vp->ed,'\\');
+					vp->ed->e_tabcount=1;
+					goto escape;
+				}
+				else if(vp->ed->e_tabcount==1)
+				{
+					ed_ungetchar(vp->ed,'=');
+					goto escape;
+				}
+				vp->ed->e_tabcount = 0;
 			}
 			/* FALL THRU*/
 		default:
@@ -2278,6 +2287,10 @@ addin:
 			/***** Input commands *****/
 
 #if KSHELL
+        case '\t':
+		if(vp->ed->e_tabcount!=1)
+			return(BAD);
+		c = '=';
 	case '*':		/** do file name expansion in place **/
 	case '\\':		/** do file name completion in place **/
 		if( cur_virt == INVALID )
@@ -2286,9 +2299,17 @@ addin:
 		save_v(vp);
 		i = last_virt;
 		++last_virt;
+		mode = cur_virt-1;
 		virtual[last_virt] = 0;
-		if( ed_expand(vp->ed,(char*)virtual, &cur_virt, &last_virt, c, vp->repeat_set?vp->repeat:-1) )
+		if(ed_expand(vp->ed,(char*)virtual, &cur_virt, &last_virt, c, vp->repeat_set?vp->repeat:-1)<0)
 		{
+			if(vp->ed->e_tabcount)
+			{
+				vp->ed->e_tabcount=2;
+				ed_ungetchar(vp->ed,'\t');
+				--last_virt;
+				return(APPEND);
+			}
 			last_virt = i;
 			ed_ringbell();
 		}
@@ -2304,6 +2325,8 @@ addin:
 			--cur_virt;
 			--last_virt;
 			vp->ocur_virt = MAXCHAR;
+			if(c=='=' || (mode<cur_virt && (virtual[cur_virt]==' ' || virtual[cur_virt]=='/')))
+				vp->ed->e_tabcount = 0;
 			return(APPEND);
 		}
 		break;

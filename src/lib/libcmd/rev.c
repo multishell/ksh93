@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -31,7 +31,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: rev (AT&T Labs Research) 1999-04-10 $\n]"
+"[-?\n@(#)$Id: rev (AT&T Research) 1999-04-10 $\n]"
 USAGE_LICENSE
 "[+NAME?rev - reverse the characters or lines of one or more files]"
 "[+DESCRIPTION?\brev\b copies one or more files to standard output "
@@ -51,7 +51,8 @@ USAGE_LICENSE
 "[+SEE ALSO?\bcat\b(1), \btail\b(1)]"
 ;
 
-#include	<cmdlib.h>
+#include	<cmd.h>
+#include	<rev.h>
 
 /*
  * reverse the characters within a line
@@ -84,8 +85,7 @@ b_rev(int argc, register char** argv, void* context)
 	register int n, line=0;
 	NOT_USED(argc);
 
-	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	    case 'l':

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -19,12 +19,9 @@
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
-/*
- * fmt
- */
 
 static const char usage[] =
-"[-?\n@(#)$Id: fmt (AT&T Research) 2005-08-11 $\n]"
+"[-?\n@(#)$Id: fmt (AT&T Research) 2007-01-02 $\n]"
 USAGE_LICENSE
 "[+NAME?fmt - simple text formatter]"
 "[+DESCRIPTION?\bfmt\b reads the input files and left justifies space "
@@ -51,7 +48,7 @@ USAGE_LICENSE
     "\boptget\b(3)]"
 ;
 
-#include <cmdlib.h>
+#include <cmd.h>
 #include <ctype.h>
 
 typedef struct Fmt_s
@@ -137,7 +134,7 @@ outline(Fmt_t* fp)
 }
 
 static void
-split(Fmt_t* fp, char* buf)
+split(Fmt_t* fp, char* buf, int splice)
 {
 	register char*	cp;
 	register char*	ep;
@@ -225,7 +222,7 @@ split(Fmt_t* fp, char* buf)
 
 		if (!isoption(fp, 'o') && strchr(".:!?", fp->outp[-1]))
 			*fp->outp++ = ' ';
-		if (!fp->retain && (!fp->quote || (fp->outp - fp->outbuf) < 2 || fp->outp[-2] != '\\' || fp->outp[-1] != 'n' && fp->outp[-1] != 't' && fp->outp[-1] != ' '))
+		if (!splice && !fp->retain && (!fp->quote || (fp->outp - fp->outbuf) < 2 || fp->outp[-2] != '\\' || fp->outp[-1] != 'n' && fp->outp[-1] != 't' && fp->outp[-1] != ' '))
 			*fp->outp++ = ' ';
 	}
 }
@@ -236,6 +233,7 @@ dofmt(Fmt_t* fp)
 	register int	c;
 	int		b;
 	int		x;
+	int		splice;
 	char*		cp;
 	char*		dp;
 	char*		ep;
@@ -244,7 +242,7 @@ dofmt(Fmt_t* fp)
 	char		buf[8192];
 
 	cp = 0;
-	while (cp || (cp = sfgetr(fp->in, '\n', 0)) && (lp = cp + sfvalue(fp->in) - 1) || (cp = sfgetr(fp->in, '\n', SF_LASTR)) && (lp = cp + sfvalue(fp->in)))
+	while (cp || (cp = sfgetr(fp->in, '\n', 0)) && !(splice = 0) && (lp = cp + sfvalue(fp->in) - 1) || (cp = sfgetr(fp->in, '\n', SF_LASTR)) && (splice = 1) && (lp = cp + sfvalue(fp->in)))
 	{
 		if (isoption(fp, 'o'))
 		{
@@ -412,7 +410,7 @@ dofmt(Fmt_t* fp)
 					flush:
 						*dp++ = c;
 						*dp = 0;
-						split(fp, buf);
+						split(fp, buf, 0);
 						outline(fp);
 						goto again;
 					}
@@ -433,7 +431,24 @@ dofmt(Fmt_t* fp)
 					}
 					else if (c == '{')
 					{
-						if (cp >= lp || *cp == '[' || *cp != '\\' || (lp - cp) > 1 && *(cp + 1) == 'n')
+						x = 1;
+						for (tp = cp; tp < lp; tp++)
+						{
+							if (*tp == '[' || *tp == '\n')
+								break;
+							if (*tp == ' ' || *tp == '\t' || *tp == '"')
+								continue;
+							if (*tp == '\\' && (lp - tp) > 1)
+							{
+								if (*++tp == 'n')
+									break;
+								if (*tp == 't' || *tp == '\n')
+									continue;
+							}
+							x = 0;
+							break;
+						}
+						if (x)
 						{
 							if (fp->endbuf > (fp->outbuf + fp->indent + 2*INDENT))
 								fp->nextdent = 2*INDENT;
@@ -476,7 +491,7 @@ dofmt(Fmt_t* fp)
 						if (cp < lp && (*cp == ' ' || *cp == '\t'))
 							*dp++ = *cp++;
 						*dp = 0;
-						split(fp, buf);
+						split(fp, buf, 0);
 						dp = buf;
 						ep = 0;
 						fp->retain = 0;
@@ -528,6 +543,7 @@ dofmt(Fmt_t* fp)
 						dp = tp;
 						break;
 					}
+				ep = 0;
 				break;
 			}
 			if (c != ' ')
@@ -540,7 +556,7 @@ dofmt(Fmt_t* fp)
 			*ep = 0;
 		else
 			*dp = 0;
-		split(fp, buf);
+		split(fp, buf, splice);
 	}
 	return 0;
 }
@@ -565,7 +581,7 @@ b_fmt(int argc, char** argv, void *context)
 	fmt.quote = 0;
 	fmt.retain = 0;
 	fmt.section = 1;
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage))
 		switch (n)
 		{
@@ -610,7 +626,7 @@ b_fmt(int argc, char** argv, void *context)
 			sfclose(fmt.in);
 	} while (cp = *argv++);
 	outline(&fmt);
-	if (sferror(sfstdout))
+	if (sfsync(sfstdout))
 		error(ERROR_system(0), "write error");
 	return error_info.errors != 0;
 }

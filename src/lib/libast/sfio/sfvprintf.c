@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -106,6 +106,9 @@ va_list	args;		/* arg list if !argf	*/
 	Sflong_t	lv;
 	char		*sp, *ssp, *endsp, *ep, *endep;
 	int		dot, width, precis, sign, decpt;
+#if _PACKAGE_ast
+	int		scale;
+#endif
 	ssize_t		size;
 	Sfdouble_t	dval;
 	char		*tls[2], **ls;	/* for %..[separ]s		*/
@@ -199,11 +202,12 @@ loop_fmt :
 	while((n = *form) )
 	{	if(n != '%') /* collect the non-pattern chars */
 		{	sp = (char*)form;
-			for(;;)
-			{	form += SFMBLEN(form, &fmbs);
-				if(*form == 0 || *form == '%')
-					break;
-			}
+			do
+			{	if((n = SFMBLEN(form, &fmbs)) <= 0)
+				{	n = 1;
+					SFMBCLR(&fmbs);
+				}
+			} while(*(form += n) && *form != '%');
 
 			n = form-sp;
 			SFwrite(f,sp,n);
@@ -212,6 +216,9 @@ loop_fmt :
 		else	form += 1;
 
 		flags = 0;
+#if _PACKAGE_ast
+		scale = 0;
+#endif
 		size = width = precis = base = n_s = argp = -1;
 		ssp = _Sfdigits;
 		endep = ep = NIL(char*);
@@ -482,10 +489,10 @@ loop_fmt :
 					size = sizeof(int);
 			}
 			else if(_Sftype[fmt]&SFFMT_FLOAT)
-			{	if(flags&(SFFMT_LONG|SFFMT_LLONG))
-					size = sizeof(double);
-				else if(flags&SFFMT_LDOUBLE)
+			{	if(flags&SFFMT_LDOUBLE)
 					size = sizeof(Sfdouble_t);
+				else if(flags&(SFFMT_LONG|SFFMT_LLONG))
+					size = sizeof(double);
 				else if(flags&SFFMT_IFLAG)
 				{	if(size <= 0)
 						size = sizeof(Sfdouble_t);
@@ -657,6 +664,13 @@ loop_fmt :
 				{	sp = "(null)";
 					flags &= ~SFFMT_LONG;
 				}
+#if _PACKAGE_ast
+		str_cvt:
+				if(scale)
+				{	size = base = -1;
+					flags &= ~SFFMT_LONG;
+				}
+#endif
 				ls = tls; tls[0] = sp;
 			}
 			for(sp = *ls;;)
@@ -828,12 +842,24 @@ loop_fmt :
 			flags &= ~(SFFMT_SIGN|SFFMT_BLANK);
 			goto int_arg;
 		case 'i':
+#if _PACKAGE_ast
+			if((flags&SFFMT_ALTER) && base < 0)
+			{	flags &= ~SFFMT_ALTER;
+				scale = 1024;
+			}
+#endif
 			fmt = 'd';
 			goto d_format;
 		case 'u':
 			flags &= ~(SFFMT_SIGN|SFFMT_BLANK);
 		case 'd':
 		d_format:
+#if _PACKAGE_ast
+			if((flags&SFFMT_ALTER) && base < 0)
+			{	flags &= ~SFFMT_ALTER;
+				scale = 1000;
+			}
+#endif
 			if(base < 2 || base > SF_RADIX)
 				base = 10;
 			if((base&(n_s = base-1)) == 0)
@@ -856,6 +882,12 @@ loop_fmt :
 					lv = (Sflong_t)argv.l;
 				else	lv = (Sflong_t)argv.ul;
 			long_cvt:
+#if _PACKAGE_ast
+				if(scale)
+				{	sp = fmtscale(lv, scale);
+					goto str_cvt;
+				}
+#endif
 				if(lv == 0 && precis == 0)
 					break;
 				if(lv < 0 && fmt == 'd' )
@@ -907,6 +939,12 @@ loop_fmt :
 			else
 			{	v = argv.i;
 			int_cvt:
+#if _PACKAGE_ast
+				if(scale)
+				{	sp = fmtscale(v, scale);
+					goto str_cvt;
+				}
+#endif
 				if(v == 0 && precis == 0)
 					break;
 				if(v < 0 && fmt == 'd' )

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -26,7 +26,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: pathchk (AT&T Labs Research) 2004-10-08 $\n]"
+"[-?\n@(#)$Id: pathchk (AT&T Research) 2006-09-19 $\n]"
 USAGE_LICENSE
 "[+NAME?pathchk - check pathnames for portability]"
 "[+DESCRIPTION?\bpathchk\b checks each \apathname\a to see if it "
@@ -68,7 +68,7 @@ USAGE_LICENSE
 ;
 
 
-#include	<cmdlib.h>
+#include	<cmd.h>
 #include	<ls.h>
 
 #define isport(c)	(((c)>='a' && (c)<='z') || ((c)>='A' && (c)<='Z') || ((c)>='0' && (c)<='9') || (strchr("._-",(c))!=0) )
@@ -79,8 +79,11 @@ USAGE_LICENSE
 static long mypathconf(const char *path, int op)
 {
 	register long r;
+
+	static const char*	ops[] = { "NAME_MAX", "PATH_MAX" };
+
 	errno=0;
-	if((r=pathconf(path, op))<0 && errno==0)
+	if((r=strtol(astconf(ops[op], path, NiL), NiL, 0))<0 && errno==0)
 		return(LONG_MAX);
 	return(r);
 }
@@ -107,12 +110,13 @@ static int pathchk(char* path, int mode)
 	}
 	else
 	{
-		static char buff[2];
+		char tmp[2];
 		name_max = path_max = 0;
-		buff[0] = (*cp=='/'? '/': '.');
-		if((r=mypathconf(buff, _PC_NAME_MAX)) > _POSIX_NAME_MAX)
+		tmp[0] = (*cp=='/'? '/': '.');
+		tmp[1] = 0;
+		if((r=mypathconf(tmp, 0)) > _POSIX_NAME_MAX)
 			name_max = r;
-		if((r=mypathconf(buff, _PC_PATH_MAX)) > _POSIX_PATH_MAX)
+		if((r=mypathconf(tmp, 1)) > _POSIX_PATH_MAX)
 			path_max = r;
 		if(*cp!='/')
 		{
@@ -131,9 +135,9 @@ static int pathchk(char* path, int mode)
 						if(cp>cpold)
 							while(--cp>cpold && *cp=='/');
 						*++cp = 0;
-						if(name_max==0 && (r=mypathconf(cpold, _PC_NAME_MAX)) > _POSIX_NAME_MAX)
+						if(name_max==0 && (r=mypathconf(cpold, 0)) > _POSIX_NAME_MAX)
 							name_max = r;
-						if(path_max==0 && (r=mypathconf(cpold, _PC_PATH_MAX)) > _POSIX_PATH_MAX)
+						if(path_max==0 && (r=mypathconf(cpold, 1)) > _POSIX_PATH_MAX)
 							path_max=r;
 						if(--cp==cpold)
 						{
@@ -160,7 +164,7 @@ static int pathchk(char* path, int mode)
 				goto err;
 			errno=0;
 			cp[-1] = 0;
-			r = mypathconf(path, _PC_NAME_MAX);
+			r = mypathconf(path, 0);
 			if((cp[-1]=c)==0)
 				cp--;
 			else while(*cp=='/')
@@ -219,7 +223,7 @@ b_pathchk(int argc, char** argv, void* context)
 	register int n, mode=0;
 	register char *cp;
 
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
   	    case 'p':

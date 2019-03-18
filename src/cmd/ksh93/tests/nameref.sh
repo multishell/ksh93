@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,7 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
 integer Errors=0
 function checkref
 {
@@ -197,4 +197,20 @@ function selfref
 }
 ps=(a=1 b=2)
 [[ $(selfref ps) == *a=1* ]] ||  err_exit 'local nameref cannot reference global variable of the same name'
+function subref
+{
+	typeset -n foo=$1
+	print -r -- ${foo.a}
+}
+[[ $(subref ps) == 1 ]] ||  err_exit 'local nameref cannot reference global variable child'
+
+unset fun i
+foo=(x=hi)
+function fun
+{
+        nameref i=$1
+        print -r -- "${i.x}"
+}
+i=foo
+[[ $(fun $i) == hi ]] || err_exit 'nameref for compound variable with in function name of caller fails'
 exit $((Errors))

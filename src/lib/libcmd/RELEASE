@@ -1,3 +1,40 @@
+07-01-02 fmt.c: fix buffer splice off by one bug -- what else
+06-11-23 cmd.h: because of proto cmdinit cannot be a function like macro
+06-11-21 cp.c: fix 06-10-31 const dot[] readonly assignment
+06-11-15 cp.c: fix 06-10-31 ln -s enoent bug
+06-11-11 getconf.c: let astconf() handle "undefined" vs. ""
+06-11-11 getconf.c: fix deferred getconf path search
+06-11-11 fmt.c: handle two char { \t \n } in --usage ouput
+06-10-31 global edit to eliminate most non-const static data0
+06-10-31 use <cmd.h> for all b_*() implementations; drop <cmdlib.h> 
+06-10-31 cmd.h: add CMD_ prefix to { BUILTIN DYNAMIC STANDALONE } 
+06-10-31 join.c: tone down /tmp usage vi SFSK_DISCARD
+06-10-31 cp.c,rm.c: update to <fts.h> to accomodate non-static data
+06-10-29 date.c: "...%H%..." => "...%H" "%..." to avoid SCCS conflict
+06-10-26 fds.c: handle sctp
+06-10-18 tail.c: fix invalid suffix infinite loop
+06-10-11 chgrp.c,cp.c: add sfstruse() error checks
+06-10-10 tee.c: add --linebuffer, -l
+06-10-06 getconf.c: preserve native getconf(1) known variable behavior
+06-10-04 sync.c: add (thanks to Roland Mainz)
+06-10-04 getconf.c: add -v specification => run native getconf(1)
+06-09-28 stty.c: static setmode() => set() for darwin.i386
+06-09-27 head.c: handle -1c => -c1
+06-09-19 pathchk.c: pathconf() => astconf()
+06-09-11 tail.c: handle compatibility corner cases
+06-09-08 date.c: add output write error diagnostic
+06-09-04 tail.c: fix initial position for -n0, no args => no -f
+06-08-28 uniq.c: add -D,--all-repeated
+06-08-25 wc.c,wclib.c: add -L,--longest-line,WC_LONGEST
+06-08-24 wc.c,wclib.c: implement -m and WC_MBYTE
+06-08-24 rmdir.c: -sp applies to every message, add gnu -e
+06-08-23 rmdir.c: add solaris --suppress, -s
+06-08-23 mkdir.c: don't add 0300 to -p final dir mode
+06-07-17 cut.c: handle last line with no newline
+06-07-17 cut.c: --output-delimiter == --line-delimiter
+06-06-25 chmod.c: mask -c output with S_IPERM
+06-05-09 uname.c: add -o; change -a to match linux
+06-05-03 date.c: add --last -L to list last of multiple time args
 06-02-14 tail.c: fix -f bug that lost fast stream data
 06-02-11 getconf.c: exit 1 if name invalid -- duh
 06-01-28 cp.c,rm.c: fix astquery() 'q' to return and not exit()

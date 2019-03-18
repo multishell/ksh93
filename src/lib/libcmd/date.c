@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: date (AT&T Research) 2005-03-07 $\n]"
+"[-?\n@(#)$Id: date (AT&T Research) 2006-09-08 $\n]"
 USAGE_LICENSE
 "[+NAME?date - set/list/convert dates]"
 "[+DESCRIPTION?\bdate\b sets the current date and time (with appropriate"
@@ -153,6 +153,7 @@ USAGE_LICENSE
 "[i:incremental|adjust?Set the system time in incrementatl adjustments to"
 "	avoid complete time shift shock. Negative adjustments still maintain"
 "	monotonic increasing time. Not available on all systems.]"
+"[L:last?List only the last time for multiple \adate\a operands.]"
 "[l:leap-seconds?Include leap seconds in time calculations. Leap seconds"
 "	after the ast library release date are not accounted for.]"
 "[m:modify-time|mtime?List file argument modify times.]"
@@ -181,7 +182,7 @@ USAGE_LICENSE
 "	\bstrftime\b(3), \bstrptime\b(3), \btm\b(3)]"
 ;
 
-#include <cmdlib.h>
+#include <cmd.h>
 #include <ls.h>
 #include <proc.h>
 #include <tmx.h>
@@ -219,13 +220,13 @@ settime(const char* cmd, Time_t now, int adjust, int network)
 		*argv++ = s;
 		if (streq(astconf("UNIVERSE", NiL, NiL), "att"))
 		{
-			tmxfmt(buf, sizeof(buf), "%m%d%H%M%Y.%S", now);
+			tmxfmt(buf, sizeof(buf), "%m%d%H" "%M%Y.%S", now);
 			if (adjust)
 				*argv++ = "-a";
 		}
 		else
 		{
-			tmxfmt(buf, sizeof(buf), "%Y%m%d%H%M.%S", now);
+			tmxfmt(buf, sizeof(buf), "%Y%m%d%H" "%M.%S", now);
 			if (network)
 				*argv++ = "-n";
 			if (tm_info.flags & TM_UTC)
@@ -282,12 +283,13 @@ b_date(int argc, register char** argv, void* context)
 	int		elapsed = 0;	/* args are start/stop pairs	*/
 	int		filetime = 0;	/* use this st_ time field	*/
 	int		increment = 0;	/* incrementally adjust time	*/
+	int		last = 0;	/* display the last time arg	*/
 	Tm_zone_t*	listzones = 0;	/* known time zone table	*/
 	int		network = 0;	/* don't set network time	*/
 	int		show = 0;	/* show date and don't set	*/
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	setlocale(LC_ALL, "");
 	tm_info.flags = TM_DATESTYLE;
 	fmts = &fmt;
@@ -320,6 +322,9 @@ b_date(int argc, register char** argv, void* context)
 			continue;
 		case 'l':
 			tm_info.flags |= TM_LEAP;
+			continue;
+		case 'L':
+			last = 1;
 			continue;
 		case 'n':
 			network = 1;
@@ -362,6 +367,7 @@ b_date(int argc, register char** argv, void* context)
 				s = listzones->type;
 			sfprintf(sfstdout, "%3s %4s %4s %4d %4d\n", s, *listzones->standard ? listzones->standard : "-", listzones->daylight ? listzones->daylight : "-", listzones->west, listzones->dst);
 			listzones++;
+			show = 1;
 		}
 	}
 	else if (elapsed)
@@ -382,6 +388,7 @@ b_date(int argc, register char** argv, void* context)
 				e += ts - te;
 		}
 		sfputr(sfstdout, fmtelapsed((unsigned long)tmxsec(e), 1), '\n');
+		show = 1;
 	}
 	else if (filetime)
 	{
@@ -411,6 +418,7 @@ b_date(int argc, register char** argv, void* context)
 					sfprintf(sfstdout, "%s: %s\n", s, buf);
 				else
 					sfprintf(sfstdout, "%s\n", buf);
+				show = 1;
 			}
 		}
 	}
@@ -432,8 +440,11 @@ b_date(int argc, register char** argv, void* context)
 				show = 1;
 				do
 				{
-					tmxfmt(buf, sizeof(buf), format, now);
-					sfprintf(sfstdout, "%s\n", buf);
+					if (!last)
+					{
+						tmxfmt(buf, sizeof(buf), format, now);
+						sfprintf(sfstdout, "%s\n", buf);
+					}
 					now = convert(fmts, s, now);
 				} while (s = *++argv);
 			}
@@ -455,5 +466,7 @@ b_date(int argc, register char** argv, void* context)
 		free(f);
 	}
 	tm_info.flags = 0;
+	if (show && sfsync(sfstdout))
+		error(ERROR_system(0), "write error");
 	return error_info.errors != 0;
 }

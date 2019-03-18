@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -124,7 +124,6 @@ static void		job_prmsg(struct process*);
 static struct process	*freelist;
 static char		beenhere;
 static char		possible;
-static int		savesig;
 static struct process	dummy;
 static char		by_number;
 static Sfio_t		*outfile;
@@ -135,7 +134,6 @@ static struct back_save	bck;
 #ifdef JOBS
     static void			job_set(struct process*);
     static void			job_reset(struct process*);
-    static int			job_reap(int);
     static void			job_waitsafe(int);
     static struct process	*job_byname(char*);
     static struct process	*job_bystring(char*);
@@ -174,16 +172,13 @@ static struct back_save	bck;
 
 #ifdef JOBS
 
-#define job_lock()	(job.in_critical++)
-#define job_unlock()	do{if(!--job.in_critical&&savesig)job_reap(savesig);}while(0)
-
 typedef int (*Waitevent_f)(int,long,int);
 
 /*
  * Reap one job
  * When called with sig==0, it does a blocking wait
  */
-static int job_reap(register int sig)
+int job_reap(register int sig)
 {
 	register pid_t pid;
 	register struct process *pw;
@@ -199,11 +194,11 @@ static int job_reap(register int sig)
 		write(2,"waitsafe\n",9);
 	sfsync(sfstderr);
 #endif /* DEBUG */
-	savesig = 0;
+	job.savesig = 0;
 	if(sig)
 		flags = WNOHANG|WUNTRACED|wcontinued;
 	else
-		flags = WUNTRACED;
+		flags = WUNTRACED|wcontinued;
 	sh.waitevent = 0;
 	oerrno = errno;
 	while(1)
@@ -229,6 +224,7 @@ static int job_reap(register int sig)
 			break;
 		flags |= WNOHANG;
 		job.waitsafe++;
+		jp = 0;
 		if(!(pw=job_bypid(pid)))
 		{
 #ifdef DEBUG
@@ -358,7 +354,7 @@ static void job_waitsafe(int sig)
 {
 	if(job.in_critical)
 	{
-		savesig = sig;
+		job.savesig = sig;
 		job.waitsafe++;
 	}
 	else
@@ -1082,7 +1078,7 @@ int job_post(pid_t pid, pid_t join)
 	pw->p_pgrp = pw->p_fgrp;
 #ifdef DEBUG
 	sfprintf(sfstderr,"ksh: job line %4d: post pid=%d critical=%d job=%d pid=%d pgid=%d savesig=%d join=%d\n",__LINE__,getpid(),job.in_critical,pw->p_job,
-		pw->p_pid,pw->p_pgrp,savesig,join);
+		pw->p_pid,pw->p_pgrp,job.savesig,join);
 	sfsync(sfstderr);
 #endif /* DEBUG */
 #ifdef JOBS
@@ -1293,7 +1289,7 @@ void	job_wait(register pid_t pid)
 		}
 		sfsync(sfstderr);
 		job.waitsafe = 0;
-		nochild = job_reap(savesig);
+		nochild = job_reap(job.savesig);
 		if(job.waitsafe)
 			continue;
 		if(nochild)
@@ -1362,6 +1358,7 @@ int job_switch(register struct process *pw,int bgflag)
 	if(bgflag=='b')
 	{
 		sfprintf(outfile,"[%d]\t",(int)pw->p_job);
+		sh.bckpid = pw->p_pid;
 		msg = "&";
 	}
 	else

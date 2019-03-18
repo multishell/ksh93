@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -36,7 +36,7 @@ struct sh_static	sh = {0};
 
 Dtdisc_t	_Nvdisc =
 {
-	offsetof(Namval_t,nvname), -1
+	offsetof(Namval_t,nvname), -1 , 0, 0, 0, nv_compare
 };
 
 /* reserve room for writable state table */

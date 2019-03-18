@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,10 +24,13 @@
  * dirname(3) implementation
  */
 
-#include <ast_map.h>
-#include <libgen.h>
+#include <ast_common.h>
 
-char *dirname(register char *pathname)
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
+extern char *dirname(register char *pathname)
 {
 	register char  *last;
 	/* go to end of path */

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -54,6 +54,7 @@
 #define TEST_SLT	15
 #define TEST_SGT	16
 #define TEST_END	8
+#define TEST_REP	20
 
 extern int test_unop(int, const char*);
 extern int test_inode(const char*, const char*);

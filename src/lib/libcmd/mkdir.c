@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: mkdir (AT&T Labs Research) 2001-10-31 $\n]"
+"[-?\n@(#)$Id: mkdir (AT&T Research) 2006-08-27 $\n]"
 USAGE_LICENSE
 "[+NAME?mkdir - make directories]"
 "[+DESCRIPTION?\bmkdir\b creates one or more directories.  By "
@@ -36,11 +36,13 @@ USAGE_LICENSE
 "[m:mode]:[mode?Set the mode of created directories to \amode\a.  "
 	"\amode\a is symbolic or octal mode as in \bchmod\b(1).  Relative "
 	"modes assume an initial mode of \ba=rwx\b.]"
-"[p:parents?Ensure  that  each  given directory exists.  Create "
-	"any missing parent directories for  each  argument.  "
-	"Parent directories default to the umask modified by "
-	"\bu+wx\b.  Do not consider an argument directory that "
-	"already exists to be an error.]"
+"[p:parents?Create any missing intermediate pathname components. For "
+    "each dir operand that does not name an existing directory, effects "
+    "equivalent to those caused by the following command shall occur: "
+    "\vmkdir -p -m $(umask -S),u+wx $(dirname dir) && mkdir [-m mode]] "
+    "dir\v where the \b-m\b mode option represents that option supplied to "
+    "the original invocation of \bmkdir\b, if any. Each dir operand that "
+    "names an existing directory shall be ignored without error.]"
 "\n"
 "\ndirectory ...\n"
 "\n"
@@ -52,9 +54,7 @@ USAGE_LICENSE
 "[+SEE ALSO?\bchmod\b(1), \brmdir\b(1), \bumask\b(1)]"
 ;
 
-
-
-#include <cmdlib.h>
+#include <cmd.h>
 #include <ls.h>
 
 #define DIRMODE	(S_IRWXU|S_IRWXG|S_IRWXO)
@@ -71,8 +71,7 @@ b_mkdir(int argc, char** argv, void* context)
 	char*		name;
 	mode_t		dmode;
 
-	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	case 'p':
@@ -97,9 +96,10 @@ b_mkdir(int argc, char** argv, void* context)
 	mask = umask(0);
 	if (mflag || pflag)
 	{
-		dmode = (DIRMODE & ~mask) | S_IWUSR | S_IXUSR;
+		dmode = DIRMODE & ~mask;
 		if (!mflag)
 			mode = dmode;
+		dmode |= S_IWUSR | S_IXUSR;
 	}
 	else
 	{

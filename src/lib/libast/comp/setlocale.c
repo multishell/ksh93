@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -28,8 +28,11 @@
  * and persistent private data for locale related functions
  */
 
+#include <ast_standards.h>
+
 #include "lclib.h"
 
+#include <ast_wchar.h>
 #include <ctype.h>
 #include <mc.h>
 #include <namval.h>

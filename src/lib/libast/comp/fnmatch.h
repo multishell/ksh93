@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,6 +27,8 @@
 #ifndef _FNMATCH_H
 #define _FNMATCH_H
 
+#include <ast_common.h>
+
 /* fnmatch flags */
 
 #define FNM_NOESCAPE	0x0001		/* \ is literal			*/
@@ -47,6 +49,12 @@
 
 #define FNM_NOMATCH	1		/* == REG_NOMATCH		*/
 
+#if _BLD_ast && defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
 extern int	fnmatch(const char*, const char*, int);
+
+#undef	extern
 
 #endif

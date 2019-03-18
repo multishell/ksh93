@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -79,6 +79,8 @@ struct _vmalloc_s
 	_VM_PRIVATE_
 #endif
 };
+
+#undef	VM_FLAGS			/* solaris sys kernel clash	*/
 
 #define VM_TRUST	0000001		/* forgo some security checks	*/
 #define VM_TRACE	0000002		/* generate trace 		*/

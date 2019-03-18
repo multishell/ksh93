@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: logname (AT&T Labs Research) 1999-04-30 $\n]"
+"[-?\n@(#)$Id: logname (AT&T Research) 1999-04-30 $\n]"
 USAGE_LICENSE
 "[+NAME?logname - return the user's login name]"
 "[+DESCRIPTION?\blogname\b writes the users's login name to standard "
@@ -47,15 +47,14 @@ USAGE_LICENSE
 ;
 
 
-#include <cmdlib.h>
+#include <cmd.h>
 
 int
 b_logname(int argc, char** argv, void* context)
 {
 	register char*	logname;
 
-	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	for (;;)
 	{
 		switch (optget(argv, usage))

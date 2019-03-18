@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -268,6 +268,8 @@ int hist_expand(const char *ln, char **xp)
 			if(c == '-')
 				n = -n;
 			break;
+		case '$':
+			n = -1;
 		case ':':
 			break;
 		case '?':

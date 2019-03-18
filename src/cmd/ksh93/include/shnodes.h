@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -37,6 +37,7 @@
 #define FPOU		(040<<COMBITS)		/* output is a pipe */
 #define FPCL		(0100<<COMBITS)		/* close the pipe */
 #define FCOOP		(0200<<COMBITS)		/* cooperating process */
+#define FSHOWME		(0400<<COMBITS)		/* set for showme commands  */
 #define FPOSIX		(02<<COMBITS)		/* posix semantics function */
 #define FLINENO		(04<<COMBITS)		/* for/case has line number */
 
@@ -182,6 +183,7 @@ struct arithnod
 #define IOVNM	0x10000		/* iovname field is non-zero */
 #define IOLSEEK	0x20000		/* seek operators <# or >#  */
 #define IOARITH	0x40000		/* arithmetic seek <# ((expr))  */
+#define IOCOPY	IOCLOB		/* copy skipped lines onto standard output */
 
 union Shnode_u
 {

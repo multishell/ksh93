@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -125,7 +125,7 @@ int    b_readonly(int argc,char *argv[],void *extra)
 
 int    b_alias(int argc,register char *argv[],void *extra)
 {
-	register unsigned flag = NV_ARRAY|NV_NOSCOPE|NV_ASSIGN;
+	register unsigned flag = NV_NOARRAY|NV_NOSCOPE|NV_ASSIGN;
 	register Dt_t *troot;
 	register int n;
 	struct tdata tdata;
@@ -189,7 +189,7 @@ int    b_typeset(int argc,register char *argv[],void *extra)
 	struct tdata tdata;
 	Namtype_t *ntp = (Namtype_t*)extra;
 	Dt_t *troot;
-	int isfloat = 0;
+	int isfloat=0, shortint=0;
 	NOT_USED(argc);
 	memset((void*)&tdata,0,sizeof(tdata));
 	tdata.sh = ntp->shp;
@@ -200,6 +200,9 @@ int    b_typeset(int argc,register char *argv[],void *extra)
 	{
 		switch(n)
 		{
+			case 'a':
+				flag |= NV_IARRAY;
+				break;
 			case 'A':
 				flag |= NV_ARRAY;
 				break;
@@ -268,6 +271,9 @@ int    b_typeset(int argc,register char *argv[],void *extra)
 			case 'r':
 				flag |= NV_RDONLY;
 				break;
+			case 's':
+				shortint=1;
+				break;
 			case 't':
 				flag |= NV_TAGGED;
 				break;
@@ -306,12 +312,16 @@ int    b_typeset(int argc,register char *argv[],void *extra)
 		errormsg(SH_DICT,ERROR_usage(2),"%s", optusage(NIL(char*)));
 	if(isfloat)
 		flag |= NV_INTEGER|NV_DOUBLE;
+	if(shortint)
+		flag |= NV_SHORT|NV_INTEGER;
 	if(tdata.sh->fn_depth)
 		flag |= NV_NOSCOPE;
 	if(flag&NV_TYPE)
 	{
 		int offset = staktell();
 		stakputs(NV_CLASS);
+		if(NV_CLASS[sizeof(NV_CLASS)-2]!='.')
+			stakputc('.');
 		stakputs(tdata.prefix);
 		stakputc(0);
 		tdata.tp = nv_open(stakptr(offset),tdata.sh->var_tree,NV_VARNAME|NV_NOARRAY|NV_NOASSIGN);
@@ -329,10 +339,10 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 {
 	register char *name;
 	char *last = 0;
-	int nvflags=(flag&(NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT|NV_ASSIGN));
+	int nvflags=(flag&(NV_ARRAY|NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT|NV_ASSIGN));
 	int r=0, ref=0;
 	Shell_t *shp =tp->sh;
-	flag &= ~(NV_ARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT);
+	flag &= ~(NV_NOARRAY|NV_NOSCOPE|NV_VARNAME|NV_IDENT);
 	if(argv[1])
 	{
 		if(flag&NV_REF)
@@ -402,10 +412,21 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 				}
 				continue;
 			}
+			if(tp->tp)
+			{
+				nv_settype(np,tp->tp,tp->aflag=='-'?0:NV_APPEND);
+				flag = (np->nvflag&NV_NOCHANGE);
+			}
+			if(troot==shp->var_tree && (flag&NV_IARRAY))
+			{
+				flag &= ~NV_IARRAY;
+				if(nv_isnull(np))
+					nv_onattr(np,NV_ARRAY);
+				else
+					nv_putsub(np, (char*)0, 0);
+			}
 			if(troot==shp->var_tree && (nvflags&NV_ARRAY))
 				nv_setarray(np,nv_associative);
-			if(tp->tp)
-				nv_settype(np,tp->tp,tp->aflag=='-'?0:NV_APPEND);
 			curflag = np->nvflag;
 			flag &= ~NV_ASSIGN;
 			if(last=strchr(name,'='))
@@ -476,7 +497,7 @@ static int     b_common(char **argv,register int flag,Dt_t *troot,struct tdata *
 			nv_close(np);
 		}
 	}
-	else
+	else if(!sh.envlist)
 	{
 		if(tp->aflag)
 		{
@@ -559,7 +580,7 @@ int	b_builtin(int argc,char *argv[],void *extra)
 	register char *arg=0, *name;
 	register int n, r=0, flag=0;
 	register Namval_t *np;
-	int dlete=0;
+	long dlete=0;
 	struct tdata tdata;
 	Fptr_t addr;
 	void *library=0;
@@ -605,7 +626,7 @@ int	b_builtin(int argc,char *argv[],void *extra)
 	{
 #ifdef _hdr_dlldefs
 #if (_AST_VERSION>=20040404)
-		if(!(library = dllplug("ksh",arg,NIL(char*),RTLD_LAZY,NIL(char*),0)))
+		if(!(library = dllplug(SH_ID,arg,NIL(char*),RTLD_LAZY,NIL(char*),0)))
 #else
 		if(!(library = dllfind(arg,NIL(char*),RTLD_LAZY,NIL(char*),0)))
 #endif
@@ -637,7 +658,7 @@ int	b_builtin(int argc,char *argv[],void *extra)
 			/* (char*) added for some sgi-mips compilers */ 
 			if(dlete || (addr = (Fptr_t)dlllook(liblist[n],stakptr(flag))))
 			{
-				if(np = sh_addbuiltin(arg, addr,(void*)dlete))
+				if(np = sh_addbuiltin(arg, addr,pointerof(dlete)))
 				{
 					if(dlete || nv_isattr(np,BLT_SPC))
 						errmsg = "restricted name";
@@ -903,7 +924,8 @@ static void print_scan(Sfio_t *file, int flag, Dt_t *root, int option,struct tda
 	namec = nv_scan(root,nullscan,(void*)0,tp->scanmask,flag);
 	argv = tp->argnam  = (char**)stakalloc((namec+1)*sizeof(char*));
 	namec = nv_scan(root, pushname, (void*)tp, tp->scanmask, flag);
-	strsort(argv,namec,strcoll);
+	if(mbcoll())
+		strsort(argv,namec,strcoll);
 	while(namec--)
 	{
 		if((np=nv_search(*argv++,root,0)) && np!=onp && (!nv_isnull(np) || np->nvfun || nv_isattr(np,~NV_NOFREE)))

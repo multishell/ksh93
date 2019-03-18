@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -40,5 +40,5 @@ strdup(register const char* s)
 	register char*	t;
 	register int	n;
 
-	return (t = newof(0, char, n = strlen(s) + 1, 0)) ? (char*)memcpy(t, s, n) : 0;
+	return (s && (t = newof(0, char, n = strlen(s) + 1, 0))) ? (char*)memcpy(t, s, n) : (char*)0;
 }

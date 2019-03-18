@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,8 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
+trap '' FPE # NOTE: osf.alpha requires this (no ieee math)
 integer Errors=0
 integer x=1 y=2 z=3
 if	(( 2+2 != 4 ))
@@ -315,8 +316,9 @@ if	[[ $(print x$((10))=foo) != x10=foo ]]
 then	err_exit 'parsing error with x$((10))=foo'
 fi
 $SHELL -c 'typeset x$((10))=foo' 2> /dev/null || err_exit 'typeset x$((10)) parse error'
+unset x
 x=$(( exp(log(2.0)) ))
-(( x > 1.999 && x < 2.001 )) || err_exit 'composit functions not working'
+(( x > 1.999 && x < 2.001 )) || err_exit 'composite functions not working'
 unset x y n
 typeset -Z8 x=0 y=0
 integer n
@@ -344,6 +346,10 @@ do	(( ipx = ip % 256 ))
 done	
 unset x
 x=010
+(( x == 8 )) || err_exit 'leading zeros not treated as octal arithmetic'
+(( $x == 8 )) || err_exit 'leading zeros not treated as octal arithmetic with $x'
+unset x
+typeset -Z x=010
 (( x == 10 )) || err_exit 'leading zeros not ignored for arithmetic'
 (( $x == 10 )) || err_exit 'leading zeros not ignored for arithmetic with $x'
 typeset -i i=x
@@ -431,4 +437,30 @@ done
 [[ $((5||0)) == 1 ]] || err_exit '$((5||0))'" == $((5||0)) should be 1"
 $SHELL -c 'integer x=3 y=2; (( (y += x += 2) == 7  && x==5))' 2> /dev/null || err_exit '((y += x += 2)) not working' 
 $SHELL -c 'b=0; [[ $((b?a=1:b=9)) == 9 ]]' 2> /dev/null || err_exit 'b?a=1:b=9 not working'
+unset x
+(( x = 4*atan(1.0) ))
+[[ $x == "$((x))" ]] || err_exit  '$x !- $((x)) when x is pi'
+$SHELL -c  "[[  ${x//./} == {14,100}(\d) ]]" 2> /dev/null || err_exit 'pi has less than 14 significant places'
+if	(( Inf+1 == Inf ))
+then	[[ $(printf "%g\n" $((Inf))) == Inf ]] || err_exit 'printf "%g\n" $((Inf) fails'
+#	[[ $(printf "%g\n" $((Nan))) == Inf ]] || err_exit 'printf "%g\n" $((Nan) fails'
+	[[ $(printf "%g\n" Inf) == Inf ]] || err_exit 'printf "%g\n" Inf fails'
+	[[ $(printf "%g\n" NaN) == NaN ]] || err_exit 'printf "%g\n" NaN fails'
+	[[ $(print -- $((Inf))) == Inf ]] || err_exit 'print -- $((Inf)) fails'
+	(( 1.0/0.0 == Inf )) || err_exit '1.0/0.0 != Inf'
+	[[ $(print -- $((0.0/0.0))) == NaN ]] || err_exit '0.0/0.0 != NaN'
+	(( Inf*Inf == Inf )) || err_exit 'Inf*Inf != Inf'
+	(( NaN != NaN )) || err_exit 'NaN == NaN'
+	(( -5*Inf == -Inf )) || err_exit '-5*Inf != -Inf'
+	[[ $(print -- $((sqrt(-1.0)))) == NaN ]]|| err_exit 'sqrt(-1.0) != NaN'
+	(( pow(1.0,Inf) == 1.0 )) || err_exit 'pow(1.0,Inf) != 1.0'
+	(( pow(Inf,0.0) == 1.0 )) || err_exit 'pow(Inf,0.0) != 1.0'
+	[[ $(print -- $((NaN/Inf))) == NaN ]] || err_exit 'NaN/Inf != NaN'
+	(( 4.0/Inf == 0.0 )) || err_exit '4.0/Inf != 0.0'
+else	err_exit 'Inf and NaN not working'
+fi
+unset x y
+float x=14.555 y
+y=$(printf "%a" x)
+(( x == y )) || err_exit 'output of printf %a not self preserving'
 exit $((Errors))

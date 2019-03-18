@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -51,7 +51,14 @@ strperm(const char* aexpr, char** e, register int perm)
 	int		mask;
 	int		masked;
 
-	masked = 0;
+	if (perm == -1)
+	{
+		perm = 0;
+		masked = 1;
+		mask = ~0;
+	}
+	else
+		masked = 0;
 	for (;;)
 	{
 		op = num = who = typ = 0;
@@ -73,10 +80,19 @@ strperm(const char* aexpr, char** e, register int perm)
 				continue;
 			default:
 				if (c >= '0' && c <= '7')
+				{
+					if (!who)
+						who = S_ISVTX|S_ISUID|S_ISGID|S_IRWXU|S_IRWXG|S_IRWXO;
 					c = '=';
+				}
 				expr--;
 				/*FALLTHROUGH*/
 			case '=':
+				if (who)
+					perm &= ~who;
+				else
+					perm = 0;
+				/*FALLTHROUGH*/
 			case '+':
 			case '|':
 			case '-':
@@ -94,7 +110,7 @@ strperm(const char* aexpr, char** e, register int perm)
 						typ |= S_IWUSR|S_IWGRP|S_IWOTH;
 						continue;
 					case 'X':
-						if (op != '+' || !S_ISDIR(perm) && !(perm & (S_IXUSR|S_IXGRP|S_IXOTH)))
+						if (!S_ISDIR(perm) && !(perm & (S_IXUSR|S_IXGRP|S_IXOTH)))
 							continue;
 						/*FALLTHROUGH*/
 					case 'x':
@@ -111,7 +127,7 @@ strperm(const char* aexpr, char** e, register int perm)
 						{
 							if (e)
 								*e = expr - 1;
-							return perm;
+							return perm & S_IPERM;
 						}
 						typ |= S_ISGID;
 						continue;
@@ -128,6 +144,7 @@ strperm(const char* aexpr, char** e, register int perm)
 						else
 							switch (op)
 							{
+							case '=':
 							case '+':
 							case '|':
 							case '-':
@@ -228,9 +245,11 @@ strperm(const char* aexpr, char** e, register int perm)
 								}
 								perm |= typ;
 							}
-							return perm;
+							return perm & S_IPERM;
 						}
 						num = (num << 3) | (c - '0');
+						if (!who && (op == '+' || op == '-'))
+							who = S_ISVTX|S_ISUID|S_ISGID|S_IRWXU|S_IRWXG|S_IRWXO;
 						if (*expr < '0' || *expr > '7')
 						{
 							typ |= modei(num);

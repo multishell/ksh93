@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -33,6 +33,8 @@
 #define X_ITYPE(m)	((m)&X_IFMT)
 
 #define	X_IFMT		0170000
+#define	X_IFWHT		0160000
+#define	X_IFDOOR	0150000
 #define	X_IFSOCK	0140000
 #define	X_IFLNK		0120000
 #define	X_IFCTG		0110000

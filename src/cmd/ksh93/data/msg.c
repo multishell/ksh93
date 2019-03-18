@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -91,14 +91,16 @@ const char e_badfield[]		= "%d: negative field size";
 const char e_ident[]		= "%s: is not an identifier";
 const char e_badname[]		= "%s: invalid name";
 const char e_varname[]		= "%s: invalid variable name";
-const char e_funname[]		= "%s: invalid function name";
+const char e_badfun[]		= "%s: invalid function name";
 const char e_aliname[]		= "%s: invalid alias name";
 const char e_badexport[]	= "%s: invalid export name";
 const char e_badref[]		= "%s: reference variable cannot be an array";
+const char e_noarray[]		= "%s: cannot be an array";
 const char e_noref[]		= "%s: no reference name";
 const char e_selfref[]		= "%s: invalid self reference";
 const char e_noalias[]		= "%s: alias not found\n";
 const char e_format[]		= "%s: bad format";
+const char e_redef[]		= "%s: type cannot be redefined";
 const char e_badtformat[]	= "%c: bad format character in time format";
 const char e_nolabels[]		= "%s: label not implemented";
 const char e_notimp[]		= "%s: not implemented";

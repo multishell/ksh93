@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -34,7 +34,7 @@ function abspath
         print $newdir/$base
 }
 #test for proper exit of shell
-Command=$0
+Command=${0##*/}
 integer Errors=0
 ABSHELL=$(abspath)
 mkdir /tmp/ksh$$ || err_exit "mkdir /tmp/ksh$$ failed"
@@ -42,17 +42,28 @@ cd /tmp/ksh$$ || err_exit "cd /tmp/ksh$$ failed"
 print exit 0 >.profile
 ${ABSHELL}  <<!
 HOME=$PWD \
-LD_LIBRARY_PATH=$LD_LIBRARY_PATH \
-LD_LIBRARYN32_PATH=$LD_LIBRARYN32_PATH \
-LD_LIBRARY64_PATH=$LD_LIBRARY64_PATH \
-LIBPATH=$LIBPATH \
 PATH=$PATH \
 SHELL=$ABSSHELL \
-SHLIBPATH=$SHLIBPATH \
+$(
+	set --noglob
+	ifs=$IFS
+	IFS=,
+	set -- $(getconf LIBPATH)
+	IFS=$ifs
+	for v
+	do	IFS=:
+		set -- $v
+		IFS=$ifs
+		eval [[ \$$2 ]] && eval print -n \" \"\$2=\"\$$2\"
+	done
+) \
 exec -c -a -ksh ${ABSHELL} -c "exit 1" 1>/dev/null 2>&1
 !
-if [[ $(echo $?) != 0 ]]
-then err_exit 'exit in .profile is ignored'
+status=$(echo $?)
+if	[[ -o noprivileged && $status != 0 ]]
+then	err_exit 'exit in .profile is ignored'
+elif	[[ -o privileged && $status == 0 ]]
+then	err_exit 'privileged .profile not ignored'
 fi
 if	[[ $(trap 'code=$?; echo $code; trap 0; exit $code' 0; exit 123) != 123 ]]
 then	err_exit 'exit not setting $?'

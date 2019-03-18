@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -43,8 +43,9 @@
 #define	S_FLAG	2	/* save in history file */
 #define	A_FLAG	4	/* read into array */
 #define N_FLAG	8	/* fixed size read at most */
-#define NN_FLAG	16	/* fixed size read exact */
-#define D_FLAG	6	/* must be number of bits for all flags */
+#define NN_FLAG	0x10	/* fixed size read exact */
+#define V_FLAG	0x20	/* use default value */
+#define D_FLAG	8	/* must be number of bits for all flags */
 
 int	b_read(int argc,char *argv[], void *extra)
 {
@@ -63,13 +64,14 @@ int	b_read(int argc,char *argv[], void *extra)
 		break;
 	    case 't':
 		sec = sh_strnum(opt_info.arg, (char**)0,1);
-		timeout = 1000*sec+1;
+		timeout = sec ? 1000*sec : 1;
 		break;
 	    case 'd':
 		if(opt_info.arg && *opt_info.arg!='\n')
 		{
+			char *cp = opt_info.arg;
 			flags &= ~((1<<D_FLAG)-1);
-			flags |= ((*opt_info.arg)<< D_FLAG);
+			flags |= (mbchar(cp)<< D_FLAG);
 		}
 		break;
 	    case 'p':
@@ -95,6 +97,9 @@ int	b_read(int argc,char *argv[], void *extra)
 		fd = (int)opt_info.num;
 		if(sh_inuse(fd))
 			fd = -1;
+		break;
+	    case 'v':
+		flags |= V_FLAG;
 		break;
 	    case ':':
 		errormsg(SH_DICT,2, "%s", opt_info.arg);
@@ -208,6 +213,8 @@ int sh_readline(register Shell_t *shp,char **names, int fd, int flags,long timeo
 		if(val= strchr(name,'?'))
 			*val = 0;
 		np = nv_open(name,shp->var_tree,NV_NOASSIGN|NV_VARNAME);
+		if((flags&V_FLAG) && shp->ed_context)
+			((struct edit*)shp->ed_context)->e_default = np;
 		if(flags&A_FLAG)
 		{
 			flags &= ~A_FLAG;

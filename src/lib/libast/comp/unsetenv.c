@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -19,25 +19,32 @@
 *                   Phong Vo <kpv@research.att.com>                    *
 *                                                                      *
 ***********************************************************************/
-/*
- * linux/gnu compatibility
- */
+#pragma prototyped
 
-#ifndef _BYTESEX_H
-#define _BYTESEX_H
+#define unsetenv	______unsetenv
 
-#include <ast_common.h>
+#include <ast.h>
 
-#undef __BYTE_ORDER
+#undef	unsetenv
 
-#if ( _ast_intswap & 3 ) == 3
-#define __BYTE_ORDER	__LITTLE_ENDIAN
+#if _lib_unsetenv
+
+NoN(unsetenv)
+
 #else
-#if ( _ast_intswap & 3 ) == 1
-#define __BYTE_ORDER	__PDP_ENDIAN
-#else
-#define __BYTE_ORDER	__BIG_ENDIAN
+
+#undef	_def_map_ast
+#include <ast_map.h>
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
 #endif
-#endif
+
+extern void
+unsetenv(const char *name)
+{
+	if (!strchr(name, '='))
+		setenviron(name);
+}
 
 #endif

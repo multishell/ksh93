@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -97,6 +97,7 @@ struct shlex_t
 #define SYMGT		0100000	/* trailing '>' */
 #define SYMSEMI		0110000	/* trailing ';' */
 #define SYMSHARP	0120000	/* trailing '#' */
+#define IOSEEKSYM	(SYMSHARP|'<')
 #define IOMOV0SYM	(SYMAMP|'<')
 #define IOMOV1SYM	(SYMAMP|'>')
 #define FALLTHRUSYM	(SYMAMP|';')
@@ -117,6 +118,9 @@ struct shlex_t
 #define	SH_ASSIGN	020
 #define	SH_FUNDEF	040
 #define SH_ARRAY	0100
+#define SH_SEMI		0200	/* semi-colon after NL ok */
+
+#define SH_COMPASSIGN	010	/* allow compound assignments only */
 
 typedef struct  _shlex_
 {

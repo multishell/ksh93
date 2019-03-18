@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -185,19 +185,22 @@ init(register char* s)
 		 * see <mc.h> mcindex()
 		 *
 		 * this method requires a scan of each catalog, and the
-		 * catalog do not advertize the max message number, so
+		 * catalogs do not advertize the max message number, so
 		 * we assume there are no messages after a gap of GAP
 		 * missing messages
 		 */
 
 		if (cp->messages = dtopen(&state.message_disc, Dtset))
 		{
-			m = 0;
-			for (n = 1; n < NL_MSGMAX; n++) 
+			n = m = 0;
+			for (;;)
+			{
+				n++;
 				if ((s = catgets(d, AST_MESSAGE_SET, n, state.null)) != state.null && entry(cp->messages, AST_MESSAGE_SET, n, s))
 					m = n;
 				else if ((n - m) > GAP)
 					break;
+			}
 			if (!m)
 			{
 				dtclose(cp->messages);

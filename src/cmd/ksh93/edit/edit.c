@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -33,6 +33,7 @@
 #include	<ctype.h>
 #include	"FEATURE/options"
 #include	"FEATURE/time"
+#include	"FEATURE/cmds"
 #ifdef _hdr_utime
 #   include	<utime.h>
 #   include	<ls.h>
@@ -50,11 +51,13 @@
 #include	"history.h"
 #include	"edit.h"
 
-#define CURSOR_UP       "\E[A"
+static char CURSOR_UP[20] = { ESC, '[', 'A', 0 };
 
 #if SHOPT_MULTIBYTE
+#   define is_cntrl(c)	((c<=STRIP) && iscntrl(c))
 #   define is_print(c)	((c&~STRIP) || isprint(c))
 #else
+#   define is_cntrl(c)	iscntrl(c)
 #   define is_print(c)	isprint(c)
 #endif
 
@@ -594,6 +597,7 @@ void	ed_setup(register Edit_t *ep, int fd, int reedit)
 		signal(SIGWINCH,sh_fault);
 		sh.sigflag[SIGWINCH] |= SH_SIGFAULT;
 	}
+	sh_fault(SIGWINCH);
 #endif
 #if KSHELL
 	ep->e_stkptr = stakptr(0);
@@ -728,7 +732,32 @@ void	ed_setup(register Edit_t *ep, int fd, int reedit)
 	sfwrite(sfstderr,ep->e_outptr,0);
 	ep->e_eol = reedit;
 	if(ep->e_multiline)
+	{
+#ifdef _cmd_tput
+		char *term;
+		if(!ep->e_term)
+			ep->e_term = nv_search("TERM",sh.var_tree,0);
+		if(ep->e_term && (term=nv_getval(ep->e_term)) && strlen(term)<sizeof(ep->e_termname) && strcmp(term,ep->e_termname))
+		{
+			sh_trap(".sh.subscript=$(tput cuu1 2>/dev/null)",0);
+			if(pp=nv_getval(SH_SUBSCRNOD))
+				strncpy(CURSOR_UP,pp,sizeof(CURSOR_UP)-1);
+			nv_unset(SH_SUBSCRNOD);
+			strcpy(ep->e_termname,term);
+		}
+#endif
 		ep->e_wsize = MAXLINE - (ep->e_plen-2);
+	}
+	if(ep->e_default && (pp = nv_getval(ep->e_default)))
+	{
+		n = strlen(pp);
+		if(n > LOOKAHEAD)
+			n = LOOKAHEAD;
+		ep->e_lookahead = n;
+		while(n-- > 0)
+			ep->e_lbuf[n] = *pp++;
+		ep->e_default = 0;
+	}
 }
 
 /*
@@ -972,6 +1001,8 @@ int ed_getchar(register Edit_t *ep,int mode)
 		/*** map '\r' to '\n' ***/
 		if(c == '\r' && mode!=2)
 			c = '\n';
+		if(ep->e_tabcount && !(c=='\t'||c==ESC || c=='\\' || c=='=' || c==cntl('L') || isdigit(c)))
+			ep->e_tabcount = 0;
 	}
 	else
 		siglongjmp(ep->e_env,(n==0?UEOF:UINTR));
@@ -1033,7 +1064,9 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
 	register genchar *sp=phys;
 	register int c=1, col=ep->e_plen;
 	Edpos_t pos;
-	char p;
+#if SHOPT_MULTIBYTE
+	char p[16];
+#endif /* SHOPT_MULTIBYTE */
 	if(cur && off>=cur)
 	{
 		sp += cur; 
@@ -1048,7 +1081,7 @@ Edpos_t ed_curpos(Edit_t *ep,genchar *phys, int off, int cur, Edpos_t curpos)
 		if(c)
 			c = *sp++;
 #if SHOPT_MULTIBYTE
-		if(c && (mbconv(&p, (wchar_t)c))==1 && p=='\n')
+		if(c && (mbconv(p, (wchar_t)c))==1 && p[0]=='\n')
 #else
 		if(c=='\n')
 #endif /* SHOPT_MULTIBYTE */
@@ -1166,10 +1199,9 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 	{
 		if(curp == sp)
 			r = dp - phys;
-		d = (is_print(c)?1:-1);
 #if SHOPT_MULTIBYTE
 		d = mbwidth((wchar_t)c);
-		if(d==1 && !is_print(c))
+		if(d==1 && is_cntrl(c))
 			d = -1;
 		if(d>1)
 		{
@@ -1183,6 +1215,8 @@ int ed_virt_to_phys(Edit_t *ep,genchar *virt,genchar *phys,int cur,int voff,int 
 			continue;
 		}
 		else
+#else
+		d = (is_cntrl(c)?-1:1);
 #endif	/* SHOPT_MULTIBYTE */
 		if(d<0)
 		{

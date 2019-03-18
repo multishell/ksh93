@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -109,6 +109,7 @@ typedef struct edit
 	int	e_lbuf[LOOKAHEAD];/* pointer to look-ahead buffer */
 	int	e_fd;		/* file descriptor */
 	int	e_ttyspeed;	/* line speed, also indicates tty parms are valid */
+	int	e_tabcount;
 #ifdef _hdr_utime
 	ino_t	e_tty_ino;
 	dev_t	e_tty_dev;
@@ -147,6 +148,9 @@ typedef struct edit
 	int	e_multiline;	/* allow multiple lines for editing */
 	int	e_winsz;	/* columns in window */ 
 	Edpos_t	e_curpos;	/* cursor line and column */
+	Namval_t *e_default;	/* variable containing default value */
+	Namval_t *e_term;	/* TERM variable */
+	char 	e_termname[80];	/* terminal name */
 } Edit_t;
 
 #undef MAXWINDOW

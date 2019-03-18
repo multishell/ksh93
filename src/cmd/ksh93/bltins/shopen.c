@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -18,7 +18,7 @@
 *                                                                      *
 ***********************************************************************/
 
-static const char id[] = "\n@(#)$Id: open (AT&T Labs) 1998-07-07 $\0\n";
+static const char id[] = "\n@(#)$Id: open (AT&T Research) 1998-07-07 $\0\n";
 
 #include	<sys/stat.h>
 #include	<fcntl.h>

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -38,23 +38,11 @@
 #include	"builtins.h"
 #include	"FEATURE/externs"
 #include	"FEATURE/poll"
-#include	<tm.h>
-#if TM_VERSION >= 20041201L
 #include	<tmx.h>
-#else
-typedef unsigned long Time_t;
-#define tmxgetatime(s)	((s)->st_atime)
-#define tmxgetmtime(s)	((s)->st_mtime)
-#endif
 
-#ifndef _lib_setregid
+#if !_lib_setregid
 #   undef _lib_setreuid
 #endif /* _lib_setregid */
-
-#ifdef _lib_setreuid
-    extern int setreuid(uid_t,uid_t);
-    extern int setregid(uid_t,uid_t);
-#endif /* _lib_setreuid */
 
 #ifdef S_ISSOCK
 #   if _pipe_socketpair
@@ -257,13 +245,13 @@ static int e3(struct test *tp)
 	register int op;
 	char *binop;
 	arg=nxtarg(tp,0);
-	if(c_eq(arg, '!'))
+	if(arg && c_eq(arg, '!'))
 		return(!e3(tp));
 	if(c_eq(arg, '('))
 	{
 		op = expr(tp,1);
 		cp = nxtarg(tp,0);
-		if(!c_eq(cp, ')'))
+		if(!cp || !c_eq(cp, ')'))
 			errormsg(SH_DICT,ERROR_exit(2),e_missing,"')'");
 		return(op);
 	}

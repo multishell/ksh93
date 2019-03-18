@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -25,5 +25,19 @@
 
 #define S2F_function	strtold
 #define S2F_type	2
+
+/*
+ * ast strtold() => strtod() when double == long double
+ */
+
+#define _AST_STD_H	1
+#define strtold		______strtold
+
+#include <ast_common.h>
+#include <ast_lib.h>
+#include <ast_sys.h>
+
+#undef	strtold
+#undef	_AST_STD_H
 
 #include "sfstrtof.h"

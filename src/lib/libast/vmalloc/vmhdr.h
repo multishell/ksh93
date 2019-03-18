@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -158,6 +158,10 @@ extern void		_vmmessage _ARG_((const char*, long, const char*, long));
 #endif /*DEBUG*/
 
 #define VMPAGESIZE	8192
+#if _AST_PAGESIZE > VMPAGESIZE
+#undef	VMPAGESIZE
+#define VMPAGESIZE	_AST_PAGESIZE
+#endif
 #if _lib_getpagesize
 #define GETPAGESIZE(x)	((x) ? (x) : \
 			 (((x)=getpagesize()) < VMPAGESIZE ? ((x)=VMPAGESIZE) : (x)) )

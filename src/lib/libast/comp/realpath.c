@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,7 +24,16 @@
  * realpath implementation
  */
 
+#define realpath	______realpath
+#define resolvepath	______resolvepath
+
 #include <ast.h>
+
+#undef	realpath
+#undef	resolvepath
+
+#undef	_def_map_ast
+#include <ast_map.h>
 
 extern char*		resolvepath(const char*, char*, size_t);
 

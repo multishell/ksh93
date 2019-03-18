@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -26,7 +26,7 @@ function err_exit
 alias err_exit='err_exit $LINENO'
 
 integer Errors=0
-Command=$0
+Command=${0##*/}
 integer foo=33
 bar=bye
 # check for global variables and $0
@@ -727,4 +727,32 @@ function f
 	done
 }
 f || err_exit "typeset optimization bug"
+function f
+{
+	print -r -- "$foo$bar"
+}
+function g
+{
+	print -r -- $(bar=bam f)
+}
+unset foo bar
+[[ $(foo=hello g) == hellobam ]] || err_exit 'function exports not passed on'
+[[ $(bar=hello g) == bam ]] || err_exit 'function exports not overridden'
+unset -f foo
+function foo
+{
+	typeset line=$1
+	set +n
+	while	[[ $line ]]
+	do	if	[[ ! $varname ]]
+		then	varname=${line%% *}
+			line=${line##"$varname"?( )}
+			[[ $line ]] && continue
+		else	print ok
+			return
+		fi
+		varname=
+	done
+}
+[[ $(foo 'NUMBERED RECORDSIZE') == ok ]] || err_exit 'optimization error with undefined variable'
 exit $((Errors))

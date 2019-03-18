@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -48,6 +48,7 @@ const Shtable_t shtab_testops[] =
 		"-ot",		TEST_OT,
 		"=",		TEST_SEQ,
 		"==",		TEST_SEQ,
+		"=~",           TEST_REP,
 		"<",		TEST_SLT,
 		">",		TEST_SGT,
 		"]]",		TEST_END,
@@ -55,7 +56,7 @@ const Shtable_t shtab_testops[] =
 };
 
 const char sh_opttest[] =
-"[-1c?\n@(#)$Id: test (AT&T Labs Research) 2003-03-18 $\n]"
+"[-1c?\n@(#)$Id: test (AT&T Research) 2003-03-18 $\n]"
 USAGE_LICENSE
 "[+NAME?test - evaluate expression]"
 "[+DESCRIPTION?\btest\b evaluates expressions and indicates its "

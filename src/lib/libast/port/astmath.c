@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -33,7 +33,7 @@ int
 main()
 {
 #if N & 1
-	long double	valuel = 0;
+	long double	value = 0;
 #else
 	double		value = 0;
 #endif
@@ -42,19 +42,19 @@ main()
 #endif
 
 #if N == 1
-	return ldexpl(valuel, exp) != 0;
+	return ldexpl(value, exp) != 0;
 #endif
 #if N == 2
 	return ldexp(value, exp) != 0;
 #endif
 #if N == 3
-	return frexpl(valuel, &exp) != 0;
+	return frexpl(value, &exp) != 0;
 #endif
 #if N == 4
 	return frexp(value, &exp) != 0;
 #endif
 #if N == 5
-	return isnanl(valuel);
+	return isnan(value);
 #endif
 #if N == 6
 	return isnan(value);

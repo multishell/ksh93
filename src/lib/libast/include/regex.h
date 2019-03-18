@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -25,8 +25,15 @@
  * regex library interface
  */
 
+#ifdef	_AST_STD_I
+#define _REGEX_H	-1
+#define regex_t		int
+#define regmatch_t	int
+#endif
 #ifndef _REGEX_H
-#define _REGEX_H
+#define _REGEX_H	1
+#undef	regex_t
+#undef	regmatch_t
 
 #include <ast_common.h>
 
@@ -200,13 +207,14 @@ extern regclass_t regclass(const char*, char**);
 extern int	regaddclass(const char*, regclass_t);
 extern int	regcollate(const char*, char**, char*, int);
 extern int	regcomb(regex_t*, regex_t*);
+extern size_t	regdecomp(regex_t*, regflags_t, char*, size_t);
 extern int	regdup(regex_t*, regex_t*);
 extern int	regncomp(regex_t*, const char*, size_t, regflags_t);
 extern int	regnexec(const regex_t*, const char*, size_t, size_t, regmatch_t*, regflags_t);
 extern void	regfatal(regex_t*, int, int);
 extern void	regfatalpat(regex_t*, int, int, const char*);
 extern int	regrecord(const regex_t*);
-extern int	regrexec(const regex_t*, const char*, size_t, size_t, regmatch_t*, regflags_t, regflags_t, void*, regrecord_t);
+extern int	regrexec(const regex_t*, const char*, size_t, size_t, regmatch_t*, regflags_t, int, void*, regrecord_t);
 extern regstat_t* regstat(const regex_t*);
 
 extern regex_t*	regcache(const char*, regflags_t, int*);

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -28,7 +28,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: cmp (AT&T Labs Research) 2004-12-01 $\n]"
+"[-?\n@(#)$Id: cmp (AT&T Research) 2004-12-01 $\n]"
 USAGE_LICENSE
 "[+NAME?cmp - compare two files]"
 "[+DESCRIPTION?\bcmp\b compares two files \afile1\a and \afile2\a.  "
@@ -63,7 +63,7 @@ USAGE_LICENSE
 ;
 
 
-#include <cmdlib.h>
+#include <cmd.h>
 #include <ls.h>
 #include <ctype.h>
 
@@ -195,7 +195,7 @@ b_cmp(int argc, register char** argv, void* context)
 	int		flags = 0;
 
 	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	case 'l':
@@ -260,14 +260,14 @@ b_cmp(int argc, register char** argv, void* context)
 			goto done;
 		}
 	}
-	if (o1 && sfseek(f1, o1, 0) != o1)
+	if (o1 && sfseek(f1, o1, SEEK_SET) != o1)
 	{
 		if (!(flags & CMP_SILENT))
 			error(ERROR_exit(0), "%s: EOF", file1);
 		n = 1;
 		goto done;
 	}
-	if (o2 && sfseek(f2, o2, 0) != o2)
+	if (o2 && sfseek(f2, o2, SEEK_SET) != o2)
 	{
 		if (!(flags & CMP_SILENT))
 			error(ERROR_exit(0), "%s: EOF", file2);

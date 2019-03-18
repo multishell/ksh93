@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,33 +24,22 @@
  * tmpnam implementation
  */
 
-#define _def_map_ast	1
-
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide tmpnam
-#else
 #define tmpnam		______tmpnam
-#endif
 
 #include <ast.h>
 #include <stdio.h>
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide tmpnam
-#else
 #undef	tmpnam
-#endif
 
 #undef	_def_map_ast
-
 #include <ast_map.h>
-
-#ifndef L_tmpnam
-#define L_tmpnam	25
-#endif
 
 #if defined(__EXPORT__)
 #define extern	__EXPORT__
+#endif
+
+#ifndef L_tmpnam
+#define L_tmpnam	25
 #endif
 
 extern char*

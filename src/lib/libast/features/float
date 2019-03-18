@@ -1,6 +1,6 @@
 set	prototyped
 hdr	float,limits,math,values
-lib	frexp,frexpl,ldexp,ldexpl,finite,finitel,isnan,isnanl <math.h> -lm
+lib	fpclassify,frexp,frexpl,ldexp,ldexpl,finite,finitel,isinf,isinfl,isnan,isnanl,signbit,copysign,copysignl <math.h> -lm
 
 tst	ast_no_um2fm note{ no unsigned intmax => floatmax cast }end nolink{
 	#include "FEATURE/common"
@@ -832,9 +832,11 @@ tst	- note{ missing floating point limits }end output{
 	#ifdef SIGFPE
 		if (!caught)
 		{
+	#if !__MVS__
 			f = xf;
 			f *= 2;
 			if (!f)
+	#endif
 				caught = 1;
 		}
 		if (caught)
@@ -944,7 +946,7 @@ tst	- -DN=1 - -DN=2 note{ _ast_fltmax_t maximum integral type }end output{
 	}
 }end
 
-tst	- -lm -DSCAN=1 - -DDIV=1 - -DEXP=1 - -DADD=1 - -DMPY=1 note{ INF and NAN memory representations }end output{
+tst	- -lm -DSTRTO=1 - -DSCAN=1 - -DDIV=1 - -DEXP=1 - -DADD=1 - -DMPY=1 note{ INF and NAN memory representations }end output{
 	#include "FEATURE/common"
 	#include <sys/types.h>
 	#include <signal.h>
@@ -959,6 +961,9 @@ tst	- -lm -DSCAN=1 - -DDIV=1 - -DEXP=1 - -DADD=1 - -DMPY=1 note{ INF and NAN mem
 	#endif
 	#if _hdr_values
 	#include <values.h>
+	#endif
+	#if STRTO && _hdr_stdlib
+	#include <stdlib.h>
 	#endif
 	#if !defined(FLT_MAX) && defined(MAXFLOAT)
 	#define FLT_MAX		MAXFLOAT
@@ -991,38 +996,78 @@ tst	- -lm -DSCAN=1 - -DDIV=1 - -DEXP=1 - -DADD=1 - -DMPY=1 note{ INF and NAN mem
 	int
 	main()
 	{
-	#if SCAN
-	#define NANQ	"NaNQ"
+	#if SCAN || STRTO
+	#undef	NAN
+	#define NAN	"NaN"
+	#undef	INF
 	#define INF	"INF"
 	{
 		float	f;
 
-		if (sscanf(NANQ, "%g", &f) != 1)
+	#if SCAN
+		if (sscanf(NAN, "%g", &f) != 1)
 			return 1;
+	#else
+		f = atof(NAN);
+	#endif
 		list("flt", "nan", &f, sizeof(f));
+	#if SCAN
 		if (sscanf(INF, "%g", &f) != 1)
 			return 1;
+	#else
+		f = atof(INF);
+	#endif
 		list("flt", "inf", &f, sizeof(f));
 	}
 	{
 		double	f;
+	#if STRTO
+		char*	e;
+	#endif
 
-		if (sscanf(NANQ, "%lg", &f) != 1)
+	#if SCAN
+		if (sscanf(NAN, "%lg", &f) != 1)
 			return 1;
+	#else
+		f = strtod(NAN, &e);
+		if (*e)
+			return 1;
+	#endif
 		list("dbl", "nan", &f, sizeof(f));
+	#if SCAN
 		if (sscanf(INF, "%lg", &f) != 1)
 			return 1;
+	#else
+		f = strtod(INF, &e);
+		if (*e)
+			return 1;
+	#endif
 		list("dbl", "inf", &f, sizeof(f));
 	}
 	#ifdef LDBL_MAX
 	{
 		long double	f;
+	#if STRTO
+		char*	e;
+	#endif
 
-		if (sscanf(NANQ, "%Lg", &f) != 1)
+	#if SCAN
+		if (sscanf(NAN, "%Lg", &f) != 1)
 			return 1;
+	#else
+		f = strtold(NAN, &e);
+		if (*e)
+			return 1;
+	#endif
 		list("ldbl", "nan", &f, sizeof(f));
+	#if SCAN
 		if (sscanf(INF, "%Lg", &f) != 1)
 			return 1;
+	#else
+		f = strtold(INF, &e);
+		if (*e)
+			return 1;
+	#endif
 		list("ldbl", "inf", &f, sizeof(f));
 	}
 	#endif

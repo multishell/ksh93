@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,7 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
 integer Errors=0
 null=''
 if	[[ ! -z $null ]]
@@ -170,7 +170,7 @@ if	[[ -u $SHELL ]]
 then	err_exit "setuid on $SHELL"
 fi
 if	[[ -g $SHELL ]]
-then	err_exit "setuid on $SHELL"
+then	err_exit "setgid on $SHELL"
 fi
 test -d .  -a '(' ! -f . ')' || err_exit 'test not working'
 if	[[ '!' != ! ]]
@@ -210,9 +210,7 @@ done
 ) || err_exit 'Errors with {..}(...) patterns'
 [[ D290.2003.02.16.temp == D290.+(2003.02.16).temp* ]] || err_exit 'pattern match bug with +(...)'
 rm -rf $file
-print > $file
 {
-cat $file > /dev/null # should make st_atime>st_mtime
 [[ -N $file ]] && err_exit 'test -N /tmp/*: st_mtime>st_atime after creat'
 sleep 2
 print 'hello world'
@@ -226,5 +224,7 @@ then	[[ -L "$file" ]] || err_exit '-L not working'
 	[[ -L "$file"/ ]] && err_exit '-L with file/ not working'
 fi
 $SHELL -c 't=1234567890; [[ $t == @({10}(\d)) ]]' 2> /dev/null || err_exit ' @({10}(\d)) pattern not working'
-$SHELL -c 't=1234567890; [[ att_ == ~(E)(att|cus)_.* ]]' 2> /dev/null || err_exit ' ~(E)(att|cus)_* pattern not working'
+$SHELL -c '[[ att_ == ~(E)(att|cus)_.* ]]' 2> /dev/null || err_exit ' ~(E)(att|cus)_* pattern not working'
+$SHELL -c '[[ att_ =~ (att|cus)_.* ]]' 2> /dev/null || err_exit ' =~ ere not working'
+$SHELL -c '[[ abc =~ a(b)c ]]' 2> /dev/null || err_exit '[[ abc =~ a(b)c ]] fails'
 exit $((Errors))

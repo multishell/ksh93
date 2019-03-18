@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -424,7 +424,6 @@ scan(register const char* s, char** e, const char* format, char** f, Time_t t, l
 					goto again;
 				}
 	}
- fix:
 	t = gen(tm, &set);
  done:
 	if (e)

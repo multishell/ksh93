@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -32,7 +32,7 @@
 
 struct modeop	modetab[MODELEN] =
 {
-	0170000, 12, 0000000, 0, "-pc?d?b?-Cl?sD??",
+	0170000, 12, 0000000, 0, "-pc?d?b?-Cl?sDw?",
 	0000400,  8, 0000000, 0, "-r",
 	0000200,  7, 0000000, 0, "-w",
 	0004000, 10, 0000100, 6, "-xSs",

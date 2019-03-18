@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,23 +27,26 @@
  */
 
 #if !_UWIN
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide signal
-#else
+
 #undef	signal
 #define signal		______signal
-#endif
+
 #endif
 
 #include <ast.h>
 #include <sig.h>
 
 #if !_UWIN
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide signal
-#else
+
 #undef	signal
+
+#undef	_def_map_ast
+#include <ast_map.h>
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
 #endif
+
 #endif
 
 #if defined(SV_ABORT)                                         
@@ -68,7 +71,7 @@ __STDPP__directive pragma pp:nohide signal
 #define	sa_mask		sv_mask
 #endif
 
-Sig_handler_t
+extern Sig_handler_t
 signal(int sig, Sig_handler_t fun)
 {
 	struct sigaction	na;

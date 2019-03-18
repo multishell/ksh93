@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -31,6 +31,7 @@
 #include	"path.h"
 #include	"builtins.h"
 #include	"terminal.h"
+#include	"edit.h"
 #include	"FEATURE/poll"
 #if SHOPT_KIA
 #   include	"shlex.h"
@@ -189,12 +190,15 @@ int sh_argopts(int argc,register char *argv[])
 			if(o<=0
 				|| (!sh_isoption(SH_BASH) && (o&SH_BASHEXTRA))
 				|| ((!sh_isoption(SH_BASH) || n=='o') && (o&SH_BASHOPT))
+
 				|| (setflag && (o&SH_COMMANDLINE)))
 			{
 				errormsg(SH_DICT,2, e_option, opt_info.arg);
 				error_info.errors++;
 			}
 			o &= 0xff;
+			if(sh_isoption(SH_RESTRICTED) && !f && o==SH_RESTRICTED)
+				errormsg(SH_DICT,ERROR_exit(1), e_restricted, opt_info.arg);
 			break;
 #if SHOPT_BASH
 		    case -1:	/* --rcfile */
@@ -388,13 +392,13 @@ void sh_applyopts(Shopt_t newflags)
 	on_option(&newflags,SH_NOEMPTYCMDCOMPL);
 
 	if(!is_option(&newflags,SH_XPG_ECHO) && sh_isoption(SH_XPG_ECHO))
-		astgetconf("UNIVERSE", 0, "ucb", 0);
+		astconf("UNIVERSE", 0, "ucb");
 	if(is_option(&newflags,SH_XPG_ECHO) && !sh_isoption(SH_XPG_ECHO))
-		astgetconf("UNIVERSE", 0, "att", 0);
+		astconf("UNIVERSE", 0, "att");
 	if(!is_option(&newflags,SH_PHYSICAL) && sh_isoption(SH_PHYSICAL))
-		astgetconf("PATH_RESOLVE", 0, "metaphysical", 0);
+		astconf("PATH_RESOLVE", 0, "metaphysical");
 	if(is_option(&newflags,SH_PHYSICAL) && !sh_isoption(SH_PHYSICAL))
-		astgetconf("PATH_RESOLVE", 0, "physical", 0);
+		astconf("PATH_RESOLVE", 0, "physical");
 	if(is_option(&newflags,SH_HISTORY2) && !sh_isoption(SH_HISTORY2))
 	{
 		sh_onstate(SH_HISTORY);

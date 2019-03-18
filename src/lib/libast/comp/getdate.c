@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -24,25 +24,14 @@
  * getdate implementation
  */
 
-#define _def_map_ast	1
-
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide getdate
-#else
 #define getdate	______getdate
-#endif
 
 #include <ast.h>
 #include <tm.h>
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide getdate
-#else
 #undef	getdate
-#endif
 
 #undef	_def_map_ast
-
 #include <ast_map.h>
 
 #undef	_lib_getdate	/* we can pass X/Open */
@@ -55,6 +44,10 @@ NoN(getdate)
 
 #ifndef getdate_err
 __DEFINE__(int, getdate_err, 0);
+#endif
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
 #endif
 
 extern struct tm*

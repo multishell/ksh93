@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -46,8 +46,8 @@
 #define HIST_RECENT	600
 #define HIST_UNDO	0201		/* invalidate previous command */
 #define HIST_CMDNO	0202		/* next 3 bytes give command number */
-#define HIST_BSIZE	1024		/* size of history file buffer */
-#define HIST_DFLT	128		/* default size of history list */
+#define HIST_BSIZE	4096		/* size of history file buffer */
+#define HIST_DFLT	512		/* default size of history list */
 
 #define _HIST_PRIVATE \
 	off_t	histcnt;	/* offset into history file */\
@@ -185,7 +185,7 @@ int  sh_histinit(void)
 	register History_t *hp;
 	register char *histname;
 	char *fname=0;
-	int histmask, maxlines, hist_start;
+	int histmask, maxlines, hist_start=0;
 	register char *cp;
 	register off_t hsize = 0;
 
@@ -837,6 +837,7 @@ Histloc_t hist_find(register History_t*hp,char *string,register int index1,int f
 	Histloc_t location;
 	location.hist_command = -1;
 	location.hist_char = 0;
+	location.hist_line = 0;
 	if(!hp)
 		return(location);
 	/* leading ^ means beginning of line unless escaped */
@@ -1057,8 +1058,6 @@ Histloc_t hist_locate(History_t *hp,register int command,register int line,int l
 		}
 		command = -1;
 	}
-	next.hist_command = command;
-	return(next);
 done:
 	next.hist_line = line;
 	next.hist_command = command;

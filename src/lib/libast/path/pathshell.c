@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -41,7 +41,7 @@
  *
  * root/administrator has its own test
  *
- * astconf("SHELL",NiL,NiL) is returned by default
+ * astconf("SH",NiL,NiL) is returned by default
  *
  * NOTE: csh is rejected because the bsh/csh differentiation is
  *       not done for `csh script arg ...'
@@ -59,13 +59,13 @@ pathshell(void)
 
 	static char*	val;
 
-	if ((sh = getenv("SHELL")) && *sh == '/' && strmatch(sh, "*/(sh|*[!cC]sh)?(-+([a-zA-Z0-9.]))?(.exe)"))
+	if ((sh = getenv("SHELL")) && *sh == '/' && strmatch(sh, "*/(sh|*[!cC]sh)*([[:digit:]])?(-+([.[:alnum:]]))?(.exe)"))
 	{
 		if (!(ru = getuid()) || !eaccess("/bin", W_OK))
 		{
 			if (stat(sh, &st))
 				goto defshell;
-			if (ru != st.st_uid && !strmatch(sh, "?(/usr)?(/local)/?(l)bin/?([a-z])sh?(.exe)"))
+			if (ru != st.st_uid && !strmatch(sh, "?(/usr)?(/local)/?([ls])bin/?([[:lower:]])sh?(.exe)"))
 				goto defshell;
 		}
 		else
@@ -104,7 +104,7 @@ pathshell(void)
  defshell:
 	if (!(sh = val))
 	{
-		if (!*(sh = astconf("SHELL", NiL, NiL)) || *sh != '/' || eaccess(sh, X_OK) || !(sh = strdup(sh)))
+		if (!*(sh = astconf("SH", NiL, NiL)) || *sh != '/' || eaccess(sh, X_OK) || !(sh = strdup(sh)))
 			sh = "/bin/sh";
 		val = sh;
 	}

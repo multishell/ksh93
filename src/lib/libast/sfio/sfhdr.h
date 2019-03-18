@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -873,7 +873,7 @@ typedef struct _sfextern_s
 #define _SFOPENWR(f)	((f)->endw = ((f)->flags&(SF_MTSAFE|SF_LINE)) ? (f)->data : (f)->endb)
 #define _SFOPEN(f)	((f)->mode == SF_READ  ? _SFOPENRD(f) : \
 			 (f)->mode == SF_WRITE ? _SFOPENWR(f) : \
-			 ((f)->endr = (f)->endr = (f)->data) )
+			 ((f)->endw = (f)->endr = (f)->data) )
 #define SFOPEN(f,l)	(void)((l) ? 0 : \
 				((f)->mode &= ~(SF_LOCK|SF_RC|SF_RV), _SFOPEN(f), 0) )
 

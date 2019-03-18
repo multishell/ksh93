@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -20,7 +20,7 @@
 *                                                                      *
 ***********************************************************************/
 /*
- * AT&T Labs Research
+ * AT&T Research
  * Glenn Fowler & Phong Vo
  *
  * common header and implementation for
@@ -113,6 +113,8 @@
 #endif
 
 #define S2F_batch	_ast_flt_unsigned_max_t
+
+#undef	ERR		/* who co-opted this namespace? */
 
 #if S2F_scan
 
@@ -402,6 +404,7 @@ S2F_function(str, end) char* str; char** end;
 		else if (c == decimal)
 		{
 			decimal = -1;
+			thousand = -1;
 			m = 0;
 			fraction = digits;
 		}

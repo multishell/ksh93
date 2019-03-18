@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -34,6 +34,10 @@
 #include	<history.h>
 #include	"fault.h"
 #include	"argnod.h"
+
+#ifndef pointerof
+#define pointerof(x)		((void*)((char*)0+(x)))
+#endif
 
 #define	env_change()		(++ast.env_serial)
 #if SHOPT_ENV
@@ -71,7 +75,7 @@ struct sh_scoped
 	short		optchar;
 	short		opterror;
 	int		ioset;
-	short		trapmax;
+	unsigned short	trapmax;
 	char		*trap[SH_DEBUGTRAP+1];
 	char		**trapcom;
 	char		**otrapcom;
@@ -80,6 +84,7 @@ struct sh_scoped
 
 struct limits
 {
+	long		arg_max;	/* max arg+env exec() size */
 	int		open_max;	/* maximum number of file descriptors */
 	int		clk_tck;	/* number of ticks per second */
 	int		child_max;	/* maxumum number of children */
@@ -131,6 +136,7 @@ struct limits
 	long		ppid;		/* parent process id of shell */ \
 	int		topfd; \
 	int		sigmax;		/* maximum number of signals */ \
+	int		savesig; \
 	unsigned char	*sigflag;	/* pointer to signal states */ \
 	char		intrap; \
 	char		login_sh; \
@@ -150,9 +156,11 @@ struct limits
 	struct dolnod	*arglist; \
 	int		fn_depth; \
 	int		dot_depth; \
+	int		hist_depth; \
 	int		xargmin; \
 	int		xargmax; \
 	int		xargexit; \
+	mode_t		mask; \
 	long		nforks; \
 	Env_t		*env; \
 	void		*init_context; \
@@ -182,6 +190,8 @@ struct limits
 	History_t	*hist_ptr; \
 	char		universe; \
 	void		*jmpbuffer; \
+	void		*mktype; \
+	Sfio_t		*strbuf; \
 	char		ifstable[256]; \
 	Shopt_t		offoptions;
 
@@ -228,6 +238,18 @@ struct limits
 #define SH_BASHEXTRA		0x200
 #define SH_BASHOPT		0x400
 
+#define SH_ID			"ksh"	/* ksh id */
+#define SH_STD			"sh"	/* standard sh id */
+
+/* defines for sh_type() */
+
+#define SH_TYPE_SH		001
+#define SH_TYPE_KSH		002
+#define SH_TYPE_BASH		004
+#define SH_TYPE_LOGIN		010
+#define SH_TYPE_PROFILE		020
+#define SH_TYPE_RESTRICTED	040
+
 #if SHOPT_BASH
 #   ifndef SHOPT_HISTEXPAND
 #	define SHOPT_HISTEXPAND	1
@@ -269,6 +291,10 @@ struct limits
 #   define SH_HISTVERIFY	62
 #endif
 
+#ifndef PIPE_BUF
+#   define PIPE_BUF		512
+#endif
+
 #define MATCH_MAX		64
 
 extern int		sh_addlib(void*);
@@ -286,6 +312,7 @@ extern void 		sh_envnolocal(Namval_t*,void*);
 extern Sfdouble_t	sh_arith(const char*);
 extern void		*sh_arithcomp(char*);
 extern pid_t 		sh_fork(int,int*);
+extern pid_t		_sh_fork(pid_t, int ,int*);
 extern char 		*sh_mactrim(char*,int);
 extern int 		sh_macexpand(struct argnod*,struct argnod**,int);
 extern void 		sh_machere(Sfio_t*, Sfio_t*, char*);
@@ -304,6 +331,7 @@ extern char 		*sh_substitute(const char*,const char*,char*);
 extern const char	*_sh_translate(const char*);
 extern int		sh_trace(char*[],int);
 extern void		sh_trim(char*);
+extern int		sh_type(const char*);
 extern void		sh_utol(const char*, char*);
 extern int 		sh_whence(char**,int);
 

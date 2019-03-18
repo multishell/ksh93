@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -163,13 +163,20 @@ int	b_getopts(int argc,char *argv[],void *extra)
 	nv_putval(np, options, 0);
 	nv_close(np);
 	np = nv_open(nv_name(OPTARGNOD),shp->var_tree,NV_NOSCOPE);
-	if(opt_info.num != LONG_MIN)
+	if(opt_info.num == LONG_MIN)
+		nv_putval(np, opt_info.arg, NV_RDONLY);
+	else if (opt_info.num > 0 && opt_info.arg && opt_info.arg[0] == (char)opt_info.num)
 	{
-		Sfdouble_t d = opt_info.number;
-		nv_putval(np, (char*)&d, NV_INTEGER|NV_DOUBLE|NV_LONG|NV_RDONLY);
+		key[0] = (char)opt_info.num;
+		key[1] = 0;
+		nv_putval(np, key, NV_RDONLY);
 	}
 	else
-		nv_putval(np, opt_info.arg, NV_RDONLY);
+	{
+		Sfdouble_t d;
+		d = opt_info.number;
+		nv_putval(np, (char*)&d, NV_INTEGER|NV_DOUBLE|NV_LONG|NV_RDONLY);
+	}
 	nv_close(np);
 	sh_popcontext(&buff);
         opt_info.disc = 0;

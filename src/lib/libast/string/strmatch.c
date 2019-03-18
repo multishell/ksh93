@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -99,17 +99,22 @@ strgrpmatch(const char* b, const char* p, int* sub, int n, register int flags)
 	 * convert flags
 	 */
 
-	reflags = REG_SHELL|REG_AUGMENTED;
-	if (!(flags & STR_MAXIMAL))
-		reflags |= REG_MINIMAL;
-	if (flags & STR_GROUP)
-		reflags |= REG_SHELL_GROUP;
-	if (flags & STR_LEFT)
-		reflags |= REG_LEFT;
-	if (flags & STR_RIGHT)
-		reflags |= REG_RIGHT;
-	if (flags & STR_ICASE)
-		reflags |= REG_ICASE;
+	if (flags & REG_ADVANCE)
+		reflags = flags & ~REG_ADVANCE;
+	else
+	{
+		reflags = REG_SHELL|REG_AUGMENTED;
+		if (!(flags & STR_MAXIMAL))
+			reflags |= REG_MINIMAL;
+		if (flags & STR_GROUP)
+			reflags |= REG_SHELL_GROUP;
+		if (flags & STR_LEFT)
+			reflags |= REG_LEFT;
+		if (flags & STR_RIGHT)
+			reflags |= REG_RIGHT;
+		if (flags & STR_ICASE)
+			reflags |= REG_ICASE;
+	}
 	if (!sub || n <= 0)
 		reflags |= REG_NOSUB;
 	if (!(re = regcache(p, reflags, NiL)))
@@ -120,7 +125,7 @@ strgrpmatch(const char* b, const char* p, int* sub, int n, register int flags)
 			return 0;
 		matchstate.nmatch = n;
 	}
-	if (regexec(re, b, n, matchstate.match, reflags))
+	if (regexec(re, b, n, matchstate.match, reflags & ~(REG_MINIMAL|REG_SHELL_GROUP|REG_LEFT|REG_RIGHT|REG_ICASE)))
 		return 0;
 	if (!sub || n <= 0)
 		return 1;

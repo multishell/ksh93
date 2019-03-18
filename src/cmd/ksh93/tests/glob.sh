@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -20,20 +20,47 @@
 function err_exit
 {
 	print -u2 -n "\t"
-	print -u2 -r ${command}[$1]: "${@:2}"
+	print -u2 -r ${Command}[$1]: "${@:2}"
 	((errors++))
 }
 alias err_exit='err_exit $LINENO'
 
+integer contrary=0 ignorant=0
+
 function test_glob
 {
-	typeset lineno expected arg got sep
+	typeset lineno expected drop arg got sep op val add del
+	if	[[ $1 == --* ]]
+	then	del=${1#--}
+		shift
+	fi
+	if	[[ $1 == ++* ]]
+	then	add=${1#++}
+		shift
+	fi
 	lineno=$1 expected=$2
 	shift 2
+	if	(( contrary ))
+	then	if	[[ $expected == "<Beware> "* ]]
+		then	expected=${expected#"<Beware> "}
+			expected="$expected <Beware>"
+		fi
+		if	[[ $expected == *"<aXb> <abd>"* ]]
+		then	expected=${expected/"<aXb> <abd>"/"<abd> <aXb>"}
+		fi
+	fi
 	for arg
 	do	got="$got$sep<$arg>"
 		sep=" "
 	done
+	if	(( ignorant ))
+	then	if	[[ $del ]]
+		then	got="<$del> $got"
+		fi
+		if	[[ $add ]]
+		then	expected="<$add> $expected"
+		fi
+	fi
 	if	[[ $got != "$expected" ]]
 	then	err_exit $lineno "glob: got '$got' expected '$expected'"
 	fi
@@ -54,7 +81,7 @@ function test_case
 	fi
 }
 
-command=$0
+Command=${0##*/}
 tmp=/tmp/ksh$$
 integer errors=0
 unset undefined
@@ -64,6 +91,14 @@ export LC_COLLATE=C
 mkdir $tmp || err_exit $LINENO "mkdir $tmp failed"
 trap "cd /; rm -rf $tmp" EXIT
 cd $tmp || err_exit $LINENO "cd $tmp failed"
+rm -rf *
+
+touch B b
+set -- *
+case $* in
+'b B')	contrary=1 ;;
+b|B)	ignorant=1 ;;
+esac
 rm -rf *
 
 touch a b c d abc abd abe bb bcd ca cb dd de Beware
@@ -105,7 +140,7 @@ test_glob $LINENO '<\.\./*/>' "\.\./*/"
 test_glob $LINENO '<s/\..*//>' 's/\..*//'
 test_glob $LINENO '</^root:/{s/^[!:]*:[!:]*:\([!:]*\).*$/\1/>' "/^root:/{s/^[!:]*:[!:]*:\([!:]*\).*"'$'"/\1/"
 test_glob $LINENO '<abc> <abd> <abe> <bb> <cb>' [a-c]b*
-test_glob $LINENO '<abd> <abe> <bb> <bcd> <bdir> <ca> <cb> <dd> <de>' [a-y]*[!c]
+test_glob ++Beware $LINENO '<abd> <abe> <bb> <bcd> <bdir> <ca> <cb> <dd> <de>' [a-y]*[!c]
 test_glob $LINENO '<abd> <abe>' a*[!c]
 
 touch a-b aXb
@@ -114,7 +149,7 @@ test_glob $LINENO '<a-b> <aXb>' a[X-]b
 
 touch .x .y
 
-test_glob $LINENO '<Beware> <d> <dd> <de>' [!a-c]*
+test_glob --Beware $LINENO '<Beware> <d> <dd> <de>' [!a-c]*
 
 if	mkdir a\*b 2>/dev/null
 then
@@ -136,6 +171,7 @@ then
 	test_case $LINENO '<match>' '"$undefined"' '""'
 	test_case $LINENO '<match>' 'abc' 'a["\b"]c'
 
+	rm -rf mkdir a\*b
 fi
 
 mkdir man
@@ -194,7 +230,7 @@ test_case $LINENO '<nomatch>' 'a' '[]'
 test_case $LINENO '<nomatch>' "'['" '[abc'
 test_case $LINENO '<nomatch>' '[' '[abc'
 
-test_glob $LINENO '<b> <bb> <bcd> <bdir>' b*
+test_glob ++Beware $LINENO '<b> <bb> <bcd> <bdir>' b*
 test_glob $LINENO '<Beware> <b> <bb> <bcd> <bdir>' [bB]*
 
 if	( set --nocaseglob ) 2>/dev/null
@@ -230,7 +266,7 @@ FIGNORE='.*|*'
 test_glob $LINENO '<*>' *
 
 FIGNORE='.*|*c|*e|?'
-test_glob $LINENO '<a*b> <a-b> <aXb> <abd> <bb> <bcd> <bdir> <ca> <cb> <dd> <man>' *
+test_glob $LINENO '<a-b> <aXb> <abd> <bb> <bcd> <bdir> <ca> <cb> <dd> <man>' *
 
 FIGNORE='.*|*b|*d|?'
 test_glob $LINENO '<Beware> <abc> <abe> <bdir> <ca> <de> <man>' *

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -20,7 +20,7 @@
 *                                                                      *
 ***********************************************************************/
 #include	"dthdr.h"
-static char*     Version = "\n@(#)$Id: cdt (AT&T Labs - Research) 2005-04-20 $\0\n";
+static char*     Version = "\n@(#)$Id: cdt (AT&T Research) 2005-04-20 $\0\n";
 
 /* 	Make a new dictionary
 **

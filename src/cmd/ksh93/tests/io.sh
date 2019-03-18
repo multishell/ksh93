@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,7 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
 integer Errors=0
 # cut here
 function fun
@@ -99,6 +99,14 @@ $SHELL -c '
 	print -r -- "$(cat in$$)"
 	cmp -s in$$ out$$'  2> /dev/null
 [[ $? == 0 ]] || err_exit 'builtin cat truncates files'
+cat >| script <<-\!
+print hello
+( exec 3<&- 4<&-)
+exec 3<&- 4<&-
+print world
+!
+chmod +x script
+[[ $( $SHELL ./script) == $'hello\nworld' ]] || err_exit 'closing 3 & 4 causes script to fail'
 cd ~- || err_exit "cd back failed"
 ( exec  > '' ) 2> /dev/null  && err_exit '> "" does not fail'
 unset x
@@ -208,6 +216,17 @@ then	(( $(3<#) == 0 )) || err_exit "not at position 0"
 	command exec 3<# ((40*62)) 
 	read -u3
 	[[ $REPLY == +(^) ]] || err_exit "expecting ddd..."
+	command exec 3<# ((0))
+	command exec 3<# *jjjj*
+	read -u3
+	[[  $REPLY == {39}(j) ]] || err_exit "<# pattern failed"
+	[[ $(command exec 3<## *llll*) = {39}(k) ]] || err_exit "<## pattern not saving standard output"
+	read -u3
+	[[  $REPLY == {39}(l) ]] || err_exit "<## pattern failed to position"
+	command exec 3<# *abc*
+	read -u3 && err_exit "not found pattern not positioning at eof"
+	cat /tmp/seek$$ | read -r <# *WWW*
+	[[ $REPLY == *WWWWW* ]] || err_exit '<# not working for pipes'
 else	err_exit "/tmp/seek$$: cannot open for reading"
 fi
 trap "" EXIT
@@ -226,6 +245,7 @@ $SHELL -ic '
 exitval=$?
 (( exitval ))  && err_exit  "print to unit $exitval failed"
 trap 'rm -rf /tmp/io.sh$$*' EXIT
-$SHELL -c "{ > /tmp/io.sh$$.1 ; date;} >&-" > /tmp/io.sh$$.2
+$SHELL -c "{ > /tmp/io.sh$$.1 ; date;} >&- 2> /dev/null" > /tmp/io.sh$$.2
 [[ -s /tmp/io.sh$$.1 || -s /tmp/io.sh$$.2 ]] && err_exit 'commands with standard output closed produce output'
+$SHELL -c "$SHELL -c ': 3>&1' 1>&- 2>/dev/null" && err_exit 'closed standard output not passed to subshell'
 exit $((Errors))

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: tty (AT&T Labs Research) 1999-04-10 $\n]"
+"[-?\n@(#)$Id: tty (AT&T Research) 1999-04-10 $\n]"
 USAGE_LICENSE
 "[+NAME?tty - write the name of the terminal to standard output]"
 "[+DESCRIPTION?\btty\b writes the name of the terminal that is connected "
@@ -44,7 +44,7 @@ USAGE_LICENSE
 ;
 
 
-#include <cmdlib.h>
+#include <cmd.h>
 
 int
 b_tty(int argc, char *argv[], void* context)
@@ -52,8 +52,7 @@ b_tty(int argc, char *argv[], void* context)
 	register int n,sflag=0;
 	register char *tty;
 
-	NoP(argc);
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	case 's':

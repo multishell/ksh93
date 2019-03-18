@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -31,6 +31,25 @@
 #include	"streval.h"
 #include	"variables.h"
 #include	"FEATURE/locale"
+
+#ifndef LONGLONG_MAX
+#define LONGLONG_MAX	LONG_MAX
+#endif
+
+static Sfdouble_t	Zero, NaN, Inf;
+static Namval_t Infnod =
+{
+	{ 0 },
+	"Inf",
+	NV_NOFREE|NV_INTEGER|NV_DOUBLE|NV_LONG,NV_RDONLY
+};
+
+static Namval_t NaNnod =
+{
+	{ 0 },
+	"NaN",
+	NV_NOFREE|NV_INTEGER|NV_DOUBLE|NV_LONG,NV_RDONLY
+};
 
 static Namval_t *scope(register Namval_t *np,register struct lval *lvalue,int assign)
 {
@@ -148,7 +167,37 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				int offset = staktell();
 				char *saveptr = stakfreeze(0);
 				Dt_t  *root = (lvalue->emode&ARITH_COMP)?sh.var_base:sh.var_tree;
-				np = nv_open(*ptr,root,NV_NOASSIGN|NV_VARNAME);
+				*str = c;
+				while(c=='[' || c=='.')
+				{
+					if(c=='[')
+					{
+						str = nv_endsubscript(np,cp=str,0);
+						if((c= *str)!='[' &&  c!='.')
+						{
+							str = cp;
+							c = '[';
+							break;
+						}
+					}
+					else
+						while(c= *++str, isaname(c));
+				}
+				*str = 0;
+				if(strcmp(*ptr,"Inf")==0)
+				{
+					Inf = 1.0/Zero;
+					Infnod.nvalue.ldp = &Inf;
+					np = &Infnod;
+				}
+				else if(strcmp(*ptr,"NaN")==0)
+				{
+					NaN = 0.0/Zero;
+					NaNnod.nvalue.ldp = &NaN;
+					np = &NaNnod;
+				}
+				else
+					np = nv_open(*ptr,root,NV_NOASSIGN|NV_VARNAME);
 				if(saveptr != stakptr(0))
 					stakset(saveptr,offset);
 				else
@@ -163,12 +212,18 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 				if(c=='[')
 				{
 					lvalue->flag = (str-lvalue->expr);
-					str = nv_endsubscript(np,str,0);
+					do
+						str = nv_endsubscript(np,str,0);
+					while((c= *str)=='[');
 				}
 				break;
 			}
 			if(c=='[')
-				str = nv_endsubscript(np,str,NV_ADD|NV_SUBQUOTE);
+			{
+				do
+					str = nv_endsubscript(np,str,NV_ADD|NV_SUBQUOTE);
+				while((c=*str)=='[');
+			}
 			else if(nv_isarray(np))
 				nv_putsub(np,NIL(char*),ARRAY_UNDEF);
 			if(nv_isattr(np,NV_INTEGER|NV_DOUBLE)==(NV_INTEGER|NV_DOUBLE))
@@ -192,17 +247,17 @@ static Sfdouble_t arith(const char **ptr, struct lval *lvalue, int type, Sfdoubl
 			{
 				while(*val=='0')
 					val++;
-				if(*val==0 || *val=='.')
+				if(*val==0 || *val=='.' || *val=='x' || *val=='X')
 					val--;
 			}
-			if(r==LONG_MAX && errno)
+			if(r==LONGLONG_MAX && errno)
 				c='e';
 			else
 				c = *str;
 			if(c==GETDECIMAL(0) || c=='e' || c == 'E')
 			{
 				lvalue->isfloat=1;
-				r = strtod(val,&str);
+				r = strtold(val,&str);
 			}
 			else if(lastbase==10 && val[1])
 			{

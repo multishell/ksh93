@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -35,15 +35,7 @@
 #   include	<nval.h>
 #endif /* _SH_PRIVATE */
 
-#define SH_VERSION	20030620
-
-/*
- *  The following will disappear in a future release so change all sh_fun
- *  calls to use three arguments and sh_waitnotify specify a function
- *  that will be called with three arguments.  The third argument to
- *  the waitnotify function will 0 for input, 1 for output.
- */
-#define sh_waitnotify	_sh_waitnotify
+#define SH_VERSION	20060510
 
 #undef NOT_USED
 #define NOT_USED(x)	(&x,1)
@@ -96,6 +88,7 @@ typedef union Shnode_u Shnode_t;
 #define SH_GLOBSTARS	33
 #define SH_XARGS	34
 #define SH_RC		35
+#define SH_SHOWME	36
 
 /*
  * passed as flags to builtins in Nambltin_t struct when BLT_OPTIM is on
@@ -187,6 +180,7 @@ extern int 		sh_close(int);
 extern int 		sh_dup(int);
 extern void 		sh_exit(int);
 extern int		sh_fcntl(int, int, ...);
+extern Sfio_t		*sh_fd2sfio(int);
 extern int		(*sh_fdnotify(int(*)(int,int)))(int,int);
 extern Shell_t		*sh_getinterp(void);
 extern int		sh_open(const char*, int, ...);
@@ -196,6 +190,7 @@ extern ssize_t 		sh_read(int, void*, size_t);
 extern ssize_t 		sh_write(int, const void*, size_t);
 extern off_t		sh_seek(int, off_t, int);
 extern int 		sh_pipe(int[]);
+extern mode_t 		sh_umask(mode_t);
 extern void		*sh_waitnotify(Shwait_f);
 extern Shscope_t	*sh_getscope(int,int);
 extern Shscope_t	*sh_setscope(Shscope_t*);
@@ -231,6 +226,7 @@ extern int		sh_exec(const Shnode_t*,int);
 #   define pipe(a)	sh_pipe(a)
 #   define read(a,b,c)	sh_read(a,b,c)
 #   define write(a,b,c)	sh_write(a,b,c)
+#   define umask(a)	sh_umask(a)
 #   define dup		sh_dup
 #   if _lib_lseek64
 #	define open64	sh_open

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -22,6 +22,20 @@
 /*
  * strtoll() implementation
  */
+
+#define strtoll		______strtoll
+
+#include <ast.h>
+
+#undef	strtoll
+
+#if !_UWIN
+
+#undef	_def_map_ast
+
+#include <ast_map.h>
+
+#endif
 
 #define S2I_function	strtoll
 #define S2I_number	_ast_intmax_t

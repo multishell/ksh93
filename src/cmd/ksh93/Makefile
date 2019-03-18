@@ -14,12 +14,10 @@ CATALOG = libshell
 
 SHOPT_ACCT ==  			/* accounting */
 SHOPT_ACCTFILE ==  		/* per user accounting info */
-SHOPT_APPEND == 1		/* var+=val string append */
 SHOPT_BASH ==			/* bash compatibility code */
 SHOPT_BRACEPAT == 1		/* C-shell {...,...} expansions (, required) */
 SHOPT_CMDLIB_BLTIN == 0		/* all -lcmd commands builtin */
 SHOPT_CMDLIB_DIR ==		/* SHOPT_CMDLIB_BLTIN prefix SH_CMDLIB_DIR */
-SHOPT_COMPOUND_ARRAY == 1	/* allow compound arrays */
 SHOPT_CRNL ==			/* accept <cr><nl> for <nl> */
 SHOPT_DYNAMIC == 1		/* dynamic loading for builtins */
 SHOPT_ECHOPRINT ==		/* make echo equivalent to print */
@@ -31,7 +29,6 @@ SHOPT_KIA == 1			/* shell information database generation */
 SHOPT_MULTIBYTE == 1		/* multibyte character handling */
 SHOPT_NAMESPACE == 1		/* allow namespaces */
 SHOPT_OLDTERMIO ==		/* support both TCGETA and TCGETS */
-SHOPT_OO == 1			/* object oriented extension, not complete */
 SHOPT_OPTIMIZE == 1		/* optimize loop invariants */
 SHOPT_PFSH == 1			/* solaris exec_attr(4) profile execution */
 SHOPT_P_SUID ==			/* real uid's that require -p for set[ug]id */
@@ -99,10 +96,10 @@ if  CC.HOSTTYPE == "sol([89]|[1-9][0-9]).*"
 	LDFLAGS  += $(CC.LD.LAZY) $(CC.LD.NORECORD)
 end
 
-if ! "$(-mam:N=static*)" && CC.HOSTTYPE != "sgi.mips*"
+if ! "$(-mam:N=static*)"
 	if CC.HOSTTYPE == "sol([789]|[1-9][0-9]).*"
 		LIBS_opt += +lsocket -lnsl
-	else
+	elif CC.HOSTTYPE != "sgi.mips*"
 		LIBS_opt += +lsocket +lnsl
 	end
 end
@@ -187,7 +184,7 @@ bash_pre_rc.c : bash_pre_rc.sh
 	echo ";" >> $(<)
 end
 
-:: syscall.s mamexec mamstate.c deparse.c shopen.c $(DOCFILES) \
+:: math.tab syscall.s mamexec mamstate.c deparse.c shopen.c $(DOCFILES) \
 	bash.c bash_pre_rc.sh hexpand.c mkservice.c
 
 :: shtests \
@@ -203,7 +200,9 @@ test : .NULL
 
 else
 
-test : $(BINDIR)/$(SH) $(SH) shtests
+test : test.ksh - test.shcomp
+
+test.ksh : $(BINDIR)/$(SH) $(SH) shtests
 	$(SILENT) $(CMP) $(CMPFLAGS) $(*:O=1) $(*:O=2) 2>/dev/null ||
 	echo "make install to run the tests on the latest $(SH)" >&2
 	cd $(*:O=3:P=L!:D)
@@ -214,5 +213,19 @@ test.% : %.sh $(BINDIR)/$(SH) $(SH) shtests
 	echo "make install to run the tests on the latest $(SH)" >&2
 	cd $(*:O=4:P=L!:D)
 	SHELL=$(*:O=2:P=A) $(*:O=2:P=A) $(*:O=4:B) $(*:O=1:P=A)
+
+test.shcomp : $(BINDIR)/$(SH) $(SH) shtests shcomp
+	$(SILENT) $(CMP) $(CMPFLAGS) $(*:O=1) $(*:O=2) 2>/dev/null ||
+	echo "make install to run the tests on the latest $(SH)" >&2
+	cd $(*:O=3:P=L!:D)
+	tmp=/tmp/ksh-$(tmp)
+	mkdir $tmp
+	for i in *.sh
+	do	tst=$tmp/shcomp-${i%.sh}.ksh
+		shcomp $i > $tst
+		SHELL=$(*:O=1:P=A) $(*:O=1:P=A) $(*:O=3:B) $tst
+		rm -f $tst
+	done
+	rm -rf $tmp
 
 end

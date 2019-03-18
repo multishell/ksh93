@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -21,20 +21,38 @@
 ***********************************************************************/
 #pragma prototyped
 
-/*
- * Glenn Fowler
- * AT&T Research
- *
- * character code string map
- */
+#define setenv		______setenv
 
 #include <ast.h>
-#include <ccode.h>
 
-#undef	ccmaps
+#undef	setenv
+#undef	_lib_setenv	/* procopen() calls setenv() */
 
-void*
-ccmaps(void* b, size_t n, int in, int out)
+#if _lib_setenv
+
+NoN(setenv)
+
+#else
+
+#undef	_def_map_ast
+#include <ast_map.h>
+
+#if defined(__EXPORT__)
+#define extern	__EXPORT__
+#endif
+
+extern int
+setenv(const char* name, const char* value, int overwrite)
 {
-	return CCMAPS(b, n, in, out);
+	char*	s;
+
+	if (overwrite || !getenv(name))
+	{
+		if (!(s = sfprints("%s=%s", name, value)) || !(s = strdup(s)))
+			return -1;
+		return setenviron(s) ? 0 : -1;
+	}
+	return 0;
 }
+
+#endif

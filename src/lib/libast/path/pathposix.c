@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -35,7 +35,7 @@
 
 #if _UWIN
 
-extern int	uwin_path(const char*, char*, int);
+#include <uwin.h>
 
 size_t
 pathposix(const char* path, char* buf, size_t siz)

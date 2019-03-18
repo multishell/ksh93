@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -117,6 +117,7 @@ int		type;
 
 	/* initialize discipline data */
 	disc = dt->disc; _DTDSC(disc,ky,sz,lk,cmpf);
+	dt->type &= ~DT_FOUND;
 
 	if(!obj)
 	{	if(type&(DT_NEXT|DT_PREV))
@@ -213,6 +214,9 @@ int		type;
 			}
 		}
 	}
+
+	if(t) /* found matching object */
+		dt->type |= DT_FOUND;
 
 	if(type&(DT_MATCH|DT_SEARCH|DT_VSEARCH))
 	{	if(!t)

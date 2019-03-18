@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -68,11 +68,12 @@ struct Namdisc
 struct Namfun
 {
 	const Namdisc_t	*disc;
-	short		nofree;
+	char		nofree;
+	char		funs;
 	unsigned short	dsize;
 	Namfun_t	*next;
-	Namval_t	*type;
 	char		*last;
+	Namval_t	*type;
 };
 
 struct Nambfun
@@ -89,6 +90,7 @@ struct Namarray
 	Namfun_t	hdr;
 	long		nelem;				/* number of elements */
 	void	*(*fun)(Namval_t*,const char*,int);	/* associative arrays */
+	Namval_t	*parent;		/* for multi-dimensional */
 };
 
 /* Passed as third argument to a builtin when  NV_BLTINOPT is set on node */
@@ -128,7 +130,7 @@ struct Namval
 #endif /* _NV_PRIVATE */
 };
 
-#define NV_CLASS	".sh.type."
+#define NV_CLASS	".sh.type"
 #define NV_MINSZ	(sizeof(struct Namval)-sizeof(Dtlink_t)-sizeof(char*))
 #define nv_namptr(p,n)	((Namval_t*)((char*)(p)+(n)*NV_MINSZ-sizeof(Dtlink_t)))
 
@@ -171,7 +173,8 @@ struct Namval
 					/* add node if not found */
 #define NV_ASSIGN	NV_NOFREE	/* assignment is possible */
 #define NV_NOASSIGN	0		/* backward compatibility */
-#define NV_NOARRAY	NV_ARRAY	/* array name not possible */
+#define NV_NOARRAY	0x200000	/* array name not possible */
+#define NV_IARRAY	0x400000	/* for indexed array */
 #define NV_NOREF	NV_REF		/* don't follow reference */
 #define NV_IDENT	0x80		/* name must be identifier */
 #define NV_VARNAME	0x20000		/* name must be ?(.)id*(.id) */
@@ -234,7 +237,7 @@ extern Namval_t	*nv_putsub(Namval_t*, char*, long);
 extern Namval_t	*nv_opensub(Namval_t*);
 
 /* name-value pair function prototypes */
-extern int		nv_adddisc(Namval_t*, const char**names);
+extern int		nv_adddisc(Namval_t*, const char**, Namval_t**);
 extern int		nv_clone(Namval_t*, Namval_t*, int);
 extern void 		nv_close(Namval_t*);
 extern void		*nv_context(Namval_t*);

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -29,7 +29,7 @@
 #if SHOPT_MULTIBYTE
 
 #   ifndef MARKER
-#	define MARKER		0x7fff	/* Must be invalid character */
+#	define MARKER		0xdfff	/* Must be invalid character */
 #   endif
 
     extern int sh_strchr(const char*,const char*);

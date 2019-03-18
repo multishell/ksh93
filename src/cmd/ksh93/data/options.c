@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -98,9 +98,10 @@ const Shtable_t shtab_options[] =
 	bashopt("progcomp",		SH_PROGCOMP)
 	bashopt("promptvars",		SH_PROMPTVARS)
 	"rc",				SH_RC|SH_COMMANDLINE,
-	"restricted",			SH_RESTRICTED|SH_COMMANDLINE,
+	"restricted",			SH_RESTRICTED,
 	bashopt("restricted_shell",	SH_RESTRICTED2|SH_COMMANDLINE)
 	bashopt("shift_verbose",	SH_SHIFT_VERBOSE)
+	"showme",			SH_SHOWME,
 	bashopt("sourcepath",		SH_SOURCEPATH)
 	"trackall",			SH_TRACKALL,
 	"nounset",			SH_NOUNSET,
@@ -118,12 +119,12 @@ const Shtable_t shtab_attributes[] =
 	{"-xexport",	NV_EXPORT},
 	{"-rreadonly",	NV_RDONLY},
 	{"-ttagged",	NV_TAGGED},
-	{"++long",	(NV_INTEGER|NV_DOUBLE|NV_LONG)},
+	{"-llong",	(NV_INTEGER|NV_DOUBLE|NV_LONG)},
 	{"-Eexponential",(NV_INTEGER|NV_DOUBLE|NV_EXPNOTE)},
 	{"-Ffloat",	(NV_INTEGER|NV_DOUBLE)},
-	{"++long",	(NV_INTEGER|NV_LONG)},
-	{"++short",	(NV_INTEGER|NV_SHORT)},
-	{"++unsigned",	(NV_INTEGER|NV_UNSIGN)},
+	{"-llong",	(NV_INTEGER|NV_LONG)},
+	{"-sshort",	(NV_INTEGER|NV_SHORT)},
+	{"-uunsigned",	(NV_INTEGER|NV_UNSIGN)},
 	{"-iinteger",	NV_INTEGER},
 	{"-Hfilename",	NV_HOST},
 	{"-bbinary",    NV_BINARY},
@@ -132,7 +133,8 @@ const Shtable_t shtab_attributes[] =
 	{"-Lleftjust",	NV_LJUST},
 	{"-Rrightjust",	NV_RJUST},
 	{"-uuppercase",	NV_LTOU},
-	{"-Aarray",	NV_ARRAY},
+	{"-Aassociative array",	NV_ARRAY},
+	{"-aindexed array",	NV_ARRAY},
 	{"++namespace",	NV_TABLE},
 	{"",		0}
 };

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -132,9 +132,10 @@ chresc(register const char* s, char** p)
 			c = CC_vt;
 			break;
 		case 'u':
+		case 'U':
 		case 'x':
 			c = 0;
-			q = c == 'u' ? (s + 4) : (char*)0;
+			q = c == 'u' ? (s + 4) : c == 'U' ? (s + 8) : (char*)0;
 			e = s;
 			while (!e || !q || s < q)
 			{

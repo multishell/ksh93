@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -43,6 +43,7 @@ reg int		type;
 
 	UNFLATTEN(dt);
 	disc = dt->disc; _DTDSC(disc,ky,sz,lk,cmpf);
+	dt->type &= ~DT_FOUND;
 
 	if(!obj)
 	{	if(type&(DT_LAST|DT_FIRST) )
@@ -143,6 +144,7 @@ reg int		type;
 
 	if(!r)
 		return NIL(Void_t*);
+	dt->type |= DT_FOUND;
 
 	if(type&(DT_DELETE|DT_DETACH))
 	{ dt_delete:

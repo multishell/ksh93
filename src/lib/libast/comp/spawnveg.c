@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -38,10 +38,11 @@ NoN(spawnveg)
 
 #else
 
-#if _lib_posix_spawn
+#if _lib_posix_spawn > 1	/* reports underlying exec() errors */
 
 #include <spawn.h>
 #include <error.h>
+#include <wait.h>
 
 pid_t
 spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
@@ -58,10 +59,21 @@ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
 			pgid = 0;
 		if (err = posix_spawnattr_setpgroup(&attr, pgid))
 			goto bad;
+		if (err = posix_spawnattr_setflags(&attr, POSIX_SPAWN_SETPGROUP))
+			goto bad;
 	}
 	if (err = posix_spawn(&pid, path, NiL, &attr, argv, envv ? envv : environ))
 		goto bad;
 	posix_spawnattr_destroy(&attr);
+#if _lib_posix_spawn < 2
+	if (waitpid(pid, &err, WNOHANG|WNOWAIT) == pid && EXIT_STATUS(err) == 127)
+	{
+		while (waitpid(pid, NiL, 0) == -1 && errno == EINTR);
+		if (!access(path, X_OK))
+			errno = ENOEXEC;
+		pid = -1;
+	}
+#endif
 	return pid;
  bad:
 	errno = err;
@@ -114,6 +126,7 @@ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
 #else
 
 #include <error.h>
+#include <wait.h>
 #include <sig.h>
 #include <ast_vfork.h>
 
@@ -152,6 +165,10 @@ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
 #endif
 #endif
 
+#if 0
+	if (access(path, X_OK))
+		return -1;
+#endif
 	if (!envv)
 		envv = environ;
 #if _lib_spawnve
@@ -208,41 +225,19 @@ spawnveg(const char* path, char* const argv[], char* const envv[], pid_t pgid)
 #if _real_vfork
 	if (pid != -1 && (m = *exec_errno_ptr))
 	{
-		rid = -1;
-		n = errno;
-		while (waitpid(pid, NiL, 0) == -1)
-			if (errno == ECHILD)
-			{
-				if (m != ENOEXEC)
-					rid = pid;
-				break;
-			}
-			else if (errno != EINTR)
-				break;
-		pid = -1;
-		if (rid < 0)
-			n = m;
+		while (waitpid(pid, NiL, 0) == -1 && errno == EINTR);
+		rid = pid = -1;
+		n = m;
 	}
 #else
-	if (err[0] != -1)
+	if (pid != -1 && err[0] != -1)
 	{
 		close(err[1]);
-		if (read(err[0], &m, sizeof(m)) == sizeof(m))
+		if (read(err[0], &m, sizeof(m)) == sizeof(m) && m)
 		{
-			rid = -1;
-			n = errno;
-			while (waitpid(pid, NiL, 0) == -1)
-				if (errno == ECHILD)
-				{
-					if (m != ENOEXEC)
-						rid = pid;
-					break;
-				}
-				else if (errno != EINTR)
-					break;
-			pid = -1;
-			if (rid < 0)
-				n = m;
+			while (waitpid(pid, NiL, 0) == -1 && errno == EINTR);
+			rid = pid = -1;
+			n = m;
 		}
 		close(err[0]);
 	}

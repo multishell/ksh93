@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -20,20 +20,24 @@
 *                                                                      *
 ***********************************************************************/
 #pragma prototyped
+/*
+ * strlcpy implementation
+ */
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:hide strlcpy
-#else
 #define strlcpy		______strlcpy
-#endif
 
 #include <ast.h>
 
-#if defined(__STDPP__directive) && defined(__STDPP__hide)
-__STDPP__directive pragma pp:nohide strlcpy
-#else
 #undef	strlcpy
-#endif
+
+#undef	_def_map_ast
+#include <ast_map.h>
+
+#if _lib_strlcpy
+
+NoN(strlcpy)
+
+#else
 
 /*
  * copy at most n chars from t into s
@@ -63,3 +67,5 @@ strlcpy(register char* s, register const char* t, register size_t n)
 		while (*t++);
 	return t - o - 1;
 }
+
+#endif

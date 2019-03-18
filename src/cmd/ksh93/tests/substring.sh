@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,7 +25,7 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
-Command=$0
+Command=${0##*/}
 integer Errors=0 j=4
 base=/home/dgk/foo//bar
 string1=$base/abcabcabc
@@ -489,6 +489,14 @@ pattern=00
 var=100
 [[ $( print $(( ${var%%00} )) ) == 1 ]] || err_exit "arithmetic with embeddded patterns fails"
 [[ $( print $(( ${var%%$pattern} )) ) == 1 ]] || err_exit "arithmetic with embeddded pattern variables fails"
+if	[[ ax == @(a)* ]] && [[ ${.sh.match[1]:0:${#.sh.match[1]}}  != a ]] 
+then	err_exit '${.sh.match[1]:1:${#.sh.match[1]}} not expanding correctly'
+fi
 
-
+string='foo(d:\nt\box\something)bar'
+expected='d:\nt\box\something'
+[[ ${string/*\(+([!\)])\)*/\1} == "$expected" ]] || err_exit "substring expansion failed '${string/*\(+([!\)])\)*/\1}' returned -- '$expected' expected"
+if	$SHELL -c LC_ALL=en_US.UTF-8 2>/dev/null
+then	LC_ALL=en_US.UTF-8 $SHELL -c 'b1="€€€€w€€€€"; [[ ${b1:4:1} == w ]]' || err_exit 'Multibyte ${var:offset:len} not working correctly'
+fi
 exit $((Errors))

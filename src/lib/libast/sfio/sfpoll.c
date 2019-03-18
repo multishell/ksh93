@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -231,7 +231,7 @@ int		tm;	/* time in millisecs for select/poll	*/
 
 		/* announce status */
 		if(f->disc && f->disc->exceptf)
-			(*f->disc->exceptf)(f,SF_READY,(Void_t*)status[c],f->disc);
+			(*f->disc->exceptf)(f,SF_READY,(Void_t*)(long)status[c],f->disc);
 
 		if(c > r) /* move to front of list */
 		{	fa[c] = fa[r];

@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#           Copyright (c) 1982-2006 AT&T Knowledge Ventures            #
+#           Copyright (c) 1982-2007 AT&T Knowledge Ventures            #
 #                      and is licensed under the                       #
 #                  Common Public License, Version 1.0                  #
 #                      by AT&T Knowledge Ventures                      #
@@ -25,8 +25,8 @@ function err_exit
 }
 alias err_exit='err_exit $LINENO'
 
+Command=${0##*/}
 integer Errors=0
-Command=$0
 mkdir /tmp/ksh$$
 cd /tmp/ksh$$
 trap "PATH=$PATH; cd /; rm -rf /tmp/ksh$$" EXIT
@@ -142,6 +142,12 @@ PATH=$d: whence rm > /dev/null
 if	[[ $(whence rm) != $PWD/rm ]]
 then	err_exit 'pathname not restored after scoping'
 fi
+mkdir bin
+print 'print ok' > bin/tst
+chmod +x bin/tst
+if	[[ $(PATH=$PWD/bin tst 2>/dev/null) != ok ]]
+then	err_exit '(PATH=$PWD/bin foo) does not find $PWD/bin/foo'
+fi
 cd /
 if	whence ls > /dev/null
 then	PATH=
@@ -158,6 +164,9 @@ x=$(whence rm)
 typeset foo=$(PATH=/xyz:/abc :)
 y=$(whence rm)
 [[ $x != "$y" ]] && err_exit 'PATH not restored after command substitution'
+whence getconf > /dev/null  &&  err_exit 'getconf should not be found'
+builtin /bin/getconf
+PATH=/bin
 PATH=$(getconf PATH)
 x=$(whence ls)
 PATH=.:$PWD:${x%/ls}

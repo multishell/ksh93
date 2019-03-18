@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -28,7 +28,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: id (AT&T Labs Research) 2004-06-11 $\n]"
+"[-?\n@(#)$Id: id (AT&T Research) 2004-06-11 $\n]"
 USAGE_LICENSE
 "[+NAME?id - return user identity]"
 "[+DESCRIPTION?If no \auser\a operand is specified \bid\b writes user and "
@@ -59,7 +59,7 @@ USAGE_LICENSE
 "[+SEE ALSO?\blogname\b(1), \bwho\b(1), \bgetgroups\b(2)]"
 ;
 
-#include <cmdlib.h>
+#include <cmd.h>
 
 #include "FEATURE/ids"
 
@@ -421,7 +421,7 @@ b_id(int argc, char *argv[], void* context)
 	register int	flags = 0;
 	register int	n;
 
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	while (n = optget(argv, usage)) switch (n)
 	{
 	case 'a':

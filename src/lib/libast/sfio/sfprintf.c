@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -71,11 +71,13 @@ va_list	args;
 
 	if((rv = sfvprintf(f,form,args)) < 0 )
 		return -1;
-	if(s)
-	{	if(sfputc(f, 0) < 0)
-			return -1;
-		if(n > 0)
-			memcpy(s, f->data, rv < n ? rv+1 : n);
+	if(s && n > 0)
+	{	if((rv+1) >= n)
+			n--;
+		else
+			n = rv;
+		memcpy(s, f->data, n);
+		s[n] = 0;
 	}
 
 	sfclose(f);

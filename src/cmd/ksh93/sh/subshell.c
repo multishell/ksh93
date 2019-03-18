@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -75,13 +75,14 @@ static struct subshell
 	char		*pwd;	/* present working directory */
 	const char	*shpwd;	/* saved pointer to sh.pwd */
 	void		*jobs;	/* save job info */
-	int		mask;	/* present umask */
+	mode_t		mask;	/* saved umask */
 	short		tmpfd;	/* saved tmp file descriptor */
 	short		pipefd;	/* read fd if pipe is created */
 	char		jobcontrol;
 	char		monitor;
 	unsigned char	fdstatus;
 	int		fdsaved; /* bit make for saved files */
+	int		bckpid;
 } *subshell_data;
 
 static int subenv;
@@ -235,7 +236,7 @@ static void nv_restore(struct subshell *sp)
 			mp->nvenv = np->nvenv;
 		mp->nvfun = np->nvfun;
 		mp->nvflag = np->nvflag;
-		if(mp==nv_scoped(PATHNOD))
+		if((mp==nv_scoped(PATHNOD)) || (mp==nv_scoped(IFSNOD)))
 			nv_putval(mp, np->nvalue.cp,0);
 		else
 			mp->nvalue.cp = np->nvalue.cp;
@@ -265,7 +266,7 @@ Dt_t *sh_subaliastree(int create)
 		return(sh.alias_tree);
 	if(!sp->salias && create)
 	{
-		sp->salias = dtopen(&_Nvdisc,Dtbag);
+		sp->salias = dtopen(&_Nvdisc,Dtoset);
 		dtview(sp->salias,sh.alias_tree);
 		sh.alias_tree = sp->salias;
 	}
@@ -283,7 +284,7 @@ Dt_t *sh_subfuntree(int create)
 		return(sh.fun_tree);
 	if(!sp->sfun && create)
 	{
-		sp->sfun = dtopen(&_Nvdisc,Dtbag);
+		sp->sfun = dtopen(&_Nvdisc,Dtoset);
 		dtview(sp->sfun,sh.fun_tree);
 		sh.fun_tree = sp->sfun;
 	}
@@ -362,11 +363,12 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 #endif
 	if(!shp->pwd)
 		path_pwd(0);
+	sp->bckpid = shp->bckpid;
 	if(!comsub || !sh_isoption(SH_SUBSHARE))
 	{
 		sp->shpwd = shp->pwd;
 		sp->pwd = (shp->pwd?strdup(shp->pwd):0);
-		umask(sp->mask=umask(0));
+		sp->mask = shp->mask;
 		/* save trap table */
 		shp->st.otrapcom = 0;
 		if((nsig=shp->st.trapmax*sizeof(char*))>0 || shp->st.trapcom[0])
@@ -487,6 +489,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 #endif
 	job_subrestore(sp->jobs);
 	shp->jobenv = savecurenv;
+	shp->bckpid = sp->bckpid;
 	if(sp->shpwd)	/* restore environment if saved */
 	{
 		shp->options = sp->options;
@@ -534,7 +537,8 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 		}
 		else
 			free((void*)sp->pwd);
-		umask(sp->mask);
+		if(sp->mask!=shp->mask)
+			umask(shp->mask);
 	}
 	subshell_data = sp->prev;
 	sh_argfree(argsav,0);

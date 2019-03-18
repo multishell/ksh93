@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -48,7 +48,7 @@ execvpe(const char* name, char* const argv[], char* const envv[])
 	register const char*	path = name;
 	char			buffer[PATH_MAX];
 
-	if (*path != '/' && !(path = pathpath(buffer, name, NULL, X_OK|PATH_REGULAR)))
+	if (*path != '/' && !(path = pathpath(buffer, name, NULL, PATH_REGULAR|PATH_EXECUTE)))
 		path = name;
 	execve(path, argv, envv);
 	if (errno == ENOEXEC)

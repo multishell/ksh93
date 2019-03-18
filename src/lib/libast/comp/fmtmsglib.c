@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -258,7 +258,12 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 				n = MM_LABEL_1_MAX;
 			sfprintf(sp, "%*.*s", n, n, s);
 		}
-		strcpy(lab, sfstruse(sp));
+		if (!(s = sfstruse(sp)))
+		{
+			sfstrclose(sp);
+			return MM_NOTOK;
+		}
+		strcpy(lab, s);
 	}
 	for (;;)
 	{
@@ -320,8 +325,7 @@ fmtmsg(long classification, const char* label, int severity, const char* text, c
 			sfputc(sp, '\n');
 		}
 		n = sfstrtell(sp);
-		s = sfstruse(sp);
-		if (write(fd, s, n) != n)
+		if (!(s = sfstruse(sp)) || write(fd, s, n) != n)
 			r |= c;
 	}
 	sfstrclose(sp);

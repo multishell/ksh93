@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -44,12 +44,16 @@ vfwprintf(Sfio_t* f, const wchar_t* fmt, va_list args)
 			wcstombs(m, fmt, n + 1);
 			sfvprintf(t, m, args);
 			free(m);
-			x = sfstruse(t);
-			n = mbstowcs(NiL, x, 0);
-			if (w = (wchar_t*)sfreserve(f, n * sizeof(wchar_t) + 1, 0))
-				v = mbstowcs(w, x, n + 1);
-			else
+			if (!(x = sfstruse(t)))
 				v = -1;
+			else
+			{
+				n = mbstowcs(NiL, x, 0);
+				if (w = (wchar_t*)sfreserve(f, n * sizeof(wchar_t) + 1, 0))
+					v = mbstowcs(w, x, n + 1);
+				else
+					v = -1;
+			}
 			sfstrclose(t);
 		}
 		else

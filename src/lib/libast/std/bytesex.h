@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -23,32 +23,21 @@
  * linux/gnu compatibility
  */
 
-#ifndef _ENDIAN_H
-#define _ENDIAN_H
+#ifndef _BYTESEX_H
+#define _BYTESEX_H
 
-#include <bytesex.h>
+#include <ast_common.h>
 
-#define	__LITTLE_ENDIAN	1234
-#define	__BIG_ENDIAN	4321
-#define	__PDP_ENDIAN	3412
+#undef __BYTE_ORDER
 
-#if defined (__USE_BSD) && !defined(__STRICT_ANSI__)
-
-#ifndef LITTLE_ENDIAN
-#define	LITTLE_ENDIAN	__LITTLE_ENDIAN
+#if ( _ast_intswap & 3 ) == 3
+#define __BYTE_ORDER	__LITTLE_ENDIAN
+#else
+#if ( _ast_intswap & 3 ) == 1
+#define __BYTE_ORDER	__PDP_ENDIAN
+#else
+#define __BYTE_ORDER	__BIG_ENDIAN
 #endif
-
-#ifndef BIG_ENDIAN
-#define	BIG_ENDIAN	__BIG_ENDIAN
-#endif
-
-#ifndef PDP_ENDIAN
-#define	PDP_ENDIAN	__PDP_ENDIAN
-#endif
-
-#undef	BYTE_ORDER
-#define	BYTE_ORDER	__BYTE_ORDER
-
 #endif
 
 #endif

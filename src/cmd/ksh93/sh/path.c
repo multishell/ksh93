@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -39,13 +39,13 @@
 #if SHOPT_PFSH 
 #   ifdef _hdr_exec_attr
 #	include	<exec_attr.h>
+#   else
+#	undef SHOPT_PFSH
 #   endif
-#endif
-#ifndef ARG_MAX
-#   define ARG_MAX	4096
 #endif
 
 #define RW_ALL	(S_IRUSR|S_IRGRP|S_IROTH|S_IWUSR|S_IWGRP|S_IWOTH)
+#define LIBCMD	"cmd"
 
 
 static int		canexecute(char*,int);
@@ -53,6 +53,21 @@ static void		funload(Shell_t*,int,const char*);
 static void		exscript(Shell_t*,char*, char*[], char**);
 static int		path_chkpaths(Pathcomp_t*,Pathcomp_t*,Pathcomp_t*,int);
 
+static const char	*std_path;
+
+static int onstdpath(const char *name)
+{
+	register const char *cp = std_path, *sp;
+	if(cp)
+		while(*cp)
+		{
+			for(sp=name; *sp && (*cp == *sp); sp++,cp++);
+			if(*sp==0 && (*cp==0 || *cp==':'))
+				return(1);
+			while(*cp && *cp++!=':');
+		}
+	return(0);
+}
 
 static int path_pfexecve(const char *path, char *argv[],char *const envp[])
 {
@@ -99,10 +114,10 @@ static int path_pfexecve(const char *path, char *argv[],char *const envp[])
 static pid_t _spawnveg(const char *path, char* const argv[], char* const envp[], pid_t pid)
 {
 	int waitsafe = job.waitsafe;
-	job.in_critical++;
+	job_lock();
 	pid = spawnveg(path,argv,envp,pid);
 	job.waitsafe = waitsafe;
-	job.in_critical--;
+	job_unlock();
 	return(pid);
 }
 /*
@@ -112,18 +127,15 @@ static pid_t _spawnveg(const char *path, char* const argv[], char* const envp[],
  */
 static pid_t path_xargs(const char *path, char *argv[],char *const envp[], int spawn)
 {
-	static long argmax;
 	register char *cp, **av, **xv;
 	char **avlast= &argv[sh.xargmax], **saveargs=0;
 	char *const *ev;
 	long size, left;
 	int nlast=1,n,exitval=0;
 	pid_t pid;
-	if(!argmax && (argmax = sysconf(_SC_ARG_MAX)) < 0)
-		argmax = ARG_MAX;
 	if(sh.xargmin < 0)
 		return((pid_t)-1);
-	size = argmax-1024;
+	size = sh.lim.arg_max-1024;
 	for(ev=envp; cp= *ev; ev++)
 		size -= strlen(cp)-1;
 	for(av=argv; (cp= *av) && av< &argv[sh.xargmin]; av++)  
@@ -247,7 +259,20 @@ skip:
 
 static void free_bltin(Namval_t *np,void *data)
 {
-	if((void*)np->nvenv==data)
+	register Pathcomp_t *pp= (Pathcomp_t*)data;
+	if(pp->flags&PATH_STD_DIR)
+	{
+		int offset=staktell();;
+		if(strcmp(pp->name,"/bin")==0 || memcmp(pp->name,np->nvname,pp->len) || np->nvname[pp->len]!='/')
+			return;
+		stakputs("/bin");
+		stakputs(np->nvname+pp->len+1);
+		stakputc(0);
+		sh_addbuiltin(stakptr(offset),np->nvalue.bfp,NiL);
+		stakseek(offset);
+		return;
+	}
+	if((void*)np->nvenv==pp->bltin_lib)
 		dtdelete(sh_bltin_tree(),np);
 }
 
@@ -264,10 +289,13 @@ void  path_delete(Pathcomp_t *first)
 		{
 			if(pp->lib)
 				free((void*)pp->lib);
-			if(pp->bltin_lib)
+			if(pp->blib)
+				free((void*)pp->blib);
+			if(pp->bltin_lib || (pp->flags&PATH_STD_DIR))
 			{
-				nv_scan(sh_bltin_tree(),free_bltin,pp->bltin_lib,0,0);
-				dlclose(pp->bltin_lib);
+				nv_scan(sh_bltin_tree(),free_bltin,pp,0,0);
+				if(pp->bltin_lib)
+					dlclose(pp->bltin_lib);
 			}
 			free((void*)pp);
 			if(old)
@@ -374,8 +402,7 @@ Pathcomp_t *path_nextcomp(register Pathcomp_t *pp, const char *name, Pathcomp_t 
 
 static Pathcomp_t* defpath_init(Shell_t *shp)
 {
-	const char *val = astconf("PATH",NIL(char*),NIL(char*));
-	Pathcomp_t *pp = (void*)path_addpath((Pathcomp_t*)0,(val?val:e_defpath),PATH_PATH);
+	Pathcomp_t *pp = (void*)path_addpath((Pathcomp_t*)0,(std_path),PATH_PATH);
 	if(shp->defpathlist = (void*)pp)
 		pp->shp = shp;
 	return(pp);
@@ -385,6 +412,8 @@ static void path_init(Shell_t *shp)
 {
 	const char *val;
 	Pathcomp_t *pp;
+	if(!std_path && !(std_path=astconf("PATH",NIL(char*),NIL(char*))))
+		std_path = e_defpath;
 	if(val=nv_scoped((PATHNOD))->nvalue.cp)
 	{
 		pp = (void*)path_addpath((Pathcomp_t*)shp->pathlist,val,PATH_PATH);
@@ -621,6 +650,7 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 	int		noexec=0;
 	Pathcomp_t	*pp,*oldpp;
 	Shell_t		*shp = &sh;
+	Namval_t	*np;
 	shp->path_err = ENOENT;
 	if(!(pp=path_get("")))
 		return(0);
@@ -635,15 +665,36 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 			return(endpath);
 		if(!isfun)
 		{
-			if(oldpp->bltin_lib)
+			if(nv_search(stakptr(PATH_OFFSET),sh.bltin_tree,0))
+				return(oldpp);
+			if(oldpp->blib)
 			{
 				typedef int (*Fptr_t)(int, char*[], void*);
-				Namval_t *np;
 				Fptr_t addr;
 				int n = staktell();
+				char *cp;
 				stakputs("b_");
 				stakputs(name);
 				stakputc(0);
+				if(!oldpp->bltin_lib)
+				{
+					if(cp = strrchr(oldpp->blib,'/'))
+						cp++;
+					else
+						cp = oldpp->blib;
+					if(strcmp(cp,LIBCMD)==0 && (addr=(Fptr_t)dlllook((void*)0,stakptr(n))))
+					{
+						np = sh_addbuiltin(stakptr(PATH_OFFSET),addr,NiL);
+						np->nvfun = (Namfun_t*)np->nvname;
+						return(oldpp);
+					}
+#if (_AST_VERSION>=20040404)
+					if (oldpp->bltin_lib = dllplug(SH_ID, oldpp->blib, NiL, RTLD_LAZY, NiL, 0))
+#else
+					if (oldpp->bltin_lib = dllfind(oldpp->blib, NiL, RTLD_LAZY, NiL, 0))
+#endif
+						sh_addlib(oldpp->bltin_lib);
+				}
 				if((addr=(Fptr_t)dlllook(oldpp->bltin_lib,stakptr(n))) &&
 				   (!(np = sh_addbuiltin(stakptr(PATH_OFFSET),NiL,NiL)) || np->nvalue.bfp!=addr) &&
 				   (np = sh_addbuiltin(stakptr(PATH_OFFSET),addr,NiL)))
@@ -652,8 +703,6 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 					return(oldpp);
 				}
 			}
-			else if((oldpp->flags & PATH_BUILTIN_SH) && nv_search(stakptr(PATH_OFFSET),sh.bltin_tree,0))
-				return(oldpp);
 		}
 		f = canexecute(stakptr(PATH_OFFSET),isfun);
 		if(isfun && f>=0)
@@ -662,6 +711,20 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 			close(f);
 			f = -1;
 			return(0);
+		}
+		else if(f>=0 && (oldpp->flags & PATH_STD_DIR))
+		{
+			int offset = staktell();
+			stakputs("/bin/");
+			stakputs(name);
+			stakputc(0);
+			np = nv_search(stakptr(offset),sh.bltin_tree,0);
+			stakseek(offset);
+			if(np)
+			{
+				np = sh_addbuiltin(stakptr(PATH_OFFSET),np->nvalue.bfp,NiL);
+				np->nvfun = (Namfun_t*)np->nvname;
+			}
 		}
 		if(!pp || f>=0)
 			break;
@@ -841,6 +904,7 @@ pid_t path_spawn(const char *opath,register char **argv, char **envp, Pathcomp_t
 		{
 			buff[n] = 0;
 			n = PATH_OFFSET;
+			r = 0;
 			if((v=strrchr(path,'/')) && *buff!='/')
 			{
 				if(buff[0]=='.' && buff[1]=='.' && (r = strlen(path) + 1) <= PATH_MAX)
@@ -868,9 +932,8 @@ pid_t path_spawn(const char *opath,register char **argv, char **envp, Pathcomp_t
 		stakseek(0);
 	}
 #endif
-	if(libenv)
+	if(libenv && (v = strchr(libenv,'=')))
 	{
-		v = strchr(libenv,'=');
 		n = v - libenv;
 		*v = 0;
 		np = nv_open(libenv,shp->var_tree,0);
@@ -1048,7 +1111,7 @@ static void exscript(Shell_t *shp,register char *path,register char *argv[],char
 		static char name[] = "/tmp/euidXXXXXXXXXX";
 		register int n;
 		register uid_t euserid;
-		char *savet;
+		char *savet=0;
 		struct stat statb;
 		if((n=sh_open(path,O_RDONLY,0)) >= 0)
 		{
@@ -1085,7 +1148,8 @@ static void exscript(Shell_t *shp,register char *path,register char *argv[],char
 		 */
 		if((n=open(path,O_RDONLY,0)) < 0)
 			errormsg(SH_DICT,ERROR_system(1),e_open,path);
-		*argv++ = savet;
+		if(savet)
+			*argv++ = savet;
 	openok:
 		shp->infd = n;
 	}
@@ -1242,11 +1306,20 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 	else if(stat(name,&statb)<0 || !S_ISDIR(statb.st_mode))
 	{
 		if(*name=='/')
-			return(first);
-		flag |= PATH_SKIP;
+		{
+			if(strcmp(name,SH_CMDLIB_DIR))
+				return(first);
+			statb.st_dev = 1;
+		}
+		else
+		{
+			flag |= PATH_SKIP;
+			statb.st_dev = 0;
+		}
 		statb.st_ino = 0;
-		statb.st_dev = 0;
 	}
+	if(*name=='/' && onstdpath(name))
+		flag |= PATH_STD_DIR;
 	for(pp=first, oldpp=0; pp; oldpp=pp, pp=pp->next)
 	{
 		if(pp->ino==statb.st_ino && pp->dev==statb.st_dev)
@@ -1271,9 +1344,15 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 	else
 		first = pp;
 	pp->flags = flag;
-	if(flag!=PATH_PATH)
+	if(pp->ino==0 && pp->dev==1)
+	{
+		pp->flags |= PATH_BUILTIN_LIB;
+		pp->blib = malloc(4);
+		strcpy(pp->blib,LIBCMD);
 		return(first);
-	path_chkpaths(first,old,pp,offset);
+	}
+	if((flag&(PATH_PATH|PATH_SKIP))==PATH_PATH)
+		path_chkpaths(first,old,pp,offset);
 	return(first);
 }
 
@@ -1332,22 +1411,20 @@ static int path_chkpaths(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int 
 				{
 					pp->flags |= PATH_BUILTIN_LIB;
 					if (*ep == '.' && !*(ep + 1))
-						pp->flags |= PATH_BUILTIN_SH;
+						pp->flags |= PATH_STD_DIR;
 					else
 					{
-#if (_AST_VERSION>=20040404)
-						if (*ep != '/' && (sp = malloc(k = pp->len + strlen(ep) + 2)))
-							sfsprintf(sp, k, "%s/%s", pp->name, ep);
-						else
-							sp = ep;
-						if (pp->bltin_lib = dllplug("ksh", sp, NiL, RTLD_LAZY, NiL, 0))
-							sh_addlib(pp->bltin_lib);
-						if (sp != ep)
-							free(sp);
-#else
-						if (pp->bltin_lib = dllfind(ep, NiL, RTLD_LAZY, NiL, 0))
-							sh_addlib(pp->bltin_lib);
-#endif
+						k = strlen(ep)+1;
+						if (*ep != '/')
+							k +=  pp->len+1;
+						pp->blib = sp = malloc(k);
+						if (*ep != '/')
+						{
+							strcpy(pp->blib,pp->name);
+							sp += pp->len;
+							*sp++ = '/';
+						}
+						strcpy(sp,ep);
 					}
 				}
 			}
@@ -1483,7 +1560,7 @@ void path_newdir(Pathcomp_t *first)
 			if(pp->ino==pq->ino && pp->dev==pq->dev)
 				pq->flags |= PATH_SKIP;
 		}
-		if(pp->flags==PATH_PATH)
+		if((pp->flags&(PATH_PATH|PATH_SKIP))==PATH_PATH)
 		{
 			/* try to insert .paths component */
 			int offset = staktell();

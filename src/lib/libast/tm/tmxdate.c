@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -67,6 +67,7 @@ range(register char* s, char** e, char* set, int lo, int hi)
 {
 	int	n;
 	int	m;
+	int	i;
 	char*	t;
 
 	while (isspace(*s) || *s == '_')
@@ -82,17 +83,24 @@ range(register char* s, char** e, char* set, int lo, int hi)
 		n = strtol(s, &t, 10);
 		if (s == t || n < lo || n > hi)
 			return -1;
+		i = 1;
 		if (*(s = t) == '-')
 		{
 			m = strtol(++s, &t, 10);
 			if (s == t || m < n || m > hi)
 				return -1;
-			s = t;
+			if (*(s = t) == '/')
+			{
+				i = strtol(++s, &t, 10);
+				if (s == t || i < 1)
+					return -1;
+				s = t;
+			}
 		}
 		else
 			m = n;
-		while (n <= m)
-			set[n++] = 1;
+		for (; n <= m; n += i)
+			set[n] = 1;
 		if (*s != ',')
 			break;
 		s++;
@@ -201,6 +209,7 @@ tmxdate(register const char* s, char** e, Time_t now)
 			if (isdigit(*++s))
 			{
 				now = strtoull(s, &t, 0);
+			sns:
 				if (*(s = t) == '.')
 				{
 					fix = 0;
@@ -257,7 +266,7 @@ tmxdate(register const char* s, char** e, Time_t now)
 				else if (!isdigit(n))
 					break;
 				else
-					while ((n = *++s) == ',' || n == '-' || isdigit(n));
+					while ((n = *++s) == ',' || n == '-' || n == '/' || isdigit(n));
 				if (n != ' ' && n != '_' && n != ';')
 				{
 					if (!n)
@@ -417,7 +426,11 @@ tmxdate(register const char* s, char** e, Time_t now)
 		if (isdigit(*s))
 		{
 			n = strtol(s, &t, 10);
-			w = t - s;
+			if ((w = t - s) && *t == '.' && isdigit(*(t + 1)) && isdigit(*(t + 2)) && isdigit(*(t + 3)))
+			{
+				now = n;
+				goto sns;
+			}
 			u = t + (*t == '-');
 			if ((w == 2 || w == 4) && (*u == 'W' || *u == 'w') && isdigit(*(u + 1)))
 			{

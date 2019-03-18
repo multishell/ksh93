@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -204,9 +204,9 @@ static int p_redirect(register const struct ionod *iop)
 		}
 		else
 			sfputu(outfile,0);
-		iop = iop->ionxt;
 		if(iop->iovname)
 			p_string(iop->iovname);
+		iop = iop->ionxt;
 	}
 	return(sfputl(outfile,-1));
 }

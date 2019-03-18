@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1992-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1992-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -27,7 +27,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: head (AT&T Labs Research) 2005-05-17 $\n]"
+"[-?\n@(#)$Id: head (AT&T Research) 2006-09-27 $\n]"
 USAGE_LICENSE
 "[+NAME?head - output beginning portion of one or more files ]"
 "[+DESCRIPTION?\bhead\b copies one or more input files to standard "
@@ -65,12 +65,12 @@ USAGE_LICENSE
 "[+SEE ALSO?\bcat\b(1), \btail\b(1)]"
 ;
 
-#include <cmdlib.h>
+#include <cmd.h>
 
 int
 b_head(int argc, register char** argv, void* context)
 {
-	static char header_fmt[] = "\n==> %s <==\n";
+	static const char	header_fmt[] = "\n==> %s <==\n";
 
 	register Sfio_t*	fp;
 	register char*		cp;
@@ -78,9 +78,9 @@ b_head(int argc, register char** argv, void* context)
 	register off_t		skip = 0;
 	register int		delim = '\n';
 	int			header = 1;
-	char*			format = header_fmt+1;
+	char*			format = (char*)header_fmt+1;
 
-	cmdinit(argv, context, ERROR_CATALOG, 0);
+	cmdinit(argc, argv, context, ERROR_CATALOG, 0);
 	for (;;)
 	{
 		switch (optget(argv, usage))
@@ -89,6 +89,11 @@ b_head(int argc, register char** argv, void* context)
 			delim = -1;
 			/*FALLTHROUGH*/
 		case 'n':
+			if (opt_info.offset && argv[opt_info.index][opt_info.offset] == 'c')
+			{
+				delim = -1;
+				opt_info.offset++;
+			}
 			if ((keep = opt_info.number) <=0)
 				error(2, "%s: %I*d: positive numeric option argument expected", opt_info.name, sizeof(keep), keep);
 			continue;
@@ -131,7 +136,7 @@ b_head(int argc, register char** argv, void* context)
 		}
 		if (argc > header)
 			sfprintf(sfstdout, format, cp);
-		format = header_fmt;
+		format = (char*)header_fmt;
 		if (skip > 0)
 			sfmove(fp, NiL, skip, delim);
 		if (sfmove(fp, sfstdout, keep, delim) < 0 && errno != EPIPE)

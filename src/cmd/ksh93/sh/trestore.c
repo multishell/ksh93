@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -163,7 +163,8 @@ static Shnode_t *r_tree()
 					t->lst.lstrit = (Shnode_t*)r_arg();
 			}
 	}
-	t->tre.tretyp = type;
+	if(t)
+		t->tre.tretyp = type;
 	return(t);
 }
 

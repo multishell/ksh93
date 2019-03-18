@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1985-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1985-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -29,7 +29,7 @@
  * the sum of the hacks {s5,v10,planix} is _____ than the parts
  */
 
-static const char id[] = "\n@(#)$Id: magic library (AT&T Research) 2004-10-31 $\0\n";
+static const char id[] = "\n@(#)$Id: magic library (AT&T Research) 2007-01-08 $\0\n";
 
 static const char lib[] = "libast:magic";
 
@@ -96,7 +96,7 @@ typedef struct Entry			/* magic file entry		*/
 	char		swap;		/* forced swap order		*/
 } Entry_t;
 
-#define CC_BIT		4
+#define CC_BIT		5
 
 #if (CC_MAPS*CC_BIT) <= (CHAR_BIT*2)
 typedef unsigned short Cctype_t;
@@ -104,10 +104,11 @@ typedef unsigned short Cctype_t;
 typedef unsigned long Cctype_t;
 #endif
 
-#define CC_text		0x1
-#define CC_control	0x2
-#define CC_latin	0x4
-#define CC_binary	0x8
+#define CC_text		0x01
+#define CC_control	0x02
+#define CC_latin	0x04
+#define CC_binary	0x08
+#define CC_utf_8	0x10
 
 #define CC_notext	CC_text		/* CC_text is flipped before checking */
 
@@ -794,8 +795,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			if (!(t = strrchr(file, '.')))
 				goto next;
 			sfprintf(mp->tmp, "/reg/classes_root/%s", t);
-			t = sfstruse(mp->tmp);
-			if (!(rp = sfopen(NiL, t, "r")))
+			if (!(t = sfstruse(mp->tmp)) || !(rp = sfopen(NiL, t, "r")))
 				goto next;
 			*ep->desc = 0;
 			*ep->mime = 0;
@@ -812,8 +812,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 				else
 				{
 					sfprintf(mp->tmp, "/reg/classes_root/%s", t);
-					e = sfstruse(mp->tmp);
-					if (gp = sfopen(NiL, e, "r"))
+					if ((e = sfstruse(mp->tmp)) && (gp = sfopen(NiL, e, "r")))
 					{
 						ep->desc = vmnewof(mp->vm, ep->desc, char, strlen(t), 1);
 						strcpy(ep->desc, t);
@@ -1368,6 +1367,47 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 	}
 	if (flags & (CC_binary|CC_notext))
 	{
+		b = (unsigned char*)mp->fbuf;
+		e = b + mp->fbsz;
+		n = 0;
+		for (;;)
+		{
+			c = *b++;
+			q = 0;
+			while (c & 0x80)
+			{
+				c <<= 1;
+				q++;
+			}
+			switch (q)
+			{
+			case 4:
+				if (b < e && (*b++ & 0xc0) != 0x80)
+					break;
+			case 3:
+				if (b < e && (*b++ & 0xc0) != 0x80)
+					break;
+			case 2:
+				if (b < e && (*b++ & 0xc0) != 0x80)
+					break;
+				n = 1;
+			case 0:
+				if (b >= e)
+				{
+					if (n)
+					{
+						flags &= ~(CC_binary|CC_notext);
+						flags |= CC_utf_8;
+					}
+					break;
+				}
+				continue;
+			}
+			break;
+		}
+	}
+	if (flags & (CC_binary|CC_notext))
+	{
 		unsigned long	d = 0;
 
 		if ((q = mp->fbsz / UCHAR_MAX) >= 2)
@@ -1400,7 +1440,9 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 		return s;
 	}
 	mp->mime = "text/plain";
-	if (flags & CC_latin)
+	if (flags & CC_utf_8)
+		s = (flags & CC_control) ? T("utf-8 text with control characters") : T("utf-8 text");
+	else if (flags & CC_latin)
 		s = (flags & CC_control) ? T("latin text with control characters") : T("latin text");
 	else
 		s = (flags & CC_control) ? T("text with control characters") : T("text");
@@ -2141,7 +2183,8 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 				s += n - 1;
 			}
 			sfwrite(mp->tmp, s, e - s);
-			s = sfstruse(mp->tmp);
+			if (!(s = sfstruse(mp->tmp)))
+				goto nospace;
 		}
 		if (!*s || streq(s, "-"))
 			s = MAGIC_FILE;
@@ -2153,7 +2196,8 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 				{
 					strcpy(mp->fbuf, s);
 					sfprintf(mp->tmp, "%s/%s", MAGIC_DIR, mp->fbuf);
-					s = sfstruse(mp->tmp);
+					if (!(s = sfstruse(mp->tmp)))
+						goto nospace;
 					if (!(t = pathpath(mp->fbuf, s, "", PATH_REGULAR|PATH_READ)))
 						goto next;
 				}
@@ -2187,6 +2231,10 @@ magicload(register Magic_t* mp, const char* file, unsigned long flags)
 		return -1;
 	}
 	return 0;
+ nospace:
+	if (mp->disc->errorf)
+		(*mp->disc->errorf)(mp, mp->disc, 3, "out of space");
+	return -1;
 }
 
 /*
@@ -2296,7 +2344,8 @@ magictype(register Magic_t* mp, Sfio_t* fp, const char* file, register struct st
 				sfprintf(mp->tmp, ", setgid=%s", fmtgid(st->st_gid));
 			if (st->st_mode & S_ISVTX)
 				sfprintf(mp->tmp, ", sticky");
-			s = sfstruse(mp->tmp);
+			if (!(s = sfstruse(mp->tmp)))
+				s = T("out of space");
 		}
 	}
 	if (mp->flags & MAGIC_MIME)

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*           Copyright (c) 1982-2006 AT&T Knowledge Ventures            *
+*           Copyright (c) 1982-2007 AT&T Knowledge Ventures            *
 *                      and is licensed under the                       *
 *                  Common Public License, Version 1.0                  *
 *                      by AT&T Knowledge Ventures                      *
@@ -100,7 +100,7 @@ const struct shtable3 shtab_builtins[] =
 	"jobs",		NV_BLTIN|BLT_ENV,		bltin(jobs),
 #endif	/* JOBS */
 	"false",	NV_BLTIN|BLT_ENV,		bltin(false),
-	"getconf",	NV_BLTIN|BLT_ENV,		bltin(getconf),
+	"/bin/getconf",	NV_BLTIN|BLT_ENV,		bltin(getconf),
 	"getopts",	NV_BLTIN|BLT_ENV,		bltin(getopts),
 	"print",	NV_BLTIN|BLT_ENV,		bltin(print),
 	"printf",	NV_BLTIN|NV_NOFREE,		bltin(printf),
@@ -132,28 +132,13 @@ const struct shtable3 shtab_builtins[] =
 	"/bin/dirname",	NV_BLTIN|NV_NOFREE,		bltin(dirname),
 	"/bin/head",	NV_BLTIN|NV_NOFREE,		bltin(head),
 	"/bin/mkdir",	NV_BLTIN|NV_NOFREE,		bltin(mkdir),
-#   if defined(_usr_bin_logname)  && !defined(_bin_logname)
-	"/usr/bin/logname",	NV_BLTIN|NV_NOFREE,	bltin(logname),
-#   else
 	"/bin/logname",	NV_BLTIN|NV_NOFREE,		bltin(logname),
-#   endif
 	"/bin/cat",	NV_BLTIN|NV_NOFREE,		bltin(cat),
 	"/bin/cmp",	NV_BLTIN|NV_NOFREE,		bltin(cmp),
-#   if defined(_usr_bin_cut)  && !defined(_bin_cut)
-	"/usr/bin/cut",	NV_BLTIN|NV_NOFREE,		bltin(cut),
-#   else
 	"/bin/cut",	NV_BLTIN|NV_NOFREE,		bltin(cut),
-#   endif
 	"/bin/uname",	NV_BLTIN|NV_NOFREE,		bltin(uname),
-#   if defined(_usr_bin_wc)  && !defined(_bin_wc)
-	"/usr/bin/wc",	NV_BLTIN|NV_NOFREE,		bltin(wc),
-#   else
-#	if defined(_usr_ucb_wc)  && !defined(_bin_wc)
-	   "/usr/ucb/wc", NV_BLTIN|NV_NOFREE,		bltin(wc),
-#	else
-	   "/bin/wc",	NV_BLTIN|NV_NOFREE,		bltin(wc),
-#	endif
-#   endif
+	"/bin/wc",	NV_BLTIN|NV_NOFREE,		bltin(wc),
+	"/bin/sync",	NV_BLTIN|NV_NOFREE,		bltin(sync),
 #endif
 	"",		0, 0 
 };
@@ -239,6 +224,8 @@ const char sh_set[] =
 			"command to exit with non-zero exit status, or will "
 			"be zero if all commands return zero exit status.]"
 		"[+privileged?Equivalent to \b-p\b.]"
+		"[+showme?Simple commands preceded by a \b;\b will be traced "
+			"as if \b-x\b were enabled but not executed.]"
 		"[+trackall?Equivalent to \b-h\b.]"
 		"[+verbose?Equivalent to \b-v\b.]"
 		"[+vi?Enables/disables \bvi\b editing mode.]"
@@ -253,6 +240,8 @@ const char sh_set[] =
 	"whenever the real and effective user id is not equal or the "
 	"real and effective group id is not equal.  User profiles are "
 	"not processed when \b-p\b is enabled.]"
+"[r?restricted.  Enables restricted shell.  This option cannot be unset once "
+	"enabled.]"
 "[t?Obsolete.  The shell reads one command and then exits.]"
 "[u?If enabled, the shell displays an error message when it tries to expand "
 	"a variable that is unset.]"
@@ -278,7 +267,7 @@ const char sh_set[] =
 ;
 
 const char sh_optbreak[] =
-"[-1c?\n@(#)$Id: break (AT&T Labs Research) 1999-04-07 $\n]"
+"[-1c?\n@(#)$Id: break (AT&T Research) 1999-04-07 $\n]"
 USAGE_LICENSE
 "[+NAME?break - break out of loop ]"
 "[+DESCRIPTION?\bbreak\b is a shell special built-in that exits the "
@@ -296,7 +285,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optcont[] =
-"[-1c?\n@(#)$Id: continue (AT&T Labs Research) 1999-04-07 $\n]"
+"[-1c?\n@(#)$Id: continue (AT&T Research) 1999-04-07 $\n]"
 USAGE_LICENSE
 "[+NAME?continue - continue execution at top of the loop]"
 "[+DESCRIPTION?\bcontinue\b is a shell special built-in that continues " 
@@ -315,7 +304,7 @@ USAGE_LICENSE
 
 const char sh_optalarm[]	= "r [varname seconds]";
 const char sh_optalias[] =
-"[-1c?\n@(#)$Id: alias (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: alias (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?alias - define or display aliases]"
 "[+DESCRIPTION?\balias\b creates or redefines alias definitions "
@@ -357,7 +346,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optbuiltin[] =
-"[-1c?\n@(#)$Id: builtin (AT&T Labs Research) 1999-07-10 $\n]"
+"[-1c?\n@(#)$Id: builtin (AT&T Research) 1999-07-10 $\n]"
 USAGE_LICENSE
 "[+NAME?builtin - add, delete, or display shell built-ins]"
 "[+DESCRIPTION?\bbuiltin\b can be used to add, delete, or display "
@@ -410,7 +399,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optcd[] =
-"[-1c?\n@(#)$Id: cd (AT&T Labs Research) 1999-06-05 $\n]"
+"[-1c?\n@(#)$Id: cd (AT&T Research) 1999-06-05 $\n]"
 USAGE_LICENSE
 "[+NAME?cd - change working directory ]"
 "[+DESCRIPTION?\bcd\b changes the current working directory of the "
@@ -463,7 +452,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optcommand[] =
-"[-1c?\n@(#)$Id: command (AT&T Labs Research) 2003-08-01 $\n]"
+"[-1c?\n@(#)$Id: command (AT&T Research) 2003-08-01 $\n]"
 USAGE_LICENSE
 "[+NAME?command - execute a simple command]"
 "[+DESCRIPTION?Without \b-v\b or \b-V\b,  \bcommand\b executes \acommand\a "
@@ -499,7 +488,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optdot[]	 =
-"[-1c?@(#)$Id: \b.\b (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: \b.\b (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?\b.\b - execute commands in the current environment]"
 "[+DESCRIPTION?\b.\b is a special built-in command that executes commands "
@@ -535,7 +524,7 @@ USAGE_LICENSE
 #endif /* !ECHOPRINT */
 
 const char sh_opteval[] =
-"[-1c?\n@(#)$Id: eval (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: eval (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?eval - create a shell command and process it]"
 "[+DESCRIPTION?\beval\b is a shell special built-in command that constructs "
@@ -555,7 +544,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optexec[] =
-"[-1c?\n@(#)$Id: exec (AT&T Labs Research) 1999-07-10 $\n]"
+"[-1c?\n@(#)$Id: exec (AT&T Research) 1999-07-10 $\n]"
 USAGE_LICENSE
 "[+NAME?exec - execute command, open/close and duplicate file descriptors]"
 "[+DESCRIPTION?\bexec\b is a special built-in command that can be used to "
@@ -594,7 +583,7 @@ USAGE_LICENSE
 
 
 const char sh_optexit[] =
-"[-1c?\n@(#)$Id: exit (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: exit (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?exit - exit the current shell]"
 "[+DESCRIPTION?\bexit\b is shell special built-in that causes the "
@@ -612,7 +601,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optexport[] =
-"[-1c?\n@(#)$Id: export (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: export (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?export - set export attribute on variables]"
 "[+DESCRIPTION?\bexport\b sets the export attribute on each of "
@@ -639,7 +628,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optgetopts[] =
-":[-1c?\n@(#)$Id: getopts (AT&T Labs Research) 2005-01-01 $\n]"
+":[-1c?\n@(#)$Id: getopts (AT&T Research) 2005-01-01 $\n]"
 "[-author?Glenn Fowler <gsf@research.att.com>]"
 USAGE_LICENSE
 "[+NAME?\f?\f - parse utility options]"
@@ -796,7 +785,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optbg[] =
-"[-1c?@(#)$Id: bg (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: bg (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?bg - resume jobs in the background]"
 "[+DESCRIPTION?\bbg\b places the given \ajob\as into the background "
@@ -825,7 +814,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optfg[] =
-"[-1c?@(#)$Id: fg (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: fg (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?fg - move jobs to the foreground]"
 "[+DESCRIPTION?\bfg\b places the given \ajob\as into the foreground "
@@ -854,7 +843,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optdisown[] =
-"[-1c?@(#)$Id: disown (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: disown (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?disown - disassociate a job with the current shell]"
 "[+DESCRIPTION?\bdisown\b prevents the current shell from sending "
@@ -883,7 +872,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optjobs[] =
-"[-1c?@(#)$Id: jobs (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: jobs (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?jobs - display status of jobs]"
 "[+DESCRIPTION?\bjobs\b displays information about specified \ajob\as "
@@ -922,7 +911,7 @@ USAGE_LICENSE
 ;
 
 const char sh_opthist[]	= 
-"[-1c?@(#)$Id: hist (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: hist (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?\f?\f - process command history list]"
 "[+DESCRIPTION?\b\f?\f\b lists, edits, or re-executes, commands  "
@@ -990,7 +979,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optkill[]	 = 
-"[-1c?\n@(#)$Id: kill (AT&T Labs Research) 1999-06-17 $\n]"
+"[-1c?\n@(#)$Id: kill (AT&T Research) 1999-06-17 $\n]"
 USAGE_LICENSE
 "[+NAME?kill - terminate or signal process]"
 "[+DESCRIPTION?With the first form in which \b-l\b is not specified, "
@@ -1047,7 +1036,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optlet[]	=
-"[-1c?@(#)$Id: let (AT&T Labs Research) 2000-04-02 $\n]"
+"[-1c?@(#)$Id: let (AT&T Research) 2000-04-02 $\n]"
 USAGE_LICENSE
 "[+NAME?let - evaluate arithmetic expressions]"
 "[+DESCRIPTION?\blet\b evaluates each \aexpr\a in the current "
@@ -1070,7 +1059,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optprint[] =
-"[-1c?\n@(#)$Id: print (AT&T Labs Research) 1999-04-07 $\n]"
+"[-1c?\n@(#)$Id: print (AT&T Research) 1999-04-07 $\n]"
 USAGE_LICENSE
 "[+NAME?print - write arguments to standard output]"
 "[+DESCRIPTION?By default, \bprint\b writes each \astring\a operand to "
@@ -1121,7 +1110,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optprintf[] =
-"[-1c?\n@(#)$Id: printf (AT&T Labs Research) 1999-06-21 $\n]"
+"[-1c?\n@(#)$Id: printf (AT&T Research) 2006-10-26 $\n]"
 USAGE_LICENSE
 "[+NAME?printf - write formatted output]"
 "[+DESCRIPTION?\bprintf\b writes each \astring\a operand to "
@@ -1183,7 +1172,15 @@ USAGE_LICENSE
 		"character corresponding to the hexidecimal value \ahex\a.]"
 	"[+-?Each of the integral format specifiers can have a third "
 		"modifier after width and precision that specifies the "
-		"base of the conversion from 2 to 64.]"
+		"base of the conversion from 2 to 64.  In this case the "
+		"\b#\b modifier will cause \abase\a\b#\b to be prepended to "
+		"the value.]"
+	"[+-?The \b#\b modifier can be used with the \bd\b specifier when "
+		"no base is specified cause the output to be written in units "
+		"of \b1000\b with a suffix of one of \bk M G T P E\b.]"
+	"[+-?The \b#\b modifier can be used with the \bi\b specifier to "
+		"cause the output to be written in units of \b1024\b with "
+		"a suffix of one of \bKi Mi Gi Ti Pi Ei\b.]"
 	"}"
 "[+?If there are more \astring\a operands than format specifiers, the "
 	"\aformat\a string is reprocessed from the beginning.  If there are "
@@ -1204,7 +1201,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optpwd[] =
-"[-1c?\n@(#)$Id: pwd (AT&T Labs Research) 1999-06-07 $\n]"
+"[-1c?\n@(#)$Id: pwd (AT&T Research) 1999-06-07 $\n]"
 USAGE_LICENSE
 "[+NAME?pwd - write working directory name]"
 "[+DESCRIPTION?\bpwd\b writes an absolute pathname of the current working "
@@ -1228,7 +1225,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optread[] =
-"[-1c?\n@(#)$Id: read (AT&T Labs Research) 2003-05-19 $\n]"
+"[-1c?\n@(#)$Id: read (AT&T Research) 2006-12-19 $\n]"
 USAGE_LICENSE
 "[+NAME?read - read a line from standard input]"
 "[+DESCRIPTION?\bread\b reads a line from standard input and breaks it "
@@ -1257,8 +1254,12 @@ USAGE_LICENSE
 "[u]#[fd:=0?Read from file descriptor number \afd\a instead of standard input.]"
 "[t]:[timeout?Specify a timeout \atimeout\a in seconds when reading from "
 	"a terminal or pipe.]"
-"[n]#[nbyte?Read at most \anbyte\a bytes.]"
-"[N]#[nbyte?Read exactly \anbyte\a bytes.]"
+"[n]#[nbyte?Read at most \ansize\a characters.  For binary fields \asize\a "
+	"will be in bytes.]"
+"[N]#[nbyte?Read exactly \ansize\a characters.  For binary fields \asize\a "
+	"will be in bytes.]"
+"[v?When reading from a terminal the value of the first variable is displayed "
+	"and used as a default value.]"
 "\n"
 "\n[var?prompt] [var ...]\n"
 "\n"
@@ -1270,7 +1271,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optreadonly[] =
-"[-1c?\n@(#)$Id: readonly (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: readonly (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?readonly - set readonly attribute on variables]"
 "[+DESCRIPTION?\breadonly\b sets the readonly attribute on each of "
@@ -1298,7 +1299,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optreturn[] =
-"[-1c?\n@(#)$Id: return (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: return (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?return - return from a function or dot script ]"
 "[+DESCRIPTION?\breturn\b is a shell special built-in that causes the "
@@ -1321,7 +1322,7 @@ USAGE_LICENSE
 
 
 const char sh_optksh[] =
-"+[-1c?\n@(#)$Id: sh (AT&T Labs Research) "SH_RELEASE" $\n]"
+"+[-1c?\n@(#)$Id: sh (AT&T Research) "SH_RELEASE" $\n]"
 USAGE_LICENSE
 "[+NAME?\b\f?\f\b - Shell, the standard command language interpreter]"
 "[+DESCRIPTION?\b\f?\f\b is a command language interpreter that "
@@ -1395,7 +1396,7 @@ USAGE_LICENSE
 "[+SEE ALSO?\bset\b(1), \bbuiltin\b(1)]"
 ;
 const char sh_optset[] =
-"+[-1c?\n@(#)$Id: set (AT&T Labs Research) 1999-09-28 $\n]"
+"+[-1c?\n@(#)$Id: set (AT&T Research) 1999-09-28 $\n]"
 USAGE_LICENSE
 "[+NAME?set - set/unset options and positional parameters]"
 "[+DESCRIPTION?\bset\b sets or unsets options and positional parameters.  "
@@ -1433,7 +1434,7 @@ USAGE_LICENSE
 
 
 const char sh_optshift[] =
-"[-1c?\n@(#)$Id: shift (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: shift (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?shift - shift positional parameters]"
 "[+DESCRIPTION?\bshift\b is a shell special built-in that shifts the "
@@ -1456,7 +1457,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optsleep[] =
-"[-1c?\n@(#)$Id: sleep (AT&T Labs Research) 1999-04-07 $\n]"
+"[-1c?\n@(#)$Id: sleep (AT&T Research) 1999-04-07 $\n]"
 USAGE_LICENSE
 "[+NAME?sleep - suspend execution for an interval]"
 "[+DESCRIPTION?\bsleep\b suspends execution for at least the time specified "
@@ -1476,7 +1477,7 @@ USAGE_LICENSE
 ;
 
 const char sh_opttrap[] =
-"[-1c?\n@(#)$Id: trap (AT&T Labs Research) 1999-07-17 $\n]"
+"[-1c?\n@(#)$Id: trap (AT&T Research) 1999-07-17 $\n]"
 USAGE_LICENSE
 "[+NAME?trap - trap signals and conditions]"
 "[+DESCRIPTION?\btrap\b is a special built-in that defines actions to be "
@@ -1529,7 +1530,7 @@ USAGE_LICENSE
 ;
 
 const char sh_opttypeset[] =
-"+[-1c?\n@(#)$Id: typeset (AT&T Labs Research) 2003-01-15 $\n]"
+"+[-1c?\n@(#)$Id: typeset (AT&T Research) 2003-01-15 $\n]"
 USAGE_LICENSE
 "[+NAME?\f?\f - declare or display variables with attributes]"
 "[+DESCRIPTION?Without the \b-f\b option, \b\f?\f\b sets, unsets, "
@@ -1569,19 +1570,22 @@ USAGE_LICENSE
 #if SHOPT_BASH
 "[a?Ignored, used for bash compatibility.]"
 #endif
+"[a?Indexed array. this is the default.]"
 "[b?Each \aname\a may contain binary data.  Its value is the mime "
 	"base64 encoding of the data. It can be used with \b-Z\b, "
 	"to specify fixed sized fields.]"
 "[f?Each of the options and \aname\as refers to a function.]"
 "[i]#?[base:=10?An integer. \abase\a represents the arithmetic base "
 	"from 2 to 64.]"
-"[l?Convert uppercase character to lowercase.  Unsets \b-u\b attribute.]"
+"[l?Convert uppercase character to lowercase.  Unsets \b-u\b attribute.  When "
+	"used with \b-i\b, \b-E\b, or \b-F\b indicates long variant.]"
 "[n?Name reference.  The value is the name of a variable that \aname\a "
 	"references.  \aname\a cannot contain a \b.\b.]"
 "[p?Causes the output to be in a format that can be used as input to the "
 	"shell to recreate the attributes for variables.]"
 "[r?Enables readonly.  Once enabled it cannot be disabled.  See "
 	"\breadonly\b(1).]"
+"[s?Used with \b-i\b to restrict integer size to short.]"
 "[t?When used with \b-f\b, enables tracing for each of the specified "
 	"functions.  Otherwise, \b-t\b is a user defined attribute and "
 	"has no meaning to the shell.]"
@@ -1624,7 +1628,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optulimit[] =
-"[-1c?@(#)$Id: ulimit (AT&T Labs Research) 2003-06-21 $\n]"
+"[-1c?@(#)$Id: ulimit (AT&T Research) 2003-06-21 $\n]"
 USAGE_LICENSE
 "[+NAME?ulimit - set or display resource limits]"
 "[+DESCRIPTION?\bulimit\b sets or displays resource limits.  These "
@@ -1660,7 +1664,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optumask[] =
-"[-1c?\n@(#)$Id: umask (AT&T Labs Research) 1999-04-07 $\n]"
+"[-1c?\n@(#)$Id: umask (AT&T Research) 1999-04-07 $\n]"
 USAGE_LICENSE
 "[+NAME?umask - get or set the file creation mask]"
 "[+DESCRIPTION?\bumask\b sets the file creation mask of the current "
@@ -1687,7 +1691,7 @@ USAGE_LICENSE
 ;
 const char sh_optuniverse[]	= " [name]";
 const char sh_optunset[] =
-"[-1c?\n@(#)$Id: unset (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: unset (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?unset - unset values and attributes of variables and functions]"
 "[+DESCRIPTION?For each \aname\a specified, \bunset\b  unsets the variable, "
@@ -1713,7 +1717,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optunalias[] =
-"[-1c?\n@(#)$Id: unalias (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: unalias (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?unalias - remove alias definitions]"
 "[+DESCRIPTION?\bunalias\b removes the definition of each named alias "
@@ -1735,7 +1739,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optwait[]	=
-"[-1c?\n@(#)$Id: wait (AT&T Labs Research) 1999-06-17 $\n]"
+"[-1c?\n@(#)$Id: wait (AT&T Research) 1999-06-17 $\n]"
 USAGE_LICENSE
 "[+NAME?wait - wait for process or job completion]"
 "[+DESCRIPTION?\bwait\b with no operands, waits until all jobs "
@@ -1776,7 +1780,7 @@ USAGE_LICENSE
 #endif /* SHOPT_FS_3D */
 
 const char sh_optwhence[] =
-"[-1c?\n@(#)$Id: whence (AT&T Labs Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: whence (AT&T Research) 1999-07-07 $\n]"
 USAGE_LICENSE
 "[+NAME?whence - locate a command and describe its type]"
 "[+DESCRIPTION?Without \b-v\b, \bwhence\b writes on standard output an "
@@ -1816,7 +1820,6 @@ USAGE_LICENSE
 
 const char e_alrm1[]		= "alarm -r %s +%.3g\n";
 const char e_alrm2[]		= "alarm %s %.3f\n";
-const char e_badfun[]		= "%s: illegal function name";
 const char e_baddisc[]		= "%s: invalid discipline function";
 const char e_nospace[]		= "out of memory";
 const char e_nofork[]		= "cannot fork";

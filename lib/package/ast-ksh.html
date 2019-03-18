@@ -196,7 +196,17 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="ksh93 changes">ksh93 changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
-12-02-14  --- Release ksh93u+ ---
+12-02-29  --- Release ksh93u+ ---
+12-02-29  A bug which could lead to a core dump when more that four shared
+	  libraries were added with the builtin command has been fixed.
+12-02-29  Fixed a few bugs which caused SIGCHLD to be blocked preventing
+	  background jobs from being reaped until a foreground job was run.
+12-02-27  A bug in which sh -c for a simple command caused a fork() has been
+	  fixed.
+12-02-27  A timing bug on systems such as AIX that doesn't support vfork()
+	  that could cause the exist status to get lost has been fixed.
+12-02-22  A private file descriptor that was not close-on-exec for a command
+	  substitution and has been fixed.
 12-02-14  A bug in which ^Z did not stop a pipeline when the last component
 	  was a shell built-in has been fixed.
 12-02-14  getconf("PATH") used to initialize ed(1) path.
@@ -3080,6 +3090,14 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libast changes">libast changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+12-03-10 misc/optget.c: HELP_index for "PLUGIN" too
+12-02-29 include/shcmd.h: PLUGIN_VERSION 20111111 for cdt disc/meth change
+12-02-29 comp/spawnveg.c: fix sigcritical() to include waitpid() for internal child
+12-02-29 malloc.c: make __malloc_hook initialization thread safe
+12-02-24 comp/iconv.c: fix winix UTF-8 vs UCS-2 over-conversion
+12-02-24 astsa/*.h: clean up header guards
+12-02-24 astsa/astsa.omk: clean up standalone old make makefile interactions
+12-02-21 misc/cmdarg.c: fix bug that set argv&#0091;0&#0093;
 12-02-10 sfvprintf.c: fix 1 byte too long buffer access
 12-02-07 malloc.c/features/vmalloc: add gnu __malloc_hook tests
 12-02-06 vmmopen.c: fix ALIGN vs sys/param.h macro conflict
@@ -5181,6 +5199,7 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libcoshell changes">libcoshell changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+12-02-22 coinit.c: handle non-identifier export var names
 11-12-13 cowait.c: handle sfpoll() error return on interrupt
 11-11-21 cowait.c: poll before blocking read to weed out killed jobs (no 'x' message)
 11-08-30 codata.c,coopen.c: drop macro "..." catenation for old cc
@@ -5235,6 +5254,7 @@ All recorded changes follow.
 <P><HR><CENTER><FONT color=red><FONT face=courier><H3><A name="libsum changes">libsum changes</A></H3></FONT></FONT></CENTER>
 <PRE>
 
+12-02-29 sum-sha2.c: bitcount&#0091;&#0093; order reversed to allow a single noalias buffer copy
 09-09-28 sumlib.c: use simple (faster) method name match function
 08-06-05 sum-lmd.c: align context to largest int
 08-05-01 sumlib.c: add some -lmd verification checks
@@ -5315,7 +5335,7 @@ All recorded changes follow.
 <TR>
 <TD align=left></TD>
 <TD align=center></TD>
-<TD align=right>February 17, 2012</TD>
+<TD align=right>March 13, 2012</TD>
 </TR>
 </TABLE>
 <P>

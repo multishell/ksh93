@@ -1,4 +1,4 @@
-info mam static 00000 1994-07-17 make (AT&T Research) 5.7 2012-02-29
+info mam static 00000 1994-07-17 make (AT&T Research) 5.7 2012-05-14
 setv INSTALLROOT ../../..
 setv PACKAGEROOT ../../../../..
 setv AR ${mam_cc_AR} ${mam_cc_AR_ARFLAGS}
@@ -32,20 +32,20 @@ setv SILENT
 setv TAR tar
 setv YACC yacc
 setv YACCFLAGS -d
-make ${PACKAGEROOT}/lib/package/ast.lic
-done ${PACKAGEROOT}/lib/package/ast.lic
+make ${INSTALLROOT}/lib/package/ast.lic
+done ${INSTALLROOT}/lib/package/ast.lic
 make install
 make hurl
 make hurl.sh
 done hurl.sh
-meta hurl %.sh>% hurl.sh hurl
+meta hurl %.sh>% ${PACKAGEROOT}/src/cmd/INIT/hurl.sh hurl
 prev hurl.sh
 setv LICENSE -DLICENSE="since=2003,author=gsf"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : hurl contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n hurl.sh
 exec - fi
@@ -79,14 +79,14 @@ done hurl generated
 make iffe
 make iffe.sh
 done iffe.sh
-meta iffe %.sh>% iffe.sh iffe
+meta iffe %.sh>% ${PACKAGEROOT}/src/cmd/INIT/iffe.sh iffe
 prev iffe.sh
 setv LICENSE -DLICENSE="since=1994,author=gsf+kpv"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : iffe contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n iffe.sh
 exec - fi
@@ -120,14 +120,14 @@ done iffe generated
 make mktest
 make mktest.sh
 done mktest.sh
-meta mktest %.sh>% mktest.sh mktest
+meta mktest %.sh>% ${PACKAGEROOT}/src/cmd/INIT/mktest.sh mktest
 prev mktest.sh
 setv LICENSE -DLICENSE="since=2005,author=gsf"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : mktest contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n mktest.sh
 exec - fi
@@ -161,13 +161,13 @@ done mktest generated
 make package
 make package.sh
 done package.sh
-meta package %.sh>% package.sh package
+meta package %.sh>% ${PACKAGEROOT}/src/cmd/INIT/package.sh package
 prev package.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : package contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n package.sh
 exec - fi
@@ -201,14 +201,14 @@ done package generated
 make regress
 make regress.sh
 done regress.sh
-meta regress %.sh>% regress.sh regress
+meta regress %.sh>% ${PACKAGEROOT}/src/cmd/INIT/regress.sh regress
 prev regress.sh
 setv LICENSE -DLICENSE="since=1995,author=gsf"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : regress contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n regress.sh
 exec - fi
@@ -242,14 +242,14 @@ done regress generated
 make rt
 make rt.sh
 done rt.sh
-meta rt %.sh>% rt.sh rt
+meta rt %.sh>% ${PACKAGEROOT}/src/cmd/INIT/rt.sh rt
 prev rt.sh
 setv LICENSE -DLICENSE="since=2005,author=gsf"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : rt contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n rt.sh
 exec - fi
@@ -283,13 +283,13 @@ done rt generated
 make crossexec
 make crossexec.sh
 done crossexec.sh
-meta crossexec %.sh>% crossexec.sh crossexec
+meta crossexec %.sh>% ${PACKAGEROOT}/src/cmd/INIT/crossexec.sh crossexec
 prev crossexec.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : crossexec contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n crossexec.sh
 exec - fi
@@ -323,14 +323,14 @@ done crossexec generated
 make ditto
 make ditto.sh
 done ditto.sh
-meta ditto %.sh>% ditto.sh ditto
+meta ditto %.sh>% ${PACKAGEROOT}/src/cmd/INIT/ditto.sh ditto
 prev ditto.sh
 setv LICENSE -DLICENSE="since=2001,author=gsf+ek"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : ditto contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n ditto.sh
 exec - fi
@@ -364,14 +364,14 @@ done ditto generated
 make execrate
 make execrate.sh
 done execrate.sh
-meta execrate %.sh>% execrate.sh execrate
+meta execrate %.sh>% ${PACKAGEROOT}/src/cmd/INIT/execrate.sh execrate
 prev execrate.sh
 setv LICENSE -DLICENSE="since=2002,author=gsf"
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : execrate contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n execrate.sh
 exec - fi
@@ -405,13 +405,13 @@ done execrate generated
 make filter
 make filter.sh
 done filter.sh
-meta filter %.sh>% filter.sh filter
+meta filter %.sh>% ${PACKAGEROOT}/src/cmd/INIT/filter.sh filter
 prev filter.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : filter contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n filter.sh
 exec - fi
@@ -445,13 +445,13 @@ done filter generated
 make ignore
 make ignore.sh
 done ignore.sh
-meta ignore %.sh>% ignore.sh ignore
+meta ignore %.sh>% ${PACKAGEROOT}/src/cmd/INIT/ignore.sh ignore
 prev ignore.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : ignore contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n ignore.sh
 exec - fi
@@ -485,13 +485,13 @@ done ignore generated
 make silent
 make silent.sh
 done silent.sh
-meta silent %.sh>% silent.sh silent
+meta silent %.sh>% ${PACKAGEROOT}/src/cmd/INIT/silent.sh silent
 prev silent.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : silent contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n silent.sh
 exec - fi
@@ -530,7 +530,7 @@ done shlib-compat.h dontcare virtual
 make ast.h implicit
 done ast.h dontcare virtual
 done mamake.c
-meta mamake.o %.c>%.o mamake.c mamake
+meta mamake.o %.c>%.o ${PACKAGEROOT}/src/cmd/INIT/mamake.c mamake
 prev mamake.c
 exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -DUSAGE_LICENSE=\""[-author?Glenn Fowler <gsf@research.att.com>][-copyright?Copyright (c) 1994-2012 AT&T Intellectual Property][-license?http://www.eclipse.org/org/documents/epl-v10.html][--catalog?INIT]"\" -c mamake.c
 done mamake.o generated
@@ -540,7 +540,7 @@ make proto
 make proto.o
 make proto.c
 done proto.c
-meta proto.o %.c>%.o proto.c proto
+meta proto.o %.c>%.o ${PACKAGEROOT}/src/cmd/INIT/proto.c proto
 prev proto.c
 exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -c proto.c
 done proto.o generated
@@ -565,7 +565,7 @@ make direct.h implicit
 done direct.h dontcare virtual
 prev ast.h implicit
 done ratz.c
-meta ratz.o %.c>%.o ratz.c ratz
+meta ratz.o %.c>%.o ${PACKAGEROOT}/src/cmd/INIT/ratz.c ratz
 prev ratz.c
 exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -c ratz.c
 done ratz.o generated
@@ -576,7 +576,7 @@ make release.o
 make release.c
 prev ast.h implicit
 done release.c
-meta release.o %.c>%.o release.c release
+meta release.o %.c>%.o ${PACKAGEROOT}/src/cmd/INIT/release.c release
 prev release.c
 exec - ${CC} ${mam_cc_FLAGS} ${CCFLAGS} -DUSAGE_LICENSE=\""[-author?Glenn Fowler <gsf@research.att.com>][-copyright?Copyright (c) 1994-2012 AT&T Intellectual Property][-license?http://www.eclipse.org/org/documents/epl-v10.html][--catalog?INIT]"\" -c release.c
 done release.o generated
@@ -585,13 +585,13 @@ done release generated
 make mprobe
 make mprobe.sh
 done mprobe.sh
-meta mprobe %.sh>% mprobe.sh mprobe
+meta mprobe %.sh>% ${PACKAGEROOT}/src/cmd/INIT/mprobe.sh mprobe
 prev mprobe.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : mprobe contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n mprobe.sh
 exec - fi
@@ -636,7 +636,7 @@ exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : probe contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n probe.sh
 exec - fi
@@ -713,14 +713,14 @@ exec - test '' = 'ignore' || ${STDCMP} 2>/dev/null -s ignore ${PACKAGEROOT}/bin/
 done ${PACKAGEROOT}/bin/ignore generated
 make ${PACKAGEROOT}/bin/mamprobe
 make mamprobe
-meta mamprobe %.sh>% mamprobe.sh mamprobe
+meta mamprobe %.sh>% ${PACKAGEROOT}/src/cmd/INIT/mamprobe.sh mamprobe
 make mamprobe.sh
 done mamprobe.sh
 exec - case static,port:$OPTIND:$RANDOM in
 exec - ?*:*:*|*::*|*:*:$RANDOM)
 exec - ;;
 exec - *) if ENV= LC_ALL=C x= $SHELL -nc '[[ a || b ]] && : ${list[level]}  !(pattern)' 2>/dev/null
-exec - then if grep -q '### .*archaic.* ###'
+exec - then if grep '### .*archaic.* ###' >/dev/null
 exec - then : mamprobe contains archaic constructs :
 exec - else ENV= LC_ALL=C $SHELL -n mamprobe.sh
 exec - fi
@@ -777,18 +777,15 @@ make ${PACKAGEROOT}/lib/package
 exec - if silent test ! -d ${PACKAGEROOT}/lib/package
 exec - then mkdir -p ${PACKAGEROOT}/lib/package
 exec - fi
-done ${PACKAGEROOT}/lib/package generated
-make ${PACKAGEROOT}/lib/package/package.mk
-prev ${PACKAGEROOT}/lib/package
+done ${PACKAGEROOT}/lib/package
+make ${PACKAGEROOT}/lib/package
+done ${PACKAGEROOT}/lib/package
 make package.mk
 done package.mk
 exec - test '' = 'package.mk' || ${STDCMP} 2>/dev/null -s package.mk ${PACKAGEROOT}/lib/package/package.mk || { ${STDMV} ${PACKAGEROOT}/lib/package/package.mk ${PACKAGEROOT}/lib/package/package.mk.old 2>/dev/null || true; ${STDCP} package.mk ${PACKAGEROOT}/lib/package/package.mk ;}
-done ${PACKAGEROOT}/lib/package/package.mk generated
-make ${PACKAGEROOT}/lib/package/CONVERT.mk
 make CONVERT.mk
 done CONVERT.mk
 exec - test '' = 'CONVERT.mk' || ${STDCMP} 2>/dev/null -s CONVERT.mk ${PACKAGEROOT}/lib/package/CONVERT.mk || { ${STDMV} ${PACKAGEROOT}/lib/package/CONVERT.mk ${PACKAGEROOT}/lib/package/CONVERT.mk.old 2>/dev/null || true; ${STDCP} CONVERT.mk ${PACKAGEROOT}/lib/package/CONVERT.mk ;}
-done ${PACKAGEROOT}/lib/package/CONVERT.mk generated
 make ${INSTALLROOT}/lib/make
 exec - if silent test ! -d ${INSTALLROOT}/lib/make
 exec - then mkdir -p ${INSTALLROOT}/lib/make
@@ -1320,7 +1317,7 @@ done test.iffe virtual
 make test.mamake
 prev mamake
 make mamake.tst
-meta mamake.tst %.rt>%.tst mamake.rt mamake
+meta mamake.tst %.rt>%.tst ${PACKAGEROOT}/src/cmd/INIT/mamake.rt mamake
 make mamake.rt
 done mamake.rt
 exec - if [[ "1" || "mamake.rt" -nt "mamake.tst" ]]

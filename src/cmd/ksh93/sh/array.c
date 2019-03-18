@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -199,7 +199,7 @@ static union Value *array_getup(Namval_t *np, Namarr_t *arp, int update)
 #if SHOPT_FIXEDARRAY
 	struct fixed_array *fp;
 #endif /* SHOPT_FIXEDARRAY */
-	int	nofree;
+	int	nofree=0;
 	if(!arp)
 		return(&np->nvalue);
 	if(is_associative(ap))
@@ -613,7 +613,7 @@ static void array_putval(Namval_t *np, const char *string, int flags, Namfun_t *
 #endif /* SHOPT_FIXEDARRAY */
 	do
 	{
-		int xfree = is_associative(ap)?0:array_isbit(aq->bits,aq->cur,ARRAY_NOFREE);
+		int xfree = (ap->fixed||is_associative(ap))?0:array_isbit(aq->bits,aq->cur,ARRAY_NOFREE);
 		mp = array_find(np,ap,string?ARRAY_ASSIGN:ARRAY_DELETE);
 		scan = ap->nelem&ARRAY_SCAN;
 		if(mp && mp!=np)
@@ -1081,13 +1081,8 @@ int nv_nextsub(Namval_t *np)
 		return(0);
 	if(is_associative(ap))
 	{
-		Namval_t	*nq;
-		if(nq=(*ap->header.fun)(np,NIL(char*),NV_ANEXT))
-		{
-			if(nv_isattr(nq,NV_CHILD))
-				nv_putsub(nq->nvalue.np,NIL(char*),ARRAY_UNDEF);
+		if((*ap->header.fun)(np,NIL(char*),NV_ANEXT))
 			return(1);
-		}
 		ap->header.nelem &= ~(ARRAY_SCAN|ARRAY_NOCHILD);
 		return(0);
 	}
@@ -1831,8 +1826,12 @@ void nv_setvec(register Namval_t *np,int append,register int argc,register char 
 			while(--arg0>0 && ap->val[arg0].cp==0 && aq->val[arg0].cp==0);
 			arg0++;
 		}
-		else if(!nv_isnull(np))
-			arg0=1;
+		else
+		{
+			nv_offattr(np,NV_ARRAY);
+			if(!nv_isnull(np) && np->nvalue.cp!=Empty)
+				arg0=1;
+		}
 	}
 	while(--argc >= 0)
 	{

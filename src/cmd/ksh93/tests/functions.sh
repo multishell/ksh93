@@ -27,6 +27,9 @@ alias err_exit='err_exit $LINENO'
 
 integer Errors=0
 Command=${0##*/}
+compiled=''
+read -N14 c < $0 2> /dev/null
+[[ $c == *$'\ck'* ]] && compiled=1
 
 ulimit -c 0
 
@@ -1153,5 +1156,28 @@ val=$($SHELL 2> /dev/null <<- \EOF
 	f2
 EOF)
 [[ $val == f1xtrace*on*off*f2xtrace*on* ]] || err_exit "'.sh.fun.set() { set -x; }' not tracing all functions"
+
+function foo
+{
+	typeset opt OPTIND=1 OPTARG hflag=
+	while getopts hi: opt
+	do	case $opt in
+		h)	hflag=1;;
+	        i)	[[ $OPTARG == foobar ]] || err_exit 'OPTARG should be set to foobar in function foo';;
+		esac
+	done
+	shift $((OPTIND - 1))
+	(( OPTIND == 4 )) || err_exit "OPTIND is $OPTIND at end of function foo; it should be 4"  
+	[[ $1 == foo2 ]] || err_exit "\$1 is $1, not foo after getopts in function"
+}
+OPTIND=6 OPTARG=xxx
+foo -h -i foobar foo2
+[[ $OPTARG == xxx ]] || err_exit 'getopts in function changes global OPTARG'
+(( OPTIND == 6 )) || err_exit 'getopts in function changes global OPTIND'
+
+if	[[ ! $compiled ]]
+then	function foo { getopts --man; }
+	[[ $(typeset -f foo) == 'function foo { getopts --man; }' ]] || err_exit 'typeset -f not work for function with getopts'
+fi
 
 exit $((Errors<125?Errors:125))

@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2011 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2012 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                 Eclipse Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -64,5 +64,11 @@ typeset -T X_t=( typeset name=aha )
 typeset -a[X_t] arr
 ) 2> /dev/null
 [[ $? == 1 ]] || err_exit 'typeset -a[X_t] should generate an error message when X-t is not an enumeriation type'
+
+typeset -a [Color_t] arr
+arr[green]=foo
+[[ ${arr[1]} == ${arr[green]}  ]] || err_exit 'arr[1] != arr[green]'
+read -A arr <<<  'x y z xx yy'
+[[ ${arr[1]} == ${arr[green]}  ]] || err_exit 'arr[1] != arr[green] after read'
 
 exit $((Errors<125?Errors:125))

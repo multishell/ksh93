@@ -871,6 +871,74 @@ static int sh_coexec(Shell_t *shp,const Shnode_t *t, int filt)
 }
 #endif /*SHOPT_COSHELL*/
 
+#if SHOPT_FILESCAN
+    static Sfio_t *openstream(Shell_t *shp, struct ionod *iop, int *save)
+    {
+	int savein, fd = sh_redirect(shp,iop,3);
+	Sfio_t	*sp;
+	savein = dup(0);
+	if(fd==0)
+		fd = savein;
+	sp = sfnew(NULL,NULL,SF_UNBOUND,fd,SF_READ);
+	close(0);
+	open(e_devnull,O_RDONLY);
+	shp->offsets[0] = -1;
+	shp->offsets[1] = 0;
+	*save = savein;
+	return(sp);
+    }
+#endif /* SHOPT_FILESCAN */
+
+#if SHOPT_NAMESPACE
+static Namval_t *enter_namespace(Shell_t *shp, Namval_t *nsp)
+{
+	Namval_t	*path=nsp, *fpath=nsp, *onsp=shp->namespace;
+	Dt_t		*root=0,*oroot=0;
+	char		*val;
+	if(nsp)
+	{
+		if(!nv_istable(nsp))
+			nsp = 0;
+		else if(nv_dict(nsp)->view!=shp->var_base)
+			return(onsp);
+	}
+	if(!nsp && !onsp)
+		return(0);
+	if(onsp == nsp) 
+		return(nsp);
+	if(onsp)
+	{
+		oroot = nv_dict(onsp);
+		if(!nsp)
+		{
+			path = nv_search(PATHNOD->nvname,oroot,HASH_NOSCOPE);
+			fpath = nv_search(FPATHNOD->nvname,oroot,HASH_NOSCOPE);
+		}
+		if(shp->var_tree==oroot)
+		{
+			shp->var_tree = shp->var_tree->view;
+			oroot = shp->var_base;
+		}
+	}
+	if(nsp)
+	{
+		if(shp->var_tree==shp->var_base)
+			shp->var_tree = nv_dict(nsp);
+		else
+		{
+			for(root=shp->var_tree; root->view!=oroot;root=root->view);
+			dtview(root,nv_dict(nsp));
+		}
+	}
+	shp->namespace = nsp;
+	if(path && (path = nv_search(PATHNOD->nvname,shp->var_tree,HASH_NOSCOPE)) && (val=nv_getval(path)))
+		nv_putval(path,val,NV_RDONLY);
+	if(fpath && (fpath = nv_search(FPATHNOD->nvname,shp->var_tree,HASH_NOSCOPE)) && (val=nv_getval(fpath)))
+		nv_putval(fpath,val,NV_RDONLY);
+	return(onsp);
+}
+#endif /* SHOPT_NAMESPACE */
+
 int sh_exec(register const Shnode_t *t, int flags)
 {
 	register Shell_t	*shp = sh_getinterp();
@@ -894,10 +962,10 @@ int sh_exec(register const Shnode_t *t, int flags)
 		char		*cp=0, **com=0, *comn;
 		int		argn;
 		int 		skipexitset = 0;
-		int		was_interactive = 0;
-		int		was_errexit = sh_isstate(SH_ERREXIT);
-		int		was_monitor = sh_isstate(SH_MONITOR);
-		int		echeck = 0;
+		volatile int	was_interactive = 0;
+		volatile int	was_errexit = sh_isstate(SH_ERREXIT);
+		volatile int	was_monitor = sh_isstate(SH_MONITOR);
+		volatile int	echeck = 0;
 		if(flags&sh_state(SH_INTERACTIVE))
 		{
 			if(pipejob==2)
@@ -942,6 +1010,17 @@ int sh_exec(register const Shnode_t *t, int flags)
 			}
 			np = (Namval_t*)(t->com.comnamp);
 			nq = (Namval_t*)(t->com.comnamq);
+#if SHOPT_NAMESPACE
+			if(np && shp->namespace && nq!=shp->namespace && nv_isattr(np,NV_BLTIN|NV_INTEGER|BLT_SPC)!=(NV_BLTIN|BLT_SPC))
+			{
+				Namval_t *mp;
+				if(mp = sh_fsearch(shp,com[0],0))
+				{
+					nq = shp->namespace;
+					np = mp;
+				}
+			}
+#endif /* SHOPT_NAMESPACE */
 			com0 = com[0];
 			shp->xargexit = 0;
 			while(np==SYSCOMMAND)
@@ -1040,6 +1119,8 @@ int sh_exec(register const Shnode_t *t, int flags)
 						else if(checkopt(com,'a'))
 							flgs |= NV_IARRAY;
 					}
+					if(np)
+						flgs |= NV_UNJUST;
 #if SHOPT_BASH
 					if(np==SYSLOCAL)
 					{
@@ -1068,8 +1149,6 @@ int sh_exec(register const Shnode_t *t, int flags)
 							flgs |= NV_MOVE;
 						if(checkopt(com,'n'))
 							flgs |= NV_NOREF;
-						else if(!shp->typeinit && (checkopt(com,'L') || checkopt(com,'R') || checkopt(com,'Z')))
-							flgs |= NV_UNJUST;
 #if SHOPT_TYPEDEF
 						else if(argn>=3 && checkopt(com,'T'))
 						{
@@ -1196,7 +1275,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					int jmpval, save_prompt;
 					int was_nofork = execflg?sh_isstate(SH_NOFORK):0;
 					struct checkpt *buffp = (struct checkpt*)stkalloc(shp->stk,sizeof(struct checkpt));
-					unsigned long was_vi=0, was_emacs=0, was_gmacs=0;
+					volatile unsigned long was_vi=0, was_emacs=0, was_gmacs=0;
 					struct stat statb;
 					bp = &shp->bltindata;
 					save_ptr = bp->ptr;
@@ -1380,7 +1459,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					int jmpval=0;
 					struct checkpt *buffp = (struct checkpt*)stkalloc(shp->stk,sizeof(struct checkpt));
 #if SHOPT_NAMESPACE
-					Namval_t node,*namespace=shp->namespace;
+					Namval_t node, *namespace=0;
 #else
 					Namval_t node;
 #endif /* SHOPT_NAMESPACE */
@@ -1434,17 +1513,27 @@ int sh_exec(register const Shnode_t *t, int flags)
 						jmpval = sigsetjmp(buffp->buff,0);
 					}
 					if(jmpval == 0)
+
 					{
 						if(io)
 							indx = sh_redirect(shp,io,execflg);
 #if SHOPT_NAMESPACE
-						if(nq && nv_istable(nq))
-							shp->namespace = nq;
+						if(*np->nvname=='.')
+						{
+							char *cp = strchr(np->nvname+1,'.');	
+							if(cp)
+							{
+								*cp = 0;
+								namespace = nv_search(np->nvname,shp->var_base,HASH_NOSCOPE);
+								*cp = '.';
+							}
+						}
+						namespace = enter_namespace(shp,namespace);
 #endif /* SHOPT_NAMESPACE */
 						sh_funct(shp,np,argn,com,t->com.comset,(flags&~OPTIMIZE_FLAG));
 					}
 #if SHOPT_NAMESPACE
-					shp->namespace = namespace;
+					enter_namespace(shp,namespace);
 #endif /* SHOPT_NAMESPACE */
 					if(io)
 					{
@@ -1623,7 +1712,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 					else
 						job_wait(parent);
 					if(shp->topfd > topfd)
-						sh_iorestore(shp,topfd,sh.exitval);
+						sh_iorestore(shp,topfd,0);
 					if(usepipe && tsetio &&  subdup)
 						iounpipe(shp);
 					if(!sh_isoption(SH_MONITOR))
@@ -2266,7 +2355,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 			Shnode_t *tt = t->wh.whtre;
 #if SHOPT_FILESCAN
 			Sfio_t *iop=0;
-			int savein,fd;
+			int savein;
 #endif /*SHOPT_FILESCAN*/
 #if SHOPT_OPTIMIZE
 			int  jmpval = ((struct checkpt*)shp->jmplist)->mode;
@@ -2310,15 +2399,7 @@ int sh_exec(register const Shnode_t *t, int flags)
 #if SHOPT_FILESCAN
 			if(type==TWH && tt->tre.tretyp==TCOM && !tt->com.comarg && tt->com.comio)
 			{
-				fd = sh_redirect(shp,tt->com.comio,3);
-				savein = dup(0);
-				if(fd==0)
-					fd = savein;
-				iop = sfnew(NULL,NULL,SF_UNBOUND,fd,SF_READ);
-				close(0);
-				open(e_devnull,O_RDONLY);
-				shp->offsets[0] = -1;
-				shp->offsets[1] = 0;
+				iop = openstream(shp,tt->com.comio,&savein);
 				if(tt->com.comset)
 					nv_setlist(tt->com.comset,NV_IDENT|NV_ASSIGN,0);
 			}
@@ -2572,21 +2653,16 @@ int sh_exec(register const Shnode_t *t, int flags)
 #if SHOPT_NAMESPACE
 			if(t->tre.tretyp==TNSPACE)
 			{
-				Dt_t *root,*oldroot, *bot=0;
+				Dt_t *root;
 				Namval_t *oldnspace = shp->namespace;
 				int offset = stktell(stkp);
-				long optindex = shp->st.optindex;
 				int	flags=NV_NOASSIGN|NV_NOARRAY|NV_VARNAME;
 				if(cp)
 					errormsg(SH_DICT,ERROR_exit(1),e_ident,fname);
-				if(!shp->namespace)
-					sfputc(stkp,'.');
-				else
-					flags |= NV_NOSCOPE;
+				sfputc(stkp,'.');
 				sfputr(stkp,fname,0);
 				np = nv_open(stkptr(stkp,offset),shp->var_tree,flags);
 				offset = stktell(stkp);
-				shp->namespace = np;
 				if(nv_istable(np))
 					root = nv_dict(np);
 				else
@@ -2594,25 +2670,11 @@ int sh_exec(register const Shnode_t *t, int flags)
 					root = dtopen(&_Nvdisc,Dtoset);
 					nv_mount(np, (char*)0, root);
 					np->nvalue.cp = Empty;
-					shp->st.optindex = 1;
+					dtview(root,shp->var_base);
 				}
-				if(oldnspace && dtvnext(dtvnext(shp->var_tree)))
-					bot = dtview(shp->var_tree,0);
-				else if(dtvnext(shp->var_tree))
-					bot = dtview(shp->var_tree,0);
-				oldroot = shp->var_tree;
-				dtview(root,shp->var_base);
-				shp->var_tree = root;
-				if(bot)
-					dtview(shp->var_tree,bot);
+				oldnspace = enter_namespace(shp,np);
 				sh_exec(t->for_.fortre,flags|sh_state(SH_ERREXIT));
-				if(dtvnext(shp->var_tree))
-					bot = dtview(shp->var_tree,0);
-				shp->var_tree = oldroot;
-				if(bot)
-					dtview(shp->var_tree,bot);
-				shp->namespace = oldnspace;
-				shp->st.optindex = optindex;
+				enter_namespace(shp,oldnspace);
 				break;
 			}
 #endif /* SHOPT_NAMESPACE */
@@ -2672,8 +2734,8 @@ int sh_exec(register const Shnode_t *t, int flags)
 					shp->last_root = rp->sdict;
 					for(mp=(Namval_t*)dtfirst(rp->sdict);mp;mp=nq)
 					{
-						nq = dtnext(rp->sdict,mp);
 						_nv_unset(mp,NV_RDONLY);
+						nq = dtnext(rp->sdict,mp);
 						nv_delete(mp,rp->sdict,0);
 					}
 					dtclose(rp->sdict);
@@ -3079,7 +3141,7 @@ pid_t _sh_fork(Shell_t *shp,register pid_t parent,int flags,int *jobid)
 			if(!tsetio || !subdup)
 			{
 				if(shp->topfd > restorefd)
-					sh_iorestore(shp,restorefd,sh.exitval);
+					sh_iorestore(shp,restorefd,0);
 				iounpipe(shp);
 			}
 		}
@@ -3247,7 +3309,7 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	int			n;
 	char 			*savstak;
 	struct funenv		*fp = 0;
-	struct checkpt		*buffp = (struct checkpt*)stkalloc(shp->stk,sizeof(struct checkpt));
+	struct checkpt	*buffp = (struct checkpt*)stkalloc(shp->stk,sizeof(struct checkpt));
 	Namval_t		*nspace = shp->namespace;
 	Dt_t			*last_root = shp->last_root;
 	Shopt_t			options;
@@ -3278,10 +3340,6 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 	}
 	prevscope->save_tree = shp->var_tree;
 	n = dtvnext(prevscope->save_tree)!= (shp->namespace?shp->var_base:0);
-#if SHOPT_NAMESPACE
-	if(n && fp && (np=(fp->node)->nvalue.rp->nspace) && np!=shp->namespace)
-		shp->namespace = np;
-#endif /* SHOPT_NAMESPACE */
 	sh_scope(shp,envlist,1);
 	if(n)
 	{
@@ -3352,22 +3410,18 @@ int sh_funscope(int argn, char *argv[],int(*fun)(void*),void *arg,int execflg)
 			r = shp->exitval;
 		}
 	}
+	if(shp->topscope != (Shscope_t*)shp->st.self)
+		sh_setscope(shp->topscope);
 	if(--shp->fn_depth==1 && jmpval==SH_JMPERRFN)
 		errormsg(SH_DICT,ERROR_exit(1),e_toodeep,argv[0]);
 	sh_popcontext(shp,buffp);
-	if (shp->st.self != &savst)
-		shp->var_tree = (Dt_t*)savst.save_tree;
 	sh_unscope(shp);
 	shp->namespace = nspace;
 	shp->var_tree = (Dt_t*)prevscope->save_tree;
-	if(shp->topscope != (Shscope_t*)shp->st.self)
-		sh_setscope(shp->topscope);
 	sh_argreset(shp,argsav,saveargfor);
 	trap = shp->st.trapcom[0];
 	shp->st.trapcom[0] = 0;
 	sh_sigreset(1);
-	if (shp->st.self != &savst)
-		*shp->st.self = shp->st;
 	shp->st = *prevscope;
 	shp->topscope = (Shscope_t*)prevscope;
 	nv_getval(sh_scoped(shp,IFSNOD));
@@ -3413,6 +3467,7 @@ static void sh_funct(Shell_t *shp,Namval_t *np,int argn, char *argv[],struct arg
 	level = lp->maxlevel = shp->dot_depth + shp->fn_depth+1;
 	SH_LEVELNOD->nvalue.s = lp->maxlevel;
 	shp->st.lineno = error_info.line;
+	np->nvalue.rp->running  += 2;
 	if(nv_isattr(np,NV_FPOSIX))
 	{
 		char *save;
@@ -3453,6 +3508,7 @@ static void sh_funct(Shell_t *shp,Namval_t *np,int argn, char *argv[],struct arg
 #endif
 	nv_putval(SH_PATHNAMENOD,shp->st.filename,NV_NOFREE);
 	shp->pipepid = pipepid;
+	np->nvalue.rp->running  -= 2;
 }
 
 /*
@@ -3850,31 +3906,31 @@ static pid_t sh_ntfork(Shell_t *shp,const Shnode_t *t,char *argv[],int *jobid,in
 				path = nv_getval(np);
 			else if(path_absolute(shp,path,NIL(Pathcomp_t*)))
 			{
-			path = stkptr(shp->stk,PATH_OFFSET);
-			stkfreeze(shp->stk,0);
-		}
-		else
-		{
-			pp=path_get(shp,path);
-			while(pp)
-			{
-				if(pp->len==1 && *pp->name=='.')
-					break;
-				pp = pp->next;
+				path = stkptr(shp->stk,PATH_OFFSET);
+				stkfreeze(shp->stk,0);
 			}
-			if(!pp)
-				path = 0;
+			else
+			{
+				pp=path_get(shp,path);
+				while(pp)
+				{
+					if(pp->len==1 && *pp->name=='.')
+						break;
+					pp = pp->next;
+				}
+				if(!pp)
+					path = 0;
+			}
 		}
-	}
-	else if(sh_isoption(SH_RESTRICTED))
-		errormsg(SH_DICT,ERROR_exit(1),e_restricted,path);
-	if(!path)
-	{
-		spawnpid = -1;
-		goto fail;
-	}
-	arge = sh_envgen();
-	shp->exitval = 0;
+		else if(sh_isoption(SH_RESTRICTED))
+			errormsg(SH_DICT,ERROR_exit(1),e_restricted,path);
+		if(!path)
+		{
+			spawnpid = -1;
+			goto fail;
+		}
+		arge = sh_envgen();
+		shp->exitval = 0;
 #ifdef SIGTSTP
 		if(job.jobcontrol)
 		{

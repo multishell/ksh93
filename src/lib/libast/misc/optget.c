@@ -955,7 +955,7 @@ init(register char* s, Optpass_t* p)
 				map[*t] = ++n;
 	}
 #if _BLD_DEBUG
-	error(-1, "optget debug");
+	error(-2, "optget debug");
 #endif
 	p->oopts = s;
 	p->version = 0;
@@ -1176,7 +1176,7 @@ init(register char* s, Optpass_t* p)
 		s += n;
 	}
 	p->opts = s;
-	message((-1, "version=%d prefix=%d section=%s flags=%04x id=%s catalog=%s oopts=%p", p->version, p->prefix, p->section, p->flags, p->id, p->catalog, p->oopts));
+	message((-2, "version=%d prefix=%d section=%s flags=%04x id=%s catalog=%s oopts=%p", p->version, p->prefix, p->section, p->flags, p->id, p->catalog, p->oopts));
 	return 0;
 }
 
@@ -4609,6 +4609,7 @@ optget(register char** argv, const char* oopts)
 						opt_info.num = (long)(opt_info.number = optnumber(opt_info.arg, &e, &err));
 						if (err || e == opt_info.arg)
 						{
+							opt_info.num = (long)(opt_info.number = 0);
 							if (!err && (k & OPT_cache_optional))
 							{
 								opt_info.arg = 0;
@@ -4636,6 +4637,7 @@ optget(register char** argv, const char* oopts)
 							opt_info.arg = 0;
 							opt_info.index--;
 							opt_info.offset = 0;
+							opt_info.num = (long)(opt_info.number = 0);
 							return c;
 						}
 						if (k & OPT_cache_string)
@@ -5306,6 +5308,7 @@ optget(register char** argv, const char* oopts)
 			opt_info.index++;
 			if (*(s + 1) == '?' && (*opt_info.arg == '-' || (pass->flags & OPT_plus) && *opt_info.arg == '+') && *(opt_info.arg + 1))
 			{
+				opt_info.num = (long)(opt_info.number = 0);
 				opt_info.index--;
 				opt_info.arg = 0;
 			}

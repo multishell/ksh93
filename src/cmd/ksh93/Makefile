@@ -64,6 +64,9 @@ if CC.HOSTTYPE == "*.s390-64"
 end
 
 if SHOPT_DYNAMIC && ( "$(CC.DIALECT:N=EXPORT=DLL)" || "$(PACKAGE_OPTIONS:N=optimize-space)" )
+	if "$(PACKAGE_OPTIONS:N=optimize-space)" && ! SHOPT_CMDLIB_HDR && ! SHOPT_CMDLIB_DIR
+		SHOPT_CMDLIB_HDR == 1
+	end
 	CCFLAGS += $$(CC.DLL) $$(CC.SUFFIX.DEBUG:+$$(CC.DEBUG))
 	LIBS_req = -lshell$(RELEASE)
 else
@@ -122,7 +125,7 @@ if CC.HOSTTYPE == "linux.sparc*"
 end
 LIBS_opt += -lsecdb
 if CC.HOSTTYPE == "sol.*"
-	LIBS_opt += +lw
+	LIBS_opt += -lw
 end
 $(LIBS_opt)	: .DONTCARE
 
@@ -210,11 +213,11 @@ end
 	attributes.sh basic.sh bracket.sh builtins.sh case.sh \
 	comvar.sh comvario.sh coprocess.sh cubetype.sh enum.sh exit.sh \
 	expand.sh functions.sh glob.sh grep.sh heredoc.sh io.sh \
-	leaks.sh locale.sh math.sh nameref.sh options.sh path.sh \
-	pointtype.sh pty.sh quoting.sh quoting2.sh readcsv.sh recttype.sh \
-	restricted.sh return.sh select.sh shtests sigchld.sh \
-	signal.sh statics.sh subshell.sh substring.sh tilde.sh \
-	timetype.sh treemove.sh types.sh variables.sh \
+	leaks.sh locale.sh math.sh nameref.sh namespace.sh options.sh \
+	path.sh pointtype.sh pty.sh quoting.sh quoting2.sh readcsv.sh \
+	recttype.sh restricted.sh return.sh select.sh shtests \
+	sigchld.sh signal.sh statics.sh subshell.sh substring.sh \
+	tilde.sh timetype.sh treemove.sh types.sh variables.sh \
 	vartree1.sh vartree2.sh
 
 :: ksh-regress.rt ksh-regress.tst

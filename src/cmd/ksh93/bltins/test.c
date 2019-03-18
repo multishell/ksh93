@@ -31,6 +31,7 @@
 #include	"defs.h"
 #include	<error.h>
 #include	<ls.h>
+#include	<regex.h>
 #include	"io.h"
 #include	"terminal.h"
 #include	"test.h"
@@ -83,7 +84,7 @@ static int e3(struct test*);
 
 static int test_strmatch(Shell_t *shp,const char *str, const char *pat)
 {
-	int match[2*(MATCH_MAX+1)],n;
+	regoff_t match[2*(MATCH_MAX+1)],n;
 	register int c, m=0;
 	register const char *cp=pat; 
 	while(c = *cp++)
@@ -155,6 +156,8 @@ int b_test(int argc, char *argv[],Shbltin_t *context)
 					return(test_unop(tdata.sh,cp[1],argv[3])!=0);
 				else if(argv[1][0]=='-' && argv[1][2]==0)
 					return(!test_unop(tdata.sh,argv[1][1],cp));
+				else if(not && c_eq(argv[2],'!'))
+					return(*argv[3]==0);
 				errormsg(SH_DICT,ERROR_exit(2),e_badop,cp);
 			}
 			return(test_binop(tdata.sh,op,argv[1],argv[3])^(argc!=5));

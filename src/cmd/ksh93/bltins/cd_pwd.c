@@ -115,7 +115,22 @@ int	b_cd(int argc, char *argv[],Shbltin_t *context)
 		if(*(dp=dir+1) == '.')
 			dp++;
 		if(*dp==0 || *dp=='/')
+		{
+			struct stat statb;
+			if((dp-dir)==2)
+			{
+				char *sp;
+				sfputr(shp->strbuf,oldpwd,0);
+				if(*dp)
+					sfputr(shp->strbuf,dp+1,0);
+				sp = sfstruse(shp->strbuf);
+				*(dir=strrchr(sp,'/'))=0;
+				if(*dp)
+					strcpy(dir,dp);
+				dir = (char*)sp;
+			}
 			cdpath = 0;
+		}
 	}
 	rval = -1;
 	do
@@ -191,8 +206,6 @@ success:
 	if(*dir != '/')
 		return(0);
 	nv_putval(opwdnod,oldpwd,NV_RDONLY);
-	if(oldpwd)
-		free(oldpwd);
 	flag = strlen(dir);
 	/* delete trailing '/' */
 	while(--flag>0 && dir[flag]=='/')
@@ -203,6 +216,8 @@ success:
 	nv_scan(shp->track_tree,rehash,(void*)0,NV_TAGGED,NV_TAGGED);
 	path_newdir(shp,shp->pathlist);
 	path_newdir(shp,shp->cdpathlist);
+	if(oldpwd)
+		free(oldpwd);
 	return(0);
 }
 

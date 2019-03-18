@@ -1,3 +1,19 @@
+12-05-18 misc/stk.c: fix access of moved realloc() data
+12-05-15 misc/optget.c: #? option with no value should have opt_info.num==0
+12-05-11 misc/stk.c: fix memmove() read of 1 uninitialized byte
+12-05-11 regex/regcoll.c: avoid memcpy() to self
+12-05-01 port/astconf.c: fix astconflist() to list standard minmax value if defined
+12-04-26 sfio/sftmp.c: fix memory leak due to inadvertent SF_STATIC copy
+12-04-26 sfio/sfwrite.c: fix subtle memory leak (with Vmlast or Vmpool or freeBSD malloc)
+12-04-26 vmalloc/vmbest.c: SIGSEGV overcommit check for __linux__ only
+12-04-25 vmalloc: add _vmfd() for private close-on-exec fds
+12-04-23 sfio_t.h: change getr to 32 bits to prepare for UTF-8 delimiters
+12-04-23 features/signal.c: add SIGSTKFLT
+12-04-17 regex/regcomp.c: fix (E:...) vs (E)... scoping
+12-04-11 features/sys: add aix's _LARGE_FILE_API to the _LARGEFILE(64)?_SOURCE mix -- anyone else?
+12-04-11 include/cmdarg.h,misc/cmdarg.c: (finally!) add a discipline with Cmdrun_f
+12-03-28 vmalloc: int vs [s]size_t cleanup
+12-03-27 sfio: fix #if logic that caused syntax errors (on 64 bit uwin)
 12-03-10 misc/optget.c: HELP_index for "PLUGIN" too
 12-02-29 include/shcmd.h: PLUGIN_VERSION 20111111 for cdt disc/meth change
 12-02-29 comp/spawnveg.c: fix sigcritical() to include waitpid() for internal child
@@ -19,7 +35,7 @@
 12-01-12 sfpkrd.c: add __sun I_PEEK+rsh runtime workaround
 12-01-10 shcmd.h: void* => Shbltin_t*
 12-01-10 tmxdate.c: handle { n>=1000 } TM_PARTS
-11-12-21 plug up some meory links -- thanks mhlavink
+11-12-21 plug up some memory links -- thanks mhlavink
 11-12-21 vmprivate.c: enclose VM_NONMEM exception in CLRLOCK(vm,0) ... SETLOCK(vm,0)
 11-12-13 aso: in -lposix for uwin, not -last -- just like vmalloc
 11-12-13 sfpoll.c: all streams SF_IOINTR => don't ignore EINTR

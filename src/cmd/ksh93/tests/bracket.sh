@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2011 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2012 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                 Eclipse Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -336,5 +336,18 @@ unset x y z foo bar
 [[ -e /dev/xxx/ ]] &&  err_exit '/dev/xxx/ exists'
 
 $SHELL 2> /dev/null -c '[[(-n foo)]]' || err_exit '[[(-n foo)]] should not require space in front of ('
+
+$SHELL 2> /dev/null -c '[[ "]" == ~(E)[]] ]]' || err_exit 'pattern "~(E)[]]" does not match "]"'
+
+unset var
+[[ -v var ]] &&  err_exit '[[ -v var ]] should be false after unset var'
+float var
+[[ -v var ]]  ||  err_exit '[[ -v var ]] should be true after float var'
+unset var
+[[ -v var ]] &&  err_exit '[[ -v var ]] should be false after unset var again'
+
+test ! ! ! 2> /dev/null || err_exit 'test ! ! ! should return 0'
+test ! ! x 2> /dev/null || err_exit 'test ! ! x should return 0'
+test ! ! '' 2> /dev/null && err_exit 'test ! ! "" should return non-zero'
 
 exit $((Errors<125?Errors:125))

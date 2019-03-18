@@ -1,7 +1,7 @@
 ########################################################################
 #                                                                      #
 #               This software is part of the ast package               #
-#          Copyright (c) 1982-2011 AT&T Intellectual Property          #
+#          Copyright (c) 1982-2012 AT&T Intellectual Property          #
 #                      and is licensed under the                       #
 #                 Eclipse Public License, Version 1.0                  #
 #                    by AT&T Intellectual Property                     #
@@ -108,7 +108,7 @@ fi
 # check for attributes across subshells
 typeset -i x=3
 y=1/0
-if	( typeset x=y ) 2> /dev/null
+if	( x=y ) 2> /dev/null
 then	err_exit "attributes not passed to subshells"
 fi
 unset x
@@ -484,6 +484,15 @@ function dave.unset
 unset dave
 [[ $(typeset +f) == *dave.* ]] && err_exit 'unset discipline not removed'
 
+x=$(
+	dave=dave
+	function dave.unset
+	{
+		print dave.unset
+	}
+)
+[[ $x == dave.unset ]] || err_exit 'unset discipline not called with subset completion'
+
 print 'print ${VAR}' > $tmp/script
 unset VAR
 VAR=new $tmp/script > $tmp/out
@@ -661,5 +670,8 @@ level=$($SHELL -c $'$SHELL -c \'print -r "$SHLVL"\'')
 [[ $level  == 3 ]]  || err_exit "SHLVL should be 3 not $level"
 
 [[ $($SHELL -c '{ x=1; : ${x.};print ok;}' 2> /dev/null) == ok ]] || err_exit '${x.} where x is a simple variable causes shell to abort'
+
+$SHELL -c 'unset .sh' 2> /dev/null
+[[ $? == 1 ]] || err_exit 'unset .sh should return 1'
 
 exit $((Errors<125?Errors:125))

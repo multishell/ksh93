@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -59,9 +59,7 @@ int		type;	/* >0: scanf, =0: printf, -1: internal	*/
 	Sffmt_t		savft;
 	Fmtpos_t*	fp;	/* position array of arguments	*/
 	int		argp, argn, maxp, need[FP_INDEX];
-#if _has_multibyte
 	SFMBDCL(fmbs)
-#endif
 
 	if(type < 0)
 		fp = NIL(Fmtpos_t*);

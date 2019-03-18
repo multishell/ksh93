@@ -125,6 +125,8 @@ typedef struct
 	short		_dshort;
 	char		_cpointer;
 	char		*_dpointer;
+	int32_t		_cint32_t;
+	int32_t		*_dint32_t;
 } _Align_;
 
 #define alignof(t)	((char*)&((_Align_*)0)->_d##t-(char*)&((_Align_*)0)->_c##t)
@@ -188,8 +190,8 @@ size_t nv_datasize(Namval_t *np, size_t *offset)
 			}
 			else
 			{
-				a = alignof(long);
-				s = sizeof(long);
+				a = alignof(int32_t);
+				s = sizeof(int32_t);
 			}
 		}
 	}
@@ -819,7 +821,7 @@ void nv_addtype(Namval_t *np, const char *optstr, Optdisc_t *op, size_t optsz)
 			tp->nsp = bp;
 		if(!shp->strbuf2)
 			shp->strbuf2 = sfstropen();
-		sfprintf(shp->strbuf2,"%s.%s%c\n",nv_name(bp)+1,name,0);
+		sfprintf(shp->strbuf2,".%s.%s%c\n",nv_name(bp)+1,name,0);
 		name = sfstruse(shp->strbuf2);
 	}
 #endif /* SHOPT_NAMESPACE */
@@ -1147,7 +1149,10 @@ else sfprintf(sfstderr,"tp==NULL\n");
 		}
 		else
 		{
+			Namarr_t *ap;
 			j = nv_isattr(np,NV_NOFREE);
+			if(j==0 && (ap=nv_arrayptr(np)) && !ap->fun)
+				j = 1;
 			nq->nvfun = np->nvfun;
 			np->nvfun = 0;
 			nv_disc(nq, &pp->childfun.fun, NV_LAST);
@@ -1199,6 +1204,7 @@ else sfprintf(sfstderr,"tp==NULL\n");
 	}
 	else if(!mp->nvalue.cp)
 		mp->nvalue.cp = Empty;
+	nv_onattr(mp,NV_TAGGED);
 	nv_disc(mp, &pp->fun, NV_LAST);
 	if(nd>0)
 	{

@@ -991,7 +991,7 @@ USAGE_LICENSE
 ;
 
 const char sh_optkill[]	 = 
-"[-1c?\n@(#)$Id: kill (AT&T Research) 1999-06-17 $\n]"
+"[-1c?\n@(#)$Id: kill (AT&T Research) 2012-04-13 $\n]"
 USAGE_LICENSE
 "[+NAME?kill - terminate or signal process]"
 "[+DESCRIPTION?With the first form in which \b-l\b is not specified, "
@@ -1011,6 +1011,8 @@ _JOB_
 "[l?List signal names or signal numbers rather than sending signals as "
 	"described above.  "
 	"The \b-n\b and \b-s\b options cannot be specified.]"
+"[L?Same as \b-l\b except that of no argument is specified the signals will "
+	"be listed in menu format as with select compound command.]"
 "[n]#[signum?Specify a signal number to send.  Signal numbers are not "
 	"portable across platforms, except for the following:]{"
 		"[+0?No signal]"
@@ -1143,7 +1145,9 @@ USAGE_LICENSE
 	"[+%q?Output \astring\a quoted in a manner that it can be read in "
 		"by the shell to get back the same string.  However, empty "
 		"strings resulting from missing \astring\a operands will "
-		"not be quoted.]"
+		"not be quoted. When \bq\b is preceded by the alternative "
+		"format specifier, \b#\b, the string is quoted in manner "
+		" suitable as a field in a \b.csv\b format file.]"
 	"[+%B?Treat the argument as a variable name and output the value "
 		"without converting it to a string.  This is most useful for "
 		"variables of type \b-b\b.]"
@@ -1181,6 +1185,8 @@ USAGE_LICENSE
 	"[+-?The escape sequence \b\\C[.\b\aname\a\b.]]\b expands to "
 		"the collating element \aname\a.]"
 	"[+-?The escape sequence \b\\x{\b\ahex\a\b}\b expands to the "
+		"character corresponding to the hexidecimal value \ahex\a.]"
+	"[+-?The escape sequence \b\\u{\b\ahex\a\b}\b expands to the unicode "
 		"character corresponding to the hexidecimal value \ahex\a.]"
 	"[+-?The format modifier flag \b=\b can be used to center a field to "
 		"a specified width.]"

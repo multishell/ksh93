@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -59,8 +59,8 @@ typedef struct pathcomp
 	time_t		mtime;
 	char		*name;
 	char		*lib;
+	char		*bbuf;
 	char		*blib;
-	void		*bltin_lib;
 	unsigned short	len;
 	unsigned short	flags;
 	Shell_t		*shp;
@@ -101,6 +101,10 @@ extern int		path_complete(Shell_t*,const char*, const char*,struct argnod**);
 #if SHOPT_PFSH
     extern int		path_xattr(Shell_t*, const char*, char*);
 #endif /* SHOPT_PFSH */
+
+/* builtin/plugin routines */
+extern int		sh_addlib(Shell_t*,void*,char*,Pathcomp_t*);
+extern Shbltin_f	sh_getlib(Shell_t*,char*,char*,Pathcomp_t*);
 
 /* constant strings needed for whence */
 extern const char e_timeformat[];

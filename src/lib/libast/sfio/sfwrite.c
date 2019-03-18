@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -94,7 +94,7 @@ size_t		n;	/* number of bytes. 		*/
 
 		w = f->endb - f->next;
 
-		if(s == f->next) /* after sfreserve */
+		if(s == f->next && s < f->endb) /* after sfreserve */
 		{	if(w > (ssize_t)n)
 				w = (ssize_t)n;
 			f->next = (s += w);

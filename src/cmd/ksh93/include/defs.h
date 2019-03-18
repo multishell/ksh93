@@ -90,6 +90,7 @@ struct sh_scoped
 	int		ioset;
 	unsigned short	trapmax;
 	char		*trap[SH_DEBUGTRAP+1];
+	char		**otrap;
 	char		**trapcom;
 	char		**otrapcom;
 	void		*timetrap;
@@ -155,6 +156,7 @@ struct shared
 	int		path_err;	/* last error on path search */ \
 	Dt_t		*track_tree;	/* for tracked aliases*/ \
 	Dt_t		*var_base;	/* global level variables */ \
+	Dt_t		*openmatch; \
 	Namval_t	*namespace;	/* current active namespace*/ \
 	Namval_t	*last_table;	/* last table used in last nv_open  */ \
 	Namval_t	*prev_table;	/* previous table used in nv_open  */ \
@@ -183,7 +185,6 @@ struct shared
 	int		topfd; \
 	int		savesig; \
 	unsigned char	*sigflag;	/* pointer to signal states */ \
-	char		openmatch; \
 	char		intrap; \
 	char		login_sh; \
 	char		lastbase; \
@@ -264,6 +265,7 @@ struct shared
 	Namfun_t	nvfun; \
 	char		*mathnodes; \
 	void		*coshell; \
+	char		*bltin_dir; \
 	struct Regress_s*regress;
 
 #include	<shell.h>
@@ -383,7 +385,6 @@ struct shared
 
 extern struct shared	*shgd;
 extern Shell_t		*nv_shell(Namval_t*);
-extern int		sh_addlib(Shell_t*,void*);
 extern void		sh_applyopts(Shell_t*,Shopt_t);
 extern char 		**sh_argbuild(Shell_t*,int*,const struct comnod*,int);
 extern struct dolnod	*sh_argfree(Shell_t *, struct dolnod*,int);

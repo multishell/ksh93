@@ -479,10 +479,13 @@ y=$(printf "%a" x)
 r=$y
 [[ $r == $n ]] || err_exit "output of printf %a not self preserving -- expected $x, got $y"
 unset x y r
-x=-0
-y=$(printf "%g %g %g %g %g %g\n" -0. -0 $((-0)) x $x $((x)))
-r="-0 -0 -0 -0 -0 -0"
-[[ $y == "$r" ]] || err_exit "-0 vs -0.0 inconsistency -- expected '$r', got '$y'"
+float x=-0 y=-0.0
+r=-0
+[[ $((-0)) == 0 ]] || err_exit '$((-0)) should be 0'
+[[ $(( -1*0)) == 0 ]] || err_exit '$(( -1*0)) should be 0'
+[[ $(( -1.0*0)) == -0 ]] || err_exit '$(( -1.0*0)) should be -0'
+[[ $(printf "%g %g %g\n" x $x $((x)) ) == '-0 -0 -0' ]] || err_exit '%g of x $x $((x)) for x=-0 should all be -0'
+[[ $(printf "%g %g %g\n" y $x $((y)) ) == '-0 -0 -0' ]] || err_exit '%g of y $y $((y)) for y=-0.0 should all be -0'
 $SHELL -c '(( x=));:' 2> /dev/null && err_exit '((x=)) should be an error'
 $SHELL -c '(( x+=));:' 2> /dev/null && err_exit '((x+=)) should be an error'
 $SHELL -c '(( x=+));:' 2> /dev/null && err_exit '((x=+)) should be an error'
@@ -733,5 +736,25 @@ print -- -020 | read x
 ((x == -20)) || err_exit 'numbers with leading -0 should not be treated as octal outside ((...))'
 print -- -8#20 | read x
 ((x == -16)) || err_exit 'numbers with leading -8# should be treated as octal'
+
+unset x
+x=0x1
+let "$x==1" || err_exit 'hex constants not working with let'
+(( $x == 1 )) || err_exit 'arithmetic with $x, where $x is hex constant not working'
+for i in 1
+do	(($x == 1)) || err_exit 'arithmetic in for loop with $x, where $x is hex constant not working'
+done
+x=010
+let "$x==10" || err_exit 'arithmetic with $x where $x is 010 should be decimal in let'
+(( 9.$x == 9.01 )) || err_exit 'arithmetic with 9.$x where x=010 should be 9.01' 
+(( 9$x == 9010 )) || err_exit 'arithmetic with 9$x where x=010 should be 9010' 
+x010=99
+((x$x == 99 )) || err_exit 'arithtmetic with x$x where x=010 should be $x010'
+(( 3+$x == 11 )) || err_exit '3+$x where x=010 should be 11 in ((...))'
+let "(3+$x)==13" || err_exit 'let should not recognize leading 0 as octal'
+unset x
+typeset -RZ3 x=10 
+(( $x == 10 )) || err_exit 'leading 0 in -RZ should not create octal constant wiht ((...))'
+let "$x==10" || err_exit 'leading 0 in -RZ should not create octal constant wiht let'
 
 exit $((Errors<125?Errors:125))

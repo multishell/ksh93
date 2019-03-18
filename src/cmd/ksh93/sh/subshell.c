@@ -455,7 +455,7 @@ void sh_subjobcheck(pid_t pid)
  * output of command <t>.  Otherwise, NULL will be returned.
  */
 
-Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, int flags, int comsub)
+Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, volatile int flags, int comsub)
 {
 	struct subshell sub_data;
 	register struct subshell *sp = &sub_data;
@@ -528,6 +528,7 @@ Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, int flags, int comsub)
 		sh_stats(STAT_SUBSHELL);
 		/* save trap table */
 		shp->st.otrapcom = 0;
+		shp->st.otrap = savst.trap;
 		if((nsig=shp->st.trapmax*sizeof(char*))>0 || shp->st.trapcom[0])
 		{
 			nsig += sizeof(char*);
@@ -602,6 +603,7 @@ Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, int flags, int comsub)
 	}
 	if(!shp->savesig)
 		shp->savesig = -1;
+	nv_restore(sp);
 	if(comsub)
 	{
 		/* re-enable job control */
@@ -666,7 +668,6 @@ Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, int flags, int comsub)
 	{
 		int n;
 		shp->options = sp->options;
-		nv_restore(sp);
 		if(sp->salias)
 		{
 			shp->alias_tree = dtview(sp->salias,0);
@@ -685,6 +686,7 @@ Sfio_t *sh_subshell(Shell_t *shp,Shnode_t *t, int flags, int comsub)
 			memset(&shp->st.trapcom[savst.trapmax],0,n*sizeof(char*));
 		shp->st = savst;
 		shp->curenv = savecurenv;
+		shp->st.otrap = 0;
 		if(nsig)
 		{
 			memcpy((char*)&shp->st.trapcom[0],savsig,nsig);

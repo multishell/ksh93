@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -348,7 +348,7 @@ char *stkset(register Sfio_t * stream, register char* loc, size_t offset)
 	while(1)
 	{
 		fp = (struct frame*)sp->stkbase;
-		cp  = sp->stkbase + roundof(sizeof(struct frame), STK_ALIGN);
+		cp = sp->stkbase + roundof(sizeof(struct frame), STK_ALIGN);
 		n = fp->nalias;
 		while(n-->0)
 		{
@@ -502,6 +502,7 @@ static char *stkgrow(register Sfio_t *stream, size_t size)
 	register struct frame *fp= (struct frame*)sp->stkbase;
 	register char *cp, *dp=0;
 	register size_t m = stktell(stream);
+	size_t endoff;
 	char *end=0;
 	int nn=0,add=1;
 	n += (m + sizeof(struct frame)+1);
@@ -519,15 +520,21 @@ static char *stkgrow(register Sfio_t *stream, size_t size)
 		sp->stkbase = ((struct frame*)dp)->prev;
 		end = fp->end;
 	}
+	endoff = end - dp;
 	cp = newof(dp, char, n, nn*sizeof(char*));
 	if(!cp && (!sp->stkoverflow || !(cp = (*sp->stkoverflow)(n))))
 		return(0);
 	increment(grow);
 	count(addsize,n - (dp?m:0));
-	if(dp && cp==dp)
+	if(dp==cp)
 	{
 		nn--;
-		add=0;
+		add = 0;
+	}
+	else if(dp)
+	{
+		dp = cp;
+		end = dp + endoff;
 	}
 	fp = (struct frame*)cp;
 	fp->prev = sp->stkbase;
@@ -538,10 +545,10 @@ static char *stkgrow(register Sfio_t *stream, size_t size)
 	if(fp->nalias=nn)
 	{
 		fp->aliases = (char**)fp->end;
-		if(end)
-			memmove(fp->aliases,end,nn*sizeof(char*));
+		if(end && nn>1)
+			memmove(fp->aliases,end,(nn-1)*sizeof(char*));
 		if(add)
-			fp->aliases[nn-1] =  dp + roundof(sizeof(struct frame),STK_ALIGN);
+			fp->aliases[nn-1] = dp + roundof(sizeof(struct frame),STK_ALIGN);
 	}
 	if(m && !dp)
 	{

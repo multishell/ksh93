@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -185,6 +185,10 @@ static struct _m_ map[] =
 #ifdef SIGSSTOP
 #define HAD_SIGSSTOP	1
 "Sendable stop",		"SSTOP",	SIGSSTOP,
+#endif
+#ifdef SIGSTKFLT
+#define HAD_SIGSTKFLT	1
+"Stack fault",			"STKFLT",	SIGSTKFLT,
 #endif
 #ifdef gould
 #define HAD_gould	1

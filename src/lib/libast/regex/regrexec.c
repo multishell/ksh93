@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -44,7 +44,7 @@ regrexec(const regex_t* p, const char* s, size_t len, size_t nmatch, regmatch_t*
 	register size_t*	fail;
 	register Bm_mask_t**	mask;
 	register size_t		index;
-	register int		n;
+	register ssize_t	n;
 	unsigned char*		end;
 	size_t			mid;
 	int			complete;

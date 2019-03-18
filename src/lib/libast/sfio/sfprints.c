@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -37,13 +37,16 @@ va_list	args;
 #endif
 {
 	reg int		rv;
+	Sfnotify_f	notify = _Sfnotify;
 	static Sfio_t*	f;
 
-	/* make a fake stream */
-	if(!f &&
-	   !(f = sfnew(NIL(Sfio_t*),NIL(char*),(size_t)SF_UNBOUND,
-			-1,SF_WRITE|SF_STRING)) )
-		return NIL(char*);
+	if(!f) /* make a string stream to write into */
+	{	_Sfnotify = 0;
+		f = sfnew(NIL(Sfio_t*),NIL(char*),(size_t)SF_UNBOUND, -1,SF_WRITE|SF_STRING);
+		_Sfnotify = notify;
+		if(!f)
+			return NIL(char*);
+	}
 
 	sfseek(f,(Sfoff_t)0,SEEK_SET);
 	rv = sfvprintf(f,form,args);

@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1982-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1982-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -41,7 +41,7 @@
 #define FALTPIPE	(02000<<COMBITS)	/* alternate pipes &| */
 #define FPOSIX		(02<<COMBITS)		/* posix semantics function */
 #define FLINENO		(04<<COMBITS)		/* for/case has line number */
-#define FOPTGET		(010<<COMBITS)		/* function calls getopts */
+#define FOPTGET		(0200<<COMBITS)		/* function calls getopts */
 
 #define TNEGATE		(01<<COMBITS)		/* ! inside [[...]] */
 #define TBINARY		(02<<COMBITS)		/* binary operator in [[...]] */

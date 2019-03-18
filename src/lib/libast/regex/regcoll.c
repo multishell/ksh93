@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -100,7 +100,7 @@ regcollate(register const char* s, char** e, char* buf, size_t size, wchar_t* wc
 		goto nope;
 	t = (const char*)buf;
  done:
-	if (r <= size)
+	if (r <= size && (char*)t != buf)
 	{
 		memcpy(buf, t, r);
 		if (r < size)

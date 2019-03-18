@@ -1,7 +1,7 @@
 /***********************************************************************
 *                                                                      *
 *               This software is part of the ast package               *
-*          Copyright (c) 1985-2011 AT&T Intellectual Property          *
+*          Copyright (c) 1985-2012 AT&T Intellectual Property          *
 *                      and is licensed under the                       *
 *                 Eclipse Public License, Version 1.0                  *
 *                    by AT&T Intellectual Property                     *
@@ -360,8 +360,8 @@
 #define SFMBCPY(to,fr)
 #define SFMBCLR(mb)
 #define SFMBSET(lhs,v)
-#define SFMBLEN(s,mb)		(*(s) ? 1 : 0)
 #define SFMBDCL(mb)
+#define SFMBLEN(s,mb)		(*(s) ? 1 : 0)
 #endif /* _has_multibyte */
 
 /* dealing with streams that might be accessed concurrently */
@@ -642,7 +642,7 @@
 	do if (*(dp) == 0) { \
 		Lc_numeric_t*	lv = (Lc_numeric_t*)LCINFO(AST_LC_NUMERIC)->data; \
 		*(dp) = lv->decimal; \
-		if (tp) *(tp) = lv->thousand; \
+		*(tp) = lv->thousand; \
 	} while (0)
 #endif /*!defined(SFSETLOCALE) && _PACKAGE_ast*/
 
@@ -652,11 +652,11 @@
 	do { struct lconv*	lv; \
 	  if(*(decimal) == 0) \
 	  { *(decimal) = '.'; \
-	    if (thousand) *(thousand) = -1; \
+	    *(thousand) = -1; \
 	    if((lv = localeconv())) \
 	    { if(lv->decimal_point && *lv->decimal_point) \
 	    	*(decimal) = *(unsigned char*)lv->decimal_point; \
-	      if(thousand && lv->thousands_sep && *lv->thousands_sep) \
+	      if(lv->thousands_sep && *lv->thousands_sep) \
 	    	*(thousand) = *(unsigned char*)lv->thousands_sep; \
 	    } \
 	  } \
@@ -664,7 +664,7 @@
 #endif /*!defined(SFSETLOCALE) && _lib_locale*/
 
 #if !defined(SFSETLOCALE)
-#define SFSETLOCALE(decimal,thousand)	(*(decimal)='.')
+#define SFSETLOCALE(decimal,thousand)	(*(decimal)='.',*(thousand)=-1)
 #endif
 
 /* stream pool structure. */
@@ -793,6 +793,7 @@ struct _fmtpos_s
 #define SFFMT_CLASS	040		/* %[			*/
 
 /* local variables used across sf-functions */
+typedef void  (*Sfnotify_f)_ARG_((Sfio_t*, int, void*));
 #define _Sfpage		(_Sfextern.sf_page)
 #define _Sfpool		(_Sfextern.sf_pool)
 #define _Sfpmove	(_Sfextern.sf_pmove)

@@ -1,26 +1,22 @@
-####################################################################
-#                                                                  #
-#             This software is part of the ast package             #
-#                Copyright (c) 1982-2004 AT&T Corp.                #
-#        and it may only be used by you under license from         #
-#                       AT&T Corp. ("AT&T")                        #
-#         A copy of the Source Code Agreement is available         #
-#                at the AT&T Internet web site URL                 #
-#                                                                  #
-#       http://www.research.att.com/sw/license/ast-open.html       #
-#                                                                  #
-#    If you have copied or used this software without agreeing     #
-#        to the terms of the license you are infringing on         #
-#           the license and copyright and are violating            #
-#               AT&T's intellectual property rights.               #
-#                                                                  #
-#            Information and Software Systems Research             #
-#                        AT&T Labs Research                        #
-#                         Florham Park NJ                          #
-#                                                                  #
-#                David Korn <dgk@research.att.com>                 #
-#                                                                  #
-####################################################################
+########################################################################
+#                                                                      #
+#               This software is part of the ast package               #
+#                  Copyright (c) 1982-2004 AT&T Corp.                  #
+#                      and is licensed under the                       #
+#                  Common Public License, Version 1.0                  #
+#                            by AT&T Corp.                             #
+#                                                                      #
+#                A copy of the License is available at                 #
+#            http://www.opensource.org/licenses/cpl1.0.txt             #
+#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#                                                                      #
+#              Information and Software Systems Research               #
+#                            AT&T Research                             #
+#                           Florham Park NJ                            #
+#                                                                      #
+#                  David Korn <dgk@research.att.com>                   #
+#                                                                      #
+########################################################################
 function err_exit
 {
 	print -u2 -n "\t"
@@ -344,4 +340,19 @@ foo=one
 foo[1]=two
 foo[0]=three
 [[ $foo == three ]] || err_exit 'export all not working with arrays'
+cat > /tmp/sharr$$ <<- \!
+	typeset -A foo
+	print foo${foo[abc]}
+!
+# 04-05-24 bug fix
+unset foo
+[[ $($SHELL -c "typeset -A foo;/tmp/sharr$$")  == foo ]] 2> /dev/null || err_exit 'empty associative arrays not being cleared correctly before scripts'
+[[ $($SHELL -c "typeset -A foo;foo[abc]=abc;/tmp/sharr$$") == foo ]] 2> /dev/null || err_exit 'associative arrays not being cleared correctly before scripts'
+unset foo
+foo=(one two)
+[[ ${foo[@]:1} == two ]] || err_exit '${foo[@]:1} == two'
+[[ ! ${foo[@]:2} ]] || err_exit '${foo[@]:2} not null'
+unset foo
+foo=one
+[[ ! ${foo[@]:1} ]] || err_exit '${foo[@]:1} not null'
 exit $((Errors))

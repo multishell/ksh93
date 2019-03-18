@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  *
@@ -137,7 +133,7 @@ struct match
 	char		*rval;
 	int		vsize;
 	int		nmatch;
-	int		match[40];
+	int		match[2*(MATCH_MAX+1)];
 };
 
 typedef struct _init_
@@ -654,7 +650,7 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[])
 	register int i,n;
 	if(mp->nmatch = nmatch)
 	{
-		memcpy(mp->match,match,nmatch*2*sizeof(int));
+		memcpy(mp->match,match,nmatch*2*sizeof(match[0]));
 		for(n=match[0],i=1; i < 2*nmatch; i++)
 		{
 			if(mp->match[i] < n)
@@ -676,6 +672,7 @@ void sh_setmatch(const char *v, int vsize, int nmatch, int match[])
 		}
 		memcpy(mp->val,v,vsize);
 		mp->val[vsize] = 0;
+		nv_putsub(SH_MATCHNOD, NIL(char*), nmatch|ARRAY_FILL);
 	}
 } 
 
@@ -858,7 +855,9 @@ Shell_t *sh_init(register int argc,register char *argv[], void(*userinit)(int))
 			break;
 		}
 	}
+#ifdef _SC_CLK_TCK
 	sh.lim.clk_tck = sysconf(_SC_CLK_TCK);
+#endif
 	sh.lim.open_max = sysconf(_SC_OPEN_MAX);
 	sh.lim.child_max = sysconf(_SC_CHILD_MAX);
 	sh.lim.ngroups_max = sysconf(_SC_NGROUPS_MAX);
@@ -1060,6 +1059,7 @@ int sh_reinit(char *argv[])
 	dtclose(sh.alias_tree);
 	sh.alias_tree = inittree(&sh,shtab_aliases);
 	sh.namespace = 0;
+	sh.inuse_bits = 0;
 	if(sh.userinit)
 		(*sh.userinit)(1);
 	if(sh.heredocs)

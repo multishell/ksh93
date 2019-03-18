@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * UNIX shell
@@ -100,7 +96,7 @@ static char	beenhere = 0;
     }
 #endif /* _lib_fts_notify */
 
-sh_main(int ac, char *av[], void (*userinit)(int))
+int sh_main(int ac, char *av[], void (*userinit)(int))
 {
 	register char	*name;
 	register int	fdin;
@@ -108,6 +104,7 @@ sh_main(int ac, char *av[], void (*userinit)(int))
 	register int 	rshflag;	/* set for restricted shell */
 	register Shell_t *shp;
 	int prof;
+	int i;
 	char *command;
 #ifdef _lib_sigvec
 	/* This is to clear mask that my be left on by rlogin */
@@ -156,7 +153,12 @@ sh_main(int ac, char *av[], void (*userinit)(int))
 		{
 			sh_onoption(SH_INTERACTIVE);
 			sh_onoption(SH_BGNICE);
+			sh_onoption(SH_RC);
 		}
+		if(sh_isoption(SH_BASH) && !sh_isoption(SH_POSIX))
+			sh_onoption(SH_RC);
+		for(i=0; i<elementsof(sh.offoptions.v); i++)
+			sh.options.v[i] &= ~sh.offoptions.v[i];
 		if(sh_isoption(SH_INTERACTIVE))
 		{
 #ifdef SIGXCPU
@@ -205,23 +207,12 @@ sh_main(int ac, char *av[], void (*userinit)(int))
 		name = "";
 		if(!sh_isoption(SH_NOEXEC))
 		{
-			if(prof && shp->rcfile && sh_isoption(SH_INTERACTIVE))
-			{
-#ifdef PATH_BFPATH
-				if((fdin = path_open(shp->rcfile,NIL(Pathcomp_t*))) >= 0)
+			if(prof && sh_isoption(SH_RC))
+#ifdef SHOPT_BASH
+				name = shp->rcfile ? shp->rcfile : sh_mactry("$HOME/.bashrc");
 #else
-				if((fdin = path_open(shp->rcfile,"")) >= 0)
-#endif
-				{
-					char *saveid = error_info.id;
-					error_info.id = shp->rcfile;
-					shp->st.filename = path_fullname(stakptr(PATH_OFFSET));
-					exfile(shp,iop,fdin);
-					error_info.id = saveid;
-				}
-			}
-			if(prof && (sh_isoption(SH_INTERACTIVE) || sh_isoption(SH_BASH) && !sh_isoption(SH_POSIX)))
 				name = sh_mactry(nv_getval(ENVNOD));
+#endif
 			else if(sh_isoption(SH_INTERACTIVE) && sh_isoption(SH_PRIVILEGED))
 				name = (char*)e_suidprofile;
 		}
@@ -368,7 +359,7 @@ sh_main(int ac, char *av[], void (*userinit)(int))
 static void	exfile(register Shell_t *shp, register Sfio_t *iop,register int fno)
 {
 	time_t curtime;
-	union anynode *t;
+	Shnode_t *t;
 	int maxtry=IOMAXTRY, tdone=0, execflags;
 	int states,jmpval;
 	struct checkpt buff;
@@ -555,7 +546,7 @@ static void	exfile(register Shell_t *shp, register Sfio_t *iop,register int fno)
 			sh_onstate(SH_HISTORY);
 		job.waitall = job.curpgid = 0;
 		error_info.flags |= ERROR_INTERACTIVE;
-		t = (union anynode*)sh_parse(shp,iop,0);
+		t = (Shnode_t*)sh_parse(shp,iop,0);
 		if(!sh_isstate(SH_INTERACTIVE) && !sh_isstate(SH_CFLAG))
 			error_info.flags &= ~ERROR_INTERACTIVE;
 		shp->readscript = 0;

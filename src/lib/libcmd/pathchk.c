@@ -1,27 +1,23 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1992-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1992-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * pathchk
@@ -30,7 +26,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: pathchk (AT&T Labs Research) 1999-04-29 $\n]"
+"[-?\n@(#)$Id: pathchk (AT&T Labs Research) 2004-10-08 $\n]"
 USAGE_LICENSE
 "[+NAME?pathchk - check pathnames for portability]"
 "[+DESCRIPTION?\bpathchk\b checks each \apathname\a to see if it "
@@ -41,16 +37,26 @@ USAGE_LICENSE
 "[+?By default \bpathchk\b checks each component of each \apathname\a "
 	"based on the underlying file system.  A diagnostic is written "
 	"to standard error for each pathname that:]{"
-	"[+-?Is longer than \bPATH_MAX\b bytes as returned by \bgetconf\b(1).]"
-	"[+-?Contains any component longer that \bNAME_MAX\b bytes.]"
+	"[+-?Is longer than \b$(getconf PATH_MAX)\b bytes.]"
+	"[+-?Contains any component longer than \b$(getconf NAME_MAX)\b bytes.]"
 	"[+-?Contains any directory component in a directory that is "
 		"not searchable.]"
 	"[+-?Contains any character in any component that is not valid in "
 		"its containing directory.]"
+	"[+-?Is empty.]"
 	"}"
 "[p:portability?Instead of performing length checks on the underlying "
-	"file system, the length of each \apathname\a and its components is "
-	"tested against the POSIX.1 minimum limits for portability.]"
+	"file system, write a diagnostic for each pathname operand that:]{"
+	"[+-?Is longer than \b$(getconf _POSIX_PATH_MAX)\b bytes.]"
+	"[+-?Contains any component longer than "
+		"\b$(getconf _POSIX_NAME_MAX)\b bytes.]"
+        "[+-?Contains any character in any component that is not in the "
+		"portable filename character set.]"
+#if 0
+	"[+-?Contains any component with \b-\b as the first character.]"
+#endif
+	"[+-?Is empty.]"
+	"}"
 "\n"
 "\npathname ...\n"
 "\n"
@@ -58,7 +64,7 @@ USAGE_LICENSE
         "[+0?All \apathname\a operands passed all of the checks.]"
         "[+>0?An error occurred.]"
 "}"
-"[+SEE ALSO?\bgetconf\b(1), \bcreat\b(2)]"
+"[+SEE ALSO?\bgetconf\b(1), \bcreat\b(2), \bpathchk\b(2)]"
 ;
 
 
@@ -87,6 +93,13 @@ static int pathchk(char* path, int mode)
 	register char *cp=path, *cpold;
 	register int c;
 	register long r,name_max,path_max;
+	char buf[2];
+
+	if(!*path)
+	{
+		error(2,"path is empty");
+		return(0);
+	}
 	if(mode)
 	{
 		name_max = _POSIX_NAME_MAX;
@@ -169,14 +182,19 @@ static int pathchk(char* path, int mode)
 	}
 	while(*(cpold=cp))
 	{
-		while((c= *cp++) && c!='/')
+		if(mode && *cp == '-')
 		{
+			error(2,"%s: path component begins with '-'",path,fmtquote(buf, NiL, "'", 1, 0));
+			return(0);
+		}
+		while((c= *cp++) && c!='/')
 			if(mode && !isport(c))
 			{
-				error(2,"%s: %c not in portable character set",path,c);
+				buf[0] = c;
+				buf[1] = 0;
+				error(2,"%s: '%s' not in portable character set",path,fmtquote(buf, NiL, "'", 1, 0));
 				return(0);
 			}
-		}
 		if((cp-cpold) > name_max)
 			goto err;
 		if(c==0)
@@ -224,4 +242,3 @@ b_pathchk(int argc, char** argv, void* context)
 	}
 	return(error_info.errors);
 }
-

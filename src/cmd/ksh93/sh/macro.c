@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Shell macro expander
@@ -1284,11 +1280,14 @@ retry1:
 				}
 				else if(type > 0)
 				{
-					nv_putsub(np,NIL(char*),type|ARRAY_SCAN);
-					v = nv_getval(np);
+					if(nv_putsub(np,NIL(char*),type|ARRAY_SCAN))
+						v = nv_getval(np);
+					else
+						v = 0;
 				}
 			}
-			
+			else if(type>0)
+				v = 0;
 		}
 		else if(v)
 		{
@@ -1357,7 +1356,7 @@ retry2:
 	if(v && (!nulflg || *v ) && c!='+')
 	{
 		register int d = (mode=='@'?' ':mp->ifs);
-		int match[40], nmatch, vsize_last;
+		int match[2*(MATCH_MAX+1)], nmatch, vsize_last;
 		char *vlast;
 		while(1)
 		{
@@ -1374,7 +1373,7 @@ retry2:
 					if(c=='%')
 						nmatch=substring(v,pattern,match,flag&STR_MAXIMAL);
 					else
-						nmatch=strgrpmatch(v,pattern,match,sizeof(match)/(2*sizeof(int)),flag);
+						nmatch=strgrpmatch(v,pattern,match,elementsof(match)/2,flag);
 					if(replen>0)
 						sh_setmatch(v,vsize,nmatch,match);
 					if(nmatch)
@@ -1534,7 +1533,7 @@ static void comsubst(Mac_t *mp,int type)
 	int			was_history = sh_isstate(SH_HISTORY);
 	int			was_verbose = sh_isstate(SH_VERBOSE);
 	int			newlines,bufsize;
-	register union anynode	*t;
+	register Shnode_t	*t;
 	Namval_t		*np;
 	sh.argaddr = 0;
 	savemac = *mp;
@@ -1588,7 +1587,7 @@ static void comsubst(Mac_t *mp,int type)
 		sp = sfnew(NIL(Sfio_t*),str,c,-1,SF_STRING|SF_READ);
 		c = sh.inlineno;
 		sh.inlineno = error_info.line+sh.st.firstline;
-		t = (union anynode*)sh_parse(mp->shp, sp,SH_EOF|SH_NL);
+		t = (Shnode_t*)sh_parse(mp->shp, sp,SH_EOF|SH_NL);
 		sh.inlineno = c;
 	}
 #if KSHELL
@@ -1723,14 +1722,17 @@ static void mac_copy(register Mac_t *mp,register const char *str, register int s
 		while(size-->0)
 		{
 			c = state[*(unsigned char*)cp++];
-			if(nopat&&(c==S_PAT||c==S_ESC||c==S_BRACT||c==S_ENDCH))
+			if(nopat&&(c==S_PAT||c==S_ESC||c==S_BRACT||c==S_ENDCH) && mp->pattern!=3)
 				c=1;
 			else if(mp->pattern==4 && (c==S_ESC||c==S_BRACT||c==S_ENDCH))
 				c=1;
 			else if(mp->pattern==2 && c==S_SLASH)
 				c=1;
-			else if(mp->pattern==3 && c==S_ESC && mp->quote && state[*(unsigned char*)cp]==S_DIG)
-				c=1;
+			else if(mp->pattern==3 && c==S_ESC && (state[*(unsigned char*)cp]==S_DIG||(*cp==ESCAPE)))
+			{
+				if(!(c=mp->quote))
+					cp++;
+			}
 			else
 				c=0;
 			if(c)
@@ -1885,12 +1887,12 @@ static int substring(register const char *string,const char *pat,int match[], in
 {
 	register const char *sp=string;
 	register int size,len,nmatch,n;
-	int smatch[20];
+	int smatch[2*(MATCH_MAX+1)];
 	if(flag)
 	{
-		if(n=strgrpmatch(sp,pat,smatch,10,STR_RIGHT|STR_MAXIMAL))
+		if(n=strgrpmatch(sp,pat,smatch,elementsof(smatch)/2,STR_RIGHT|STR_MAXIMAL))
 		{
-			memcpy(match,smatch,n*2*sizeof(int));
+			memcpy(match,smatch,n*2*sizeof(smatch[0]));
 			return(n);
 		}
 		return(0);
@@ -1903,10 +1905,10 @@ static int substring(register const char *string,const char *pat,int match[], in
 		if(mbwide())
 			sp = lastchar(string,sp);
 #endif /* SHOPT_MULTIBYTE */
-		if(n=strgrpmatch(sp,pat,smatch,10,STR_RIGHT|STR_LEFT|STR_MAXIMAL))
+		if(n=strgrpmatch(sp,pat,smatch,elementsof(smatch)/2,STR_RIGHT|STR_LEFT|STR_MAXIMAL))
 		{
 			nmatch = n;
-			memcpy(match,smatch,n*2*sizeof(int));
+			memcpy(match,smatch,n*2*sizeof(smatch[0]));
 			size = sp-string;
 			break;
 		}

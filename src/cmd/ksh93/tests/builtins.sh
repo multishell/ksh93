@@ -1,26 +1,22 @@
-####################################################################
-#                                                                  #
-#             This software is part of the ast package             #
-#                Copyright (c) 1982-2004 AT&T Corp.                #
-#        and it may only be used by you under license from         #
-#                       AT&T Corp. ("AT&T")                        #
-#         A copy of the Source Code Agreement is available         #
-#                at the AT&T Internet web site URL                 #
-#                                                                  #
-#       http://www.research.att.com/sw/license/ast-open.html       #
-#                                                                  #
-#    If you have copied or used this software without agreeing     #
-#        to the terms of the license you are infringing on         #
-#           the license and copyright and are violating            #
-#               AT&T's intellectual property rights.               #
-#                                                                  #
-#            Information and Software Systems Research             #
-#                        AT&T Labs Research                        #
-#                         Florham Park NJ                          #
-#                                                                  #
-#                David Korn <dgk@research.att.com>                 #
-#                                                                  #
-####################################################################
+########################################################################
+#                                                                      #
+#               This software is part of the ast package               #
+#                  Copyright (c) 1982-2004 AT&T Corp.                  #
+#                      and is licensed under the                       #
+#                  Common Public License, Version 1.0                  #
+#                            by AT&T Corp.                             #
+#                                                                      #
+#                A copy of the License is available at                 #
+#            http://www.opensource.org/licenses/cpl1.0.txt             #
+#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#                                                                      #
+#              Information and Software Systems Research               #
+#                            AT&T Research                             #
+#                           Florham Park NJ                            #
+#                                                                      #
+#                  David Korn <dgk@research.att.com>                   #
+#                                                                      #
+########################################################################
 function err_exit
 {
 	print -u2 -n "\t"
@@ -261,6 +257,8 @@ fi
 if	[[ $(printf '%..*s\n' : abc def) != abc:def ]]
 then	err_exit	"printf '%..*s' not working"
 fi
+[[ $(printf '%q\n') == '' ]] || err_exit 'printf "%q" with missing arguments'
+[[ $(printf '%T\n' now) == "$(date)" ]] || err_exit 'printf "%T" now'
 behead()
 {
 	read line
@@ -357,7 +355,7 @@ then	for i in $(command command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0
 	do	((sum += $i))
 	done
 	(( sum == n )) || err_exit "command -x processed only $sum arguments"
-	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) > /dev/null  2>&1
+	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 == argument0 ]]' count $(longline $n) > /dev/null  2>&1
 	[[ $? != 1 ]] && err_exit 'incorrect exit status for command -x'
 fi
 # test command -x option with extra arguments
@@ -369,7 +367,7 @@ then    for i in $(command command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argume
 	(( sum  > n )) || err_exit "command -x processed only $sum arguments"
 	(( (sum-n)%3==0 )) || err_exit "command -x processed only $sum arguments"
 	(( sum == n+3)) && err_exit "command -x processed only $sum arguments"
-	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 != argument0 ]]' count $(longline $n) > /dev/null  2>&1
+	command -p command -x ${SHELL:-ksh} -c 'print $#;[[ $1 == argument0 ]]' count $(longline $n) > /dev/null  2>&1
 	[[ $? != 1 ]] && err_exit 'incorrect exit status for command -x'
 fi
 # test for debug trap

@@ -1,5 +1,32 @@
+04-12-15 cp.c: add --preserve high resolution time support
+04-12-08 date.c: add high resolution time support
+04-12-01 cmp.c: fix %6I*ld => %6I*d -- doh
+	 fmt.c: handle "\n\n operands \n\n"
+	 head.c: handle -cN -nN, N > 4Gb
+04-11-22 cmp.c: handle >2G chars/lines
+04-11-18 fold.c: add --prepend=text, --append=text
+04-10-31 tail.c: use SF_LOCKR macro
+04-10-28 tail.c: use strtol() for old stype [+-]number[suffix] -- doh
+04-10-22 cp.c: check rename() errno==ENOENT to retain destination
+04-10-11 fmt.c: fix -o,--optget sublist bugs
+	 tail.c: use strton() for number conversion
+04-10-08 pathchk.c: add empty path and -p - first component char
+04-10-01 fmt.c: add -o,--optget concatenated usage string format
+	 stty.c: context is ERROR_INTERCATIVE
+	 rm.c: restore 3d before exit
+04-09-24 pathchk.c: fix docs
+04-09-14 date.c: add %| and %& --parse docs
+04-08-27 cp.c: add FTW_DC check -- duh
+04-08-01 fmt.c: handle last char != '\n'
+04-07-22 date.c,uname.c: access() => eaccess()
+04-07-01 fmt.c: handle large input lines -- ouch
+04-06-11 id.c: fix -r to output something!
+04-05-27 expr.c: fix `:' op subexpression output
+04-04-15 chmod.c: follow symlink for relative mode
+04-04-12 Makefile: add STDCHMOD (for osf.alpha)
+04-03-19 tail.c: handle -f sfreserve() large chunk failure
 04-02-29 cp.c: decouple -f and -i for standard CONFORMANCE
-	 cp.c: mv attempts rename() before remove()+rename()
+	 cp.c: mv now attempts rename() before remove()+rename()
 	 date.c: -f format or +format disables system clock set
 04-02-14 cp.c: add -F --fsync to call fsync(2) for each copied file
 04-01-05 head.c: -s now uses opt_info.number for >2Gb skip

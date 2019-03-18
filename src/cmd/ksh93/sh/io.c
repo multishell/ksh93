@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Input/output file processing
@@ -36,6 +32,7 @@
 #include	<stdarg.h>
 #include	<ctype.h>
 #include	"variables.h"
+#include	"path.h"
 #include	"io.h"
 #include	"jobs.h"
 #include	"shnodes.h"
@@ -109,7 +106,7 @@ static ssize_t	slowread(Sfio_t*, void*, size_t, Sfdisc_t*);
 static ssize_t	subread(Sfio_t*, void*, size_t, Sfdisc_t*);
 static ssize_t	tee_write(Sfio_t*,const void*,size_t,Sfdisc_t*);
 static int	io_prompt(Sfio_t*,int);
-static int	io_heredoc(register struct ionod*);
+static int	io_heredoc(register struct ionod*, const char*);
 static void	sftrack(Sfio_t*,int,int);
 static const Sfdisc_t eval_disc = { NULL, NULL, NULL, eval_exceptf, NULL};
 static Sfdisc_t tee_disc = {NULL,tee_write,NULL,NULL,NULL};
@@ -330,31 +327,16 @@ int sh_close(register int fd)
 	return(r);
 }
 
-int sh_devtofd(const char *cp)
-{
-	if(strmatch(cp,(char*)e_devfdstd))
-	{
-		if(cp[8]=='i')		/* /dev/stdin */
-			return(0);
-		else if(cp[8]=='o')	/* /dev/stdout */
-			return(1);
-		else if(cp[8]=='e')	/* /dev/stderr */
-			return(2);
-		else			/* /dev/fd/N */
-			return((int)strtol(cp+8,(char**)0,10));
-	}
-	return(-1);
-}
-
 /*
- * Open a file for reading
- * On failure, print message.
+ * Mimic open(2) with checks for pseudo /dev/ files.
  */
 int sh_open(register const char *path, int flags, ...)
 {
-	register int		fd= -1;
+	register int		fd = -1;
 	mode_t			mode;
+	char			*e;
 #ifdef SOCKET
+	int			prot = -1;
 	struct sockaddr_in	addr;
 #endif /* SOCKET */
 	va_list			ap;
@@ -367,20 +349,48 @@ int sh_open(register const char *path, int flags, ...)
 		errno = ENOENT;
 		return(-1);
 	}
-	if ((fd = sh_devtofd(path))>=0)
-	if (strmatch(path,e_devfdNN) || (fd=strmatch(path,"/dev/std@(in|out|err)")))
-	{
-		if(fd)
+	if (path[0]=='/' && path[1]=='d' && path[2]=='e' && path[3]=='v' && path[4]=='/')
+		switch (path[5])
 		{
-			if(path[8]=='i')
-				fd = 0;
-			else if(path[8]=='o')
-				fd = 1;
-			else if(path[8]=='e')
-				fd = 2;
+		case 'f':
+			if (path[6]=='d' && path[7]=='/')
+			{
+				fd = (int)strtol(path+8, &e, 10);
+				if (*e)
+					fd = -1;
+			}
+			break;
+		case 's':
+			if (path[6]=='t' && path[7]=='d')
+				switch (path[8])
+				{
+				case 'e':
+					if (path[9]=='r' && path[10]=='r' && !path[11])
+						fd = 2;
+					break;
+				case 'i':
+					if (path[9]=='n' && !path[10])
+						fd = 0;
+					break;
+				case 'o':
+					if (path[9]=='u' && path[10]=='t' && !path[11])
+						fd = 1;
+					break;
+				}
+			break;
+#ifdef SOCKET
+		case 't':
+			if (path[6]=='c' && path[7]=='p' && path[8]=='/')
+				prot = SOCK_STREAM;
+			break;
+		case 'u':
+			if (path[6]=='d' && path[7]=='p' && path[8]=='/')
+				prot = SOCK_DGRAM;
+			break;
+#endif
 		}
-		else
-			fd = (int)strtol(path+8, (char**)0, 10);
+	if (fd > 0)
+	{
 		if((mode=sh_iocheckfd(fd))==IOCLOSE)
 			return(-1);
 		flags &= O_ACCMODE;
@@ -388,13 +398,13 @@ int sh_open(register const char *path, int flags, ...)
 			return(-1);
 		if(!(mode&IOREAD) && ((flags==O_RDONLY) || (flags==O_RDWR)))
 			return(-1);
-		return(fd);
-
+		if((fd=dup(fd))<0)
+			return(-1);
 	}
 #ifdef SOCKET
-	if (strmatch(path, "/dev/@(tcp|udp)/*/*") && str2inet(path + 5, &addr))
+	else if (prot > 0 && str2inet(path + 5, &addr))
 	{
-		if ((fd = socket(AF_INET, path[5] == 't' ? SOCK_STREAM : SOCK_DGRAM, 0)) >= 0)
+		if ((fd = socket(AF_INET, prot, 0)) >= 0)
 		{
 			if(flags&O_SERVICE)
 			{
@@ -423,9 +433,8 @@ int sh_open(register const char *path, int flags, ...)
 			}
 		}
 	}
-	else
 #endif /* SOCKET */
-	if((fd = open(path, flags, mode)) < 0)
+	else if((fd = open(path, flags, mode)) < 0)
 		return(-1);
 	flags &= O_ACCMODE;
 	if(flags==O_WRONLY)
@@ -438,6 +447,10 @@ int sh_open(register const char *path, int flags, ...)
 	return(fd);
 }
 
+/*
+ * Open a file for reading
+ * On failure, print message.
+ */
 int sh_chkopen(register const char *name)
 {
 	register int fd = sh_open(name,O_RDONLY,0);
@@ -503,7 +516,6 @@ int	sh_redirect(struct ionod *iop, int flag)
 	const char *message = ERROR_dictionary(e_open);
 	int o_mode;		/* mode flag for open */
 	static char io_op[5];	/* used for -x trace info */
-	static int	inuse_bits;	/* keep track of 3-9 in use */
 	int clexec=0, fn, traceon;
 	int indx = sh.topfd;
 	char *trace = sh.st.trap[SH_DEBUGTRAP];
@@ -542,7 +554,7 @@ int	sh_redirect(struct ionod *iop, int flag)
 					io_op[2] = '<';
 					sfputr(sfstderr,io_op,'\n');
 				}
-				fd = io_heredoc(iop);
+				fd = io_heredoc(iop,fname);
 				fname = 0;
 			}
 			else if(iof&IOMOV)
@@ -666,12 +678,12 @@ int	sh_redirect(struct ionod *iop, int flag)
 			{
 				if(sh_inuse(fn) || fn==sh.infd)
 				{
-					if(fn>9 || !(inuse_bits&(1<<fn)))
+					if(fn>9 || !(sh.inuse_bits&(1<<fn)))
 						io_preserve(sh.sftable[fn],fn);
 				}
 				sh_close(fn);
 				if(fn<10)
-					inuse_bits &= ~(1<<fn);
+					sh.inuse_bits &= ~(1<<fn);
 			}
 			if(flag==3)
 				return(fd);
@@ -679,9 +691,9 @@ int	sh_redirect(struct ionod *iop, int flag)
 			{
 				if(fn>2 && fn<10)
 				{
-					if(inuse_bits&(1<<fn))
+					if(sh.inuse_bits&(1<<fn))
 						sh_close(fn);
-					inuse_bits |= (1<<fn);
+					sh.inuse_bits |= (1<<fn);
 				}
 				fd = sh_iorenumber(sh_iomovefd(fd),fn);
 			}
@@ -703,7 +715,7 @@ fail:
 /*
  * Create a tmp file for the here-document
  */
-static int io_heredoc(register struct ionod *iop)
+static int io_heredoc(register struct ionod *iop, const char *name)
 {
 	register Sfio_t	*infile = 0, *outfile;
 	register char		fd;
@@ -712,25 +724,27 @@ static int io_heredoc(register struct ionod *iop)
 	/* create an unnamed temporary file */
 	if(!(outfile=sftmp(0)))
 		errormsg(SH_DICT,ERROR_system(1),e_tmpcreate);
-	if(!(iop->iofile&IOSTRG))
-		infile = subopen(sh.heredocs,iop->iooffset,iop->iosize);
-	if(iop->iofile&IOQUOTE)
-	{
-		/* This is a quoted here-document, not expansion */
-		if(!infile)
-			infile = sfopen(NIL(Sfio_t*),iop->ioname,"s");
-		sfmove(infile,outfile,SF_UNBOUND,-1);
-		sfclose(infile);
-	}
+	if(iop->iofile&IOSTRG)
+		sfputr(outfile,name,'\n');
 	else
 	{
-		char *lastpath = sh.lastpath;
-		if(sh_isoption(SH_XTRACE))
-			sfdisc(outfile,&tee_disc);
-		sh_machere(infile,outfile,iop->ioname);
-		sh.lastpath = lastpath;
-		if(infile)
+		infile = subopen(sh.heredocs,iop->iooffset,iop->iosize);
+		if(iop->iofile&IOQUOTE)
+		{
+			/* This is a quoted here-document, not expansion */
+			sfmove(infile,outfile,SF_UNBOUND,-1);
 			sfclose(infile);
+		}
+		else
+		{
+			char *lastpath = sh.lastpath;
+			if(sh_isoption(SH_XTRACE))
+				sfdisc(outfile,&tee_disc);
+			sh_machere(infile,outfile,iop->ioname);
+			sh.lastpath = lastpath;
+			if(infile)
+				sfclose(infile);
+		}
 	}
 	/* close stream outfile, but save file descriptor */
 	fd = sffileno(outfile);
@@ -900,7 +914,7 @@ void	sh_iorestore(int last, int jmpval)
  * returns -1 for failure, 0 for success
  * <mode> is the same as for access()
  */
-sh_ioaccess(int fd,register int mode)
+int sh_ioaccess(int fd,register int mode)
 {
 	register int flags;
 	if(mode==X_OK)

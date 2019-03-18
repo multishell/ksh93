@@ -1,27 +1,23 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1992-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1992-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 
 /*
@@ -32,7 +28,7 @@
  */
 
 static const char usage[] =
-"+[-?\n@(#)$Id: tail (AT&T Labs Research) 2003-09-18 $\n]"
+"+[-?\n@(#)$Id: tail (AT&T Labs Research) 2004-10-31 $\n]"
 USAGE_LICENSE
 "[+NAME?tail - output trailing portion of one or more files ]"
 "[+DESCRIPTION?\btail\b copies one or more input files to standard output "
@@ -120,8 +116,8 @@ struct Tail_s
 	Tail_t*		next;
 	char*		name;
 	Sfio_t*		sp;
-	size_t		size;
-	size_t		last;
+	Sfoff_t		size;
+	Sfoff_t		last;
 	unsigned long	expire;
 	long		dev;
 	long		ino;
@@ -157,7 +153,7 @@ tailpos(register Sfio_t* fp, register long nitems, int delim)
 	{
 		sfseek(fp, offset, SEEK_SET);
 		n = last - offset;
-		if (!(s = sfreserve(fp, n, 1)))
+		if (!(s = sfreserve(fp, n, SF_LOCKR)))
 			return -1;
 		t = s + n;
 		while (t > s)
@@ -261,7 +257,10 @@ init(Tail_t* tp, long number, int delim, int flags)
 	if (offset)
 	{
 		if ((offset = tailpos(tp->sp, number, delim)) < 0)
+		{
+			error(ERROR_SYSTEM|2, "%s: cannot position file to tail", tp->name);
 			goto bad;
+		}
 		sfseek(tp->sp, offset, SEEK_SET);
 	}
 	tp->size = offset;
@@ -355,7 +354,7 @@ b_tail(int argc, char** argv, void* context)
 	    case 'N':
 		flags |= COUNT;
 		s = opt_info.arg;
-		number = strtol(s, &s, 10);
+		number = strton(s, &s, NiL, 0);
 		if (n=='c' && *s=='f')
 		{
 			s++;
@@ -374,7 +373,7 @@ b_tail(int argc, char** argv, void* context)
 	    case ':':
 		/* handle old style arguments */
 		s = argv[opt_info.index];
-		number = strtol(s, &s, 10);
+		number = strtol(s, &s, 0);
 		if (s!=argv[opt_info.index])
 			flags |= COUNT;
 		while (n = *s++)
@@ -453,8 +452,9 @@ b_tail(int argc, char** argv, void* context)
 		if (!(fp = (Tail_t*)stakalloc(argc * sizeof(Tail_t))))
 			error(ERROR_system(1), "out of space");
 		files = 0;
-		while (fp->name = *argv++)
+		while (s = *argv++)
 		{
+			fp->name = s;
 			fp->sp = 0;
 			if (!init(fp, number, delim, flags))
 			{
@@ -490,13 +490,14 @@ b_tail(int argc, char** argv, void* context)
 						fp->expire = NOW + timeout;
 					fp->last = st.st_size;
 					z = st.st_size - fp->size;
-					if (s = sfreserve(fp->sp, z, 1))
+					i = 0;
+					if ((s = sfreserve(fp->sp, z, SF_LOCKR)) || (z = sfvalue(fp->sp)) && (s = sfreserve(fp->sp, z, SF_LOCKR)) && (i = 1))
 					{
 						r = 0;
 						for (e = (t = s) + z; t < e; t++)
 							if (*t == '\n')
 								r = t;
-						if (r)
+						if (r || i && (r = e))
 						{
 							if ((flags & (HEADERS|VERBOSE)) && hp != fp)
 							{

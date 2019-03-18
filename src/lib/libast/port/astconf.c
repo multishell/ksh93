@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 
 /*
@@ -30,13 +26,12 @@
  * extended to allow some features to be set
  */
 
-static const char id[] = "\n@(#)$Id: getconf (AT&T Labs Research) 2003-06-21 $\0\n";
+static const char id[] = "\n@(#)$Id: getconf (AT&T Research) 2004-04-08 $\0\n";
 
 #include "univlib.h"
 
 #include <ast.h>
 #include <error.h>
-#include <sfstr.h>
 #include <fs3d.h>
 #include <ctype.h>
 #include <regex.h>
@@ -144,7 +139,7 @@ static Feature_t	dynamic[] =
 		&dynamic[3],
 		"HOSTTYPE",
 		HOSTTYPE,
-		&null[0],
+		0,
 		8,
 		CONF_AST,
 		CONF_READONLY,
@@ -158,7 +153,7 @@ static Feature_t	dynamic[] =
 #else
 		&null[0],
 #endif
-		&null[0],
+		0,
 		7,
 		CONF_AST,
 		0,
@@ -172,7 +167,7 @@ static Feature_t	dynamic[] =
 #else
 		"lib",
 #endif
-		&null[0],
+		0,
 		7,
 		CONF_AST,
 		0,
@@ -186,7 +181,7 @@ static Feature_t	dynamic[] =
 #else
 		".so",
 #endif
-		&null[0],
+		0,
 		7,
 		CONF_AST,
 		0,
@@ -486,7 +481,7 @@ initialize(register Feature_t* fp, const char* path, const char* command, const 
 								sfwrite(tmp, d, r);
 								sfputc(tmp, '/');
 								sfputr(tmp, command, 0);
-								if (!access(sfstruse(tmp), X_OK))
+								if (!eaccess(sfstruse(tmp), X_OK))
 								{
 									ok = 1;
 									if (fp->op != OP_universe)
@@ -594,7 +589,7 @@ feature(const char* name, const char* path, const char* value, Error_f conferror
 			initialize(fp, path, NiL, fp->strict, fp->value);
 		if (!n && streq(fp->value, fp->strict))
 			for (sp = state.features; sp; sp = sp->next)
-				if (sp->op && sp->op != OP_conformance)
+				if (sp->strict && sp->op && sp->op != OP_conformance)
 					astconf(sp->name, path, sp->strict);
 		break;
 

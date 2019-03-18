@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 #ifndef JOB_NFLAG
 /*
@@ -84,13 +80,13 @@ struct jobs
 	pid_t		mypid;		/* process id of shell */
 	pid_t		mypgid;		/* process group id of shell */
 	pid_t		mytgid;		/* terminal group id of shell */
+	unsigned int	in_critical;	/* >0 => in critical region */
 	int		numpost;	/* number of posted jobs */
 	short		fd;		/* tty descriptor number */
 #ifdef JOBS
 	int		suspend;	/* suspend character */
 	int		linedisc;	/* line dicipline */
 #endif /* JOBS */
-	char		in_critical;	/* set when in critical region */
 	char		jobcontrol;	/* turned on for real job control */
 	char		waitsafe;	/* wait will not block */
 	char		waitall;	/* wait for all jobs in pipe */
@@ -146,9 +142,11 @@ extern void	job_subrestore(void*);
 	extern int	job_list(struct process*,int);
 	extern int	job_terminate(struct process*,int);
 	extern int	job_switch(struct process*,int);
+	extern void	job_fork(pid_t);
 #else
 #	define job_init(flag)
 #	define job_close()	(0)
+#	define job_fork(p)
 #endif	/* JOBS */
 
 

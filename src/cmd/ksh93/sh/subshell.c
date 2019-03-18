@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  *   Create and manage subshells avoiding forks when possible
@@ -235,14 +231,14 @@ static void nv_restore(struct subshell *sp)
 			 nv_putsub(mp,NIL(char*),ARRAY_SCAN);
 		nv_unset(mp);
 		nv_setsize(mp,nv_size(np));
-		if(!nv_isattr(np,NV_MINIMAL))
+		if(!nv_isattr(np,NV_MINIMAL) || nv_isattr(np,NV_EXPORT))
 			mp->nvenv = np->nvenv;
 		mp->nvfun = np->nvfun;
+		mp->nvflag = np->nvflag;
 		if(mp==nv_scoped(PATHNOD))
 			nv_putval(mp, np->nvalue.cp,0);
 		else
 			mp->nvalue.cp = np->nvalue.cp;
-		mp->nvflag = np->nvflag;
 		np->nvfun = 0;
 		if(nv_isattr(mp,NV_EXPORT))
 		{
@@ -298,6 +294,18 @@ Dt_t *sh_subfuntree(int create)
 	return(sp->sfun);
 }
 
+static void table_unset(register Dt_t *root)
+{
+	register Namval_t *np,*nq;
+	for(np=(Namval_t*)dtfirst(root);np;np=nq)
+	{
+		_nv_unset(np,1);
+		nq = (Namval_t*)dtnext(root,np);
+		dtdelete(root,np);
+		free((void*)np);
+	}
+}
+
 int sh_subsavefd(register int fd)
 {
 	register struct subshell *sp = subshell_data;
@@ -317,7 +325,7 @@ int sh_subsavefd(register int fd)
  * output of command <t>.  Otherwise, NULL will be returned.
  */
 
-Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
+Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 {
 	Shell_t *shp = &sh;
 	struct subshell sub_data;
@@ -353,7 +361,7 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 #ifdef PATH_BFPATH
 	/* make sure initialization has occurred */ 
 	if(!shp->pathlist)
-		path_get("/");
+		path_get(".");
 	sp->pathlist = path_dup((Pathcomp_t*)shp->pathlist);
 #endif
 	if(!shp->pwd)
@@ -490,11 +498,13 @@ Sfio_t *sh_subshell(union anynode *t, int flags, int comsub)
 		if(sp->salias)
 		{
 			shp->alias_tree = dtview(sp->salias,0);
+			table_unset(sp->salias);
 			dtclose(sp->salias);
 		}
 		if(sp->sfun)
 		{
 			shp->fun_tree = dtview(sp->sfun,0);
+			table_unset(sp->sfun);
 			dtclose(sp->sfun);
 		}
 		sh_sigreset(1);

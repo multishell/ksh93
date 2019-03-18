@@ -4,7 +4,7 @@
 .\"
 .\" @(#)sh.1 (research!dgk) 12/28/93
 .\"
-.nr Z 0 \" set to 1 when command name is ksh rather than sh
+.nr Z 1 \" set to 1 when command name is ksh rather than sh
 .nr Y 0 \" set to 1 for R&D UNIX
 .if \nY=1 .nr Z 1
 .ds OK [\|
@@ -711,6 +711,8 @@ but can be unset or redefined:
 .B "r=\(fmhist \-s\(fm"
 .TP
 .B "redirect=\(fmcommand exec\(fm"
+.TP
+.B "source=\(fmcommand \s+2.\s-2\(fm"
 .TP
 .B "stop=\(fmkill \-s \s-1STOP\s+1\(fm"
 .TP
@@ -3444,6 +3446,14 @@ When an executable is found, the directory where it is found
 in is searched for a file named
 .BR .paths .
 If this file is found and it contains a line of the form
+.BI BUILTIN_LIB= value\^
+, then the library named by
+.I value\^
+will be searched for as if it were an option argument to
+.BR "builtin -f" ,
+and if it contains a built-in of the specified name
+this will be executed instead of a command by this name.
+Otherwise, if this file is found and it contains a line of the form
 .IB name\^ = value\^
 in the first or second line, then the environment variable
 .I name\^
@@ -4755,6 +4765,8 @@ option deletes each of the given built-ins.
 On systems that support dynamic loading, the
 .B \-f
 option names a shared library containing the code for built-ins.
+The shared library prefix and/or suffix, which depend on the system,
+can be omitted.
 Once a library is loaded, its symbols become available
 for subsequent invocations of
 .BR builtin .
@@ -5590,6 +5602,14 @@ to the second
 .IR vname ,
 etc., with leftover fields assigned to the last
 .IR vname .
+When
+.IR vname
+has the binary attribute and
+.B \-n
+or
+.B \-N
+is specified, the bytes that are read are stored directly
+into the variable.
 The
 .B \-A
 option causes the variable

@@ -1,39 +1,35 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
- * AT&T Labs Research
+ * AT&T Research
  *
  * library interface to file
  *
  * the sum of the hacks {s5,v10,planix} is _____ than the parts
  */
 
-static const char id[] = "\n@(#)$Id: magic library (AT&T Labs Research) 2003-11-21 $\0\n";
+static const char id[] = "\n@(#)$Id: magic library (AT&T Research) 2004-10-31 $\0\n";
 
 static const char lib[] = "libast:magic";
 
@@ -45,7 +41,6 @@ static const char lib[] = "libast:magic";
 #include <error.h>
 #include <regex.h>
 #include <swap.h>
-#include <sfstr.h>
 
 #define T(m)		(*m?ERROR_translate(NiL,NiL,lib,m):m)
 
@@ -78,6 +73,13 @@ typedef struct				/* loop info			*/
 	int		offset;		/* dynamic offset		*/
 } Loop_t;
 
+typedef struct Table
+{
+	struct Table*	next;		/* next in list			*/
+	int		value;		/* entry value			*/
+	char		name[1];	/* entry name			*/
+} Table_t;
+
 typedef struct Entry			/* magic file entry		*/
 {
 	struct Entry*	next;		/* next in list			*/
@@ -89,6 +91,7 @@ typedef struct Entry			/* magic file entry		*/
 	struct Entry*	lab;
 	regex_t*	sub;
 	Loop_t*		loop;
+	Table_t*	tab;
 	}		value;		/* comparison value		*/
 	char*		desc;		/* file description		*/
 	char*		mime;		/* file mime type		*/
@@ -393,6 +396,40 @@ regmessage(Magic_t* mp, regex_t* re, int code)
 }
 
 /*
+ * decompose vcodex(3) method composition
+ */
+
+static char*
+decompose(register Table_t* tab, char* b, char* e, unsigned char* m, unsigned char* x)
+{
+	int		n;
+
+	if ((n = *(m + 1) + 2) < (x - m))
+	{
+		b = decompose(tab, b, e, m + n, x);
+		if (b < e)
+			*b++ = ',';
+	}
+	n = *m++;
+	do
+	{
+		if (tab->value == n)
+			break;
+	} while (tab = tab->next);
+	if (tab)
+		b += sfsprintf(b, e - b, "%s", tab->name);
+	else
+		b += sfsprintf(b, e - b, "METHOD(%d)", n);
+	if (*m)
+	{
+		x = m + *m;
+		while (++m <= x)
+			b += sfsprintf(b, e - b, ".%d", *m);
+	}
+	return b;
+}
+
+/*
  * check for magic table match in buf
  */
 
@@ -658,6 +695,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 			num &= mask;
 		switch (ep->op)
 		{
+
 		case '=':
 		case '@':
 			if (num == ep->value.num)
@@ -745,6 +783,7 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 				*b = ' ';
 			b += strlen(b);
 			break;
+
 		case 'r':
 #if _UWIN
 		{
@@ -824,6 +863,18 @@ ckmagic(register Magic_t* mp, const char* file, char* buf, struct stat* st, unsi
 				mp->keep[level] = 1;
 			goto next;
 #endif
+
+		case 'v':
+			if (!(p = getdata(mp, num, 1)) || !(p = getdata(mp, num + 1, c = *(unsigned char*)p)))
+				goto next;
+			if (mp->keep[level]++ && b > buf && *(b - 1) != ' ')
+			{
+				*b++ = ',';
+				*b++ = ' ';
+			}
+			b = decompose(ep->value.tab, b, buf + PATH_MAX, (unsigned char*)p, (unsigned char*)p + c);
+			goto checknest;
+
 		}
 	swapped:
 		q = T(ep->desc);
@@ -960,7 +1011,7 @@ cklang(register Magic_t* mp, const char* file, char* buf, struct stat* st)
 			for (s = (char*)b; b < e && isprint(*b); b++);
 			c = *b;
 			*b = 0;
-			if ((st->st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) || match(s, "/*bin*/*") || !access(s, 0))
+			if ((st->st_mode & (S_IXUSR|S_IXGRP|S_IXOTH)) || match(s, "/*bin*/*") || !access(s, F_OK))
 			{
 				if (t = strrchr(s, '/'))
 					s = t + 1;
@@ -1910,7 +1961,8 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp)
 			else if (ep->type == 's')
 			{
 				ep->mask = stresc(p);
-				ep->value.str = vmstrdup(mp->vm, p);
+				ep->value.str = vmnewof(mp->vm, 0, char, ep->mask, 0);
+				memcpy(ep->value.str, p, ep->mask);
 			}
 			else if (*p == '\'')
 			{
@@ -1953,6 +2005,30 @@ load(register Magic_t* mp, char* file, register Sfio_t* fp)
 				case 'r':
 					ep->desc = vmnewof(mp->vm, 0, char, 32, 0);
 					ep->mime = vmnewof(mp->vm, 0, char, 32, 0);
+					break;
+				case 'v':
+					{
+						Table_t*	tab;
+						Table_t*	ent;
+						int		c;
+
+						tab = 0;
+						while (*p && *p != ')')
+						{
+							n = (int)strtol(p, &t, 0);
+							if (!(c = *t++))
+								break;
+							for (p = t; *p && *p != c; p++);
+							if (!(c = p - t) || !*p++)
+								break;
+							ent = vmnewof(mp->vm, 0, Table_t, 1, c);
+							memcpy(ent->name, t, c);
+							ent->value = n;
+							ent->next = tab;
+							tab = ent;
+						}
+						ep->value.tab = tab;
+					}
 					break;
 				default:
 					if ((mp->flags & MAGIC_VERBOSE) && mp->disc->errorf)
@@ -2253,6 +2329,7 @@ magiclist(register Magic_t* mp, register Sfio_t* sp)
 {
 	register Entry_t*	ep = mp->magic;
 	register Entry_t*	rp = 0;
+	Table_t*		tp;
 
 	mp->flags = mp->disc->flags;
 	sfprintf(sp, "cont\toffset\ttype\top\tmask\tvalue\tmime\tdesc\n");
@@ -2264,10 +2341,37 @@ magiclist(register Magic_t* mp, register Sfio_t* sp)
 		else
 			sfprintf(sp, "%ld", ep->offset);
 		sfprintf(sp, "\t%s%c\t%c\t%lo\t", ep->swap == (char)~3 ? "L" : ep->swap == (char)~0 ? "B" : "", ep->type, ep->op, ep->mask);
-		if (ep->type != 'm' && ep->type != 's')
-			sfprintf(sp, "%lo", ep->value.num);
-		else
+		switch (ep->type)
+		{
+		case 'm':
+		case 's':
 			sfputr(sp, fmtesc(ep->value.str), -1);
+			break;
+		case 'V':
+			switch (ep->op)
+			{
+			case 'l':
+				sfprintf(sp, "loop(%d,%d,%d,%d)", ep->value.loop->start, ep->value.loop->size, ep->value.loop->count, ep->value.loop->offset);
+				break;
+			case 'v':
+				sfprintf(sp, "vcodex(");
+				for (tp = ep->value.tab; tp; tp = tp->next)
+				{
+					if (tp != ep->value.tab)
+						sfputc(sp, ',');
+					sfprintf(sp, "%d,%s", tp->value, tp->name);
+				}
+				sfputc(sp, ')');
+				break;
+			default:
+				sfprintf(sp, "%p", ep->value.str);
+				break;
+			}
+			break;
+		default:
+			sfprintf(sp, "%lo", ep->value.num);
+			break;
+		}
 		sfprintf(sp, "\t%s\t%s\n", ep->mime ? ep->mime : "", fmtesc(ep->desc));
 		if (ep->cont == '$' && !ep->value.lab->mask)
 		{

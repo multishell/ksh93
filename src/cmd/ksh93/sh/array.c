@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Array processing routines
@@ -241,7 +237,7 @@ static void array_putval(Namval_t *np, const char *string, int flags, Namfun_t *
 		nfp = nv_stack(np,0);
 		if(nfp == (Namfun_t*)ap)
 			free((void*)ap);
-		else sfprintf(sfstderr,"not top level\n");
+		else errormsg(SH_DICT,ERROR_warn(0),"%s: variable discipline not top level",nv_name(np));
 	}
 }
 
@@ -488,8 +484,17 @@ Namval_t *nv_putsub(Namval_t *np,register char *sp,register long mode)
 		ap->header.nelem &= ~(ARRAY_SCAN|ARRAY_UNDEF);
 		ap->header.nelem |= (mode&(ARRAY_SCAN|ARRAY_UNDEF));
 		ap->cur = size;
-		if((mode&ARRAY_SCAN) && !ap->val[size].cp && nv_nextsub(np))
+		if((mode&ARRAY_SCAN) && !ap->val[size].cp && !nv_nextsub(np))
 			np = 0;
+		if(mode&ARRAY_FILL)
+		{
+			int n;
+			for(n=0; n < size; n++)
+				ap->val[n].cp = "";
+			ap->header.nelem = n|(ap->header.nelem&(ARRAY_SCAN|ARRAY_UNDEF));
+			if(n=ap->maxi-ap->maxi)
+				memset(&ap->val[size],0,n*sizeof(union Value));
+		}
 		return((Namval_t*)np);
 	}
 	ap->header.nelem &= ~(ARRAY_SCAN|ARRAY_UNDEF);

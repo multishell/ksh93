@@ -1,31 +1,27 @@
-####################################################################
-#                                                                  #
-#             This software is part of the ast package             #
-#                Copyright (c) 1985-2004 AT&T Corp.                #
-#        and it may only be used by you under license from         #
-#                       AT&T Corp. ("AT&T")                        #
-#         A copy of the Source Code Agreement is available         #
-#                at the AT&T Internet web site URL                 #
-#                                                                  #
-#       http://www.research.att.com/sw/license/ast-open.html       #
-#                                                                  #
-#    If you have copied or used this software without agreeing     #
-#        to the terms of the license you are infringing on         #
-#           the license and copyright and are violating            #
-#               AT&T's intellectual property rights.               #
-#                                                                  #
-#            Information and Software Systems Research             #
-#                        AT&T Labs Research                        #
-#                         Florham Park NJ                          #
-#                                                                  #
-#               Glenn Fowler <gsf@research.att.com>                #
-#                David Korn <dgk@research.att.com>                 #
-#                 Phong Vo <kpv@research.att.com>                  #
-#                                                                  #
-####################################################################
+########################################################################
+#                                                                      #
+#               This software is part of the ast package               #
+#                  Copyright (c) 1985-2004 AT&T Corp.                  #
+#                      and is licensed under the                       #
+#                  Common Public License, Version 1.0                  #
+#                            by AT&T Corp.                             #
+#                                                                      #
+#                A copy of the License is available at                 #
+#            http://www.opensource.org/licenses/cpl1.0.txt             #
+#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#                                                                      #
+#              Information and Software Systems Research               #
+#                            AT&T Research                             #
+#                           Florham Park NJ                            #
+#                                                                      #
+#                 Glenn Fowler <gsf@research.att.com>                  #
+#                  David Korn <dgk@research.att.com>                   #
+#                   Phong Vo <kpv@research.att.com>                    #
+#                                                                      #
+########################################################################
 : generate conf info
 #
-# @(#)conf.sh (AT&T Research) 2003-06-11
+# @(#)conf.sh (AT&T Research) 2004-08-11
 #
 # this script generates these files from the table file in the first arg
 # the remaining args are the C compiler name and flags
@@ -160,6 +156,7 @@ case $append$extra in
 			define=
 			values=
 			script=
+			headers=
 			while	:
 			do	shift
 				case $# in
@@ -186,6 +183,8 @@ case $append$extra in
 						;;
 					esac
 					;;
+				*.h)	headers=$headers$nl#include$sp'<'$1'>'
+					;;
 				*)	values=$values$sp$1
 					;;
 				esac
@@ -208,6 +207,7 @@ case $append$extra in
 			eval CONF_define_${key}='$'define
 			eval CONF_values_${key}='$'values
 			eval CONF_script_${key}='$'script
+			eval CONF_headers_${key}='$'headers
 			eval CONF_keys_${name}=\"'$'CONF_keys_${name} '$'key\"
 			if	test $index -gt $lastindex
 			then	lastindex=$index
@@ -229,7 +229,8 @@ case $debug in
 			eval define=\"'$'CONF_define_$key\"
 			eval values=\"'$'CONF_values_$key\"
 			eval script=\"'$'CONF_script_$key\"
-			printf "%29s %35s %3d %8s %2s %1d %5s %s$nl" "$name" "$key" "$index" "$standard" "$call" "$section" "$flags" "$define${values:+$sp=$values}${script:+$sp$ob$script$nl$cb}"
+			eval headers=\"'$'CONF_headers_$key\"
+			printf "%29s %35s %3d %8s %2s %1d %5s %s$nl" "$name" "$key" "$index" "$standard" "$call" "$section" "$flags" "$define${values:+$sp=$values}${headers:+$sp$headers$nl}${script:+$sp$ob$script$nl$cb}"
 			;;
 		esac
 	done
@@ -398,6 +399,7 @@ do	case $line in
 		index=$lastindex
 		values=
 		script=
+		headers=
 		case $call in
 		CS|SI)	key=CS ;;
 		*)	key=$call ;;
@@ -423,6 +425,7 @@ do	case $line in
 				eval flags='$'flags'$'CONF_flags_$old
 				eval values='$'CONF_values_$old
 				eval script='$'CONF_script_$old
+				eval headers='$'CONF_headers_$old
 				;;
 			esac
 			keys="$keys$nl$key"
@@ -435,6 +438,7 @@ do	case $line in
 			eval CONF_define_${key}='$'define
 			eval CONF_values_${key}='$'values
 			eval CONF_script_${key}='$'script
+			eval CONF_headers_${key}='$'headers
 			;;
 		*)	eval x='$'CONF_define_$key
 			case $x in
@@ -500,7 +504,8 @@ case $debug in
 			eval define=\"'$'CONF_define_$key\"
 			eval values=\"'$'CONF_values_$key\"
 			eval script=\"'$'CONF_script_$key\"
-			printf "%29s %35s %3d %8s %2s %1d %5s %s$nl" "$name" "$key" "$index" "$standard" "$call" "$section" "$flags" "$define${values:+$sp=$values}${script:+$sp$ob$script$nl$cb}"
+			eval headers=\"'$'CONF_headers_$key\"
+			printf "%29s %35s %3d %8s %2s %1d %5s %s$nl" "$name" "$key" "$index" "$standard" "$call" "$section" "$flags" "$define${values:+$sp=$values}${headers:+$sp$headers$nl}${script:+$sp$ob$script$nl$cb}"
 			;;
 		esac
 	done
@@ -567,18 +572,17 @@ do	eval name=\"'$'CONF_name_$key\"
 	eval define=\"'$'CONF_define_$key\"
 	eval values=\"'$'CONF_values_$key\"
 	eval script=\"'$'CONF_script_$key\"
+	eval headers=\"'$'CONF_headers_$key\"
 	conf_name=$name
 	conf_index=$index
 	case $call in
 	QQ)	call=XX
 		for c in SC PC CS
 		do	cat > $tmp.c <<!
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE	1
-#endif
+#include "FEATURE/standards"
 #include <sys/types.h>
 #include <limits.h>
-#include <unistd.h>$systeminfo
+#include <unistd.h>$systeminfo$headers
 #include <stdio.h>
 main()
 {
@@ -621,7 +625,7 @@ main()
 	conf_section=$section
 	conf_flags=0
 	case $flags in
-	*[ABCEGHIJKQTVWYZabcdefghijklmnopqrstuvwxyz123456789_]*)
+	*[ABCEGHIJKQTVWYZabcdefghijklmnopqrstuvwxyz_123456789]*)
 		echo "$command: $name: $flags: invalid flag(s)" >&2
 		exit 1
 		;;
@@ -700,12 +704,10 @@ main()
 		*)	continue ;;
 		esac
 		cat > $tmp.c <<!
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE	1
-#endif
+#include "FEATURE/standards"
 #include <sys/types.h>
 #include <limits.h>
-#include <unistd.h>$systeminfo
+#include <unistd.h>$systeminfo$headers
 #include <stdio.h>
 main()
 {
@@ -754,8 +756,7 @@ main()
 	esac
 	case $standard:$flags in
 	C:*)	;;
-	*:*L*)	
-		{
+	*:*L*)	{
 		echo "	hit = 0;"
 		case $call in
 		PC)	cat <<!
@@ -945,11 +946,29 @@ case ${conf_op}:"
 		minmax=
 		for i in $name $values
 		do	case $i in
-			$sym)	echo "#ifdef	$i
+			$sym)	case $something in
+				'')	cat > $tmp.c <<!
+#include "FEATURE/standards"
+#include <sys/types.h>
+#include <limits.h>
+#include <unistd.h>$systeminfo$headers
+">>>" $i "<<<"
+!
+					i=`$cc -E $tmp.c 2>/dev/null | sed -e '/">>>".*"<<<"/!d' -e 's/.*">>>"[ 	]*\([^ 	]*\)[ 	]*"<<<".*/\1/'`
+					case $i in
+					$i)		;;
+					'"'*'"')	echo "		return($i);" ;;
+					*'"'*)		;;
+					*)		echo "		return(\"$i\");" ;;
+					esac
+					;;
+				*)	echo "#ifdef	$i
 		return($i${something});
 #else"
-				endif="$endif
+					endif="$endif
 #endif"
+					;;
+				esac
 				;;
 			*)	case $flags in
 				*M*)	minmax=$i ;;

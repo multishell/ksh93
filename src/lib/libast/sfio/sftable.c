@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #include	"sfhdr.h"
 #include	"FEATURE/float"
 
@@ -472,7 +468,7 @@ int		type;	/* >0: scanf, =0: printf, -1: internal	*/
 
 static const unsigned char	flt_nan[] = { _ast_flt_nan_init };
 static const unsigned char	dbl_nan[] = { _ast_dbl_nan_init };
-#ifdef LDBL_MAX
+#ifdef _ast_ldbl_nan_init
 static const unsigned char	ldbl_nan[] = { _ast_ldbl_nan_init };
 #endif
 
@@ -525,7 +521,7 @@ static int sfcvinit()
 
 	memcpy((char*)&_Sffhuge, (char*)flt_nan, sizeof(_Sffhuge));
 	memcpy((char*)&_Sfdhuge, (char*)dbl_nan, sizeof(_Sfdhuge));
-#ifdef LDBL_MAX
+#ifdef _ast_ldbl_nan_init
 	memcpy((char*)&_Sflhuge, (char*)ldbl_nan, sizeof(_Sflhuge));
 #else
 	memcpy((char*)&_Sflhuge, (char*)dbl_nan, sizeof(_Sfdhuge));

@@ -1,3 +1,75 @@
+04-12-23 vmalloc/vmbest.c: fix vmresize bug that didn't 0 new data
+04-12-19 misc/optget.c: broaden - long option match
+04-12-09 string/strtoi.h: fix terabyte 't' suffix math
+	 string/strmatch.c: flush cache on locale change
+04-12-01 tm/tmsleep.c: add
+	 tv.h,tv*.c,tv.3: move from pax
+	 tmx.h,tmx*.c,tmx.3: add high resolution tm(3) counterparts
+	 features/lib: add *another* sgi linux.ia64 memccpy bug check
+04-10-31 Makefile: __OBSOLETE__ now computed <6 months ago year>0101
+	 ccode.h,ccmapid.c: add ccmaplist(Ccmap_t*) iterator
+	 option.h,optesc.c: add 3rd arg, 1 => quote '?' too
+	 misc/magic.c: fix bug that terminated `string \0a' at \0
+	 misc/magic.c: handle vcodex() via decompose()
+	 misc/magic.tab: add vcodex magic
+	 features/stdio: handle _LARGEFILE64_SOURCE -- oops
+	 stdio/(fseek|ftell|fseeko|fsetpos|fgetpos|ftello).c: oops^2
+04-10-28 string/swapop.c: size==-4 => size=4 and extend op=3 to op=7
+	 tm/tmfix.c: fix tm_mon<0 logic
+04-10-22 tm/tmdate.c: handle 'final day feb 2004'
+	 port/astlicense.c: add query=all|id|${...}${...}
+	 port/astlicense.c: "free" => "mit"
+	 comp/omitted.c: revert to the open source license
+	 string/stropt.c: drop siz==0 => tab is hash table
+	 include/sfio.h: incorporate <sfstr.h>
+	 include/sfstr.h: drop
+	 disc/sfstrtmp.c: drop -- use sfstrbuf()
+04-10-20 misc/magic.tab: update tar magic
+04-10-18 ufc-crypt.h,crypt_util.c: drop GPL code
+	 crypt.c: add BSD code
+	 pathpath.c: disable { $0 $_ $PWD } related root search
+04-10-01 normalize ident stamps
+	 port/astlicense.c: add type=cpl -- yeah
+04-09-25 string/swapop.c: return op < size -- duh
+04-09-23 comp/spawnveg.c: :NOOPTIMIZE: -- volatile sometimes ignored
+04-09-21 comp/spawnveg.c: exec_errno_ptr is volatile -- duh
+04-09-14 tm/tmscan.c: add %| alternation and %& => tmdate()
+04-09-08 misc/optget.c: add :!value: omitted optional arg value
+	 misc/optget.c: fix --noNAME ambiguous option logic
+04-08-26 string/strperm.c: add who^mode to propagate least restrictive up
+	 astmath.c: add { frexpl ldexpl } checks for ast.req
+	 port/astlicense.c: ignore first option if non-assignment
+	 include/ast_dir.h: move d_fileno map before struct defs -- duh
+04-08-24 vmalloc/vmbest.c: add {VM_region} VMCHECK=+r for region segment checks
+	 misc/recfmt.c,include/recfmt.h: add
+04-08-23 vmalloc/vmbest.c: add {VM_primary VM_secondary} VMCHECK=-s for primary
+	 features/common: punt to <stdarg.h> for unknown va_list
+04-08-11 vmalloc: sync _UWIN libposix hooks
+04-07-27 features/common,features/limits.c: ULL suffix for unsigned _ast_int8_t
+04-07-22 include/ast.h,comp/eaccess.c: add eaccess() for effective access()
+04-07-19 comp/open.c,sfio/_sfopen.c: { O_RDONLY O_WRONLY O_RDWR } are values
+04-06-28 misc/error.c: check level after error_info.auxilliary
+04-06-24 string/strmatch.c: strgrpmatch() match[] now variable size array
+04-06-17 features/common: change _DLL null define to (the standard ast) 1
+04-06-11 misc/optget.c: allow optional [-|+|--|++] optstr() option prefix
+	 misc/optget.c: reset optstr() state on 0 return
+	 misc/optget.c: text()=>textout() linux.ppc symbol hijack workaround
+04-05-31 sfio/sfreserve.c: no side buffer if user buffer is large enough
+04-05-27 string/fmtbuf.c: handle one concurrent buf > sizeof(buf)
+04-05-24 regcomp.c: fix no-advance initialization
+04-05-05 conf.tab,conf.sh: update to align with standards
+	 magic.tab: ms suffix update
+04-05-04 port/lcgen.c: fix territory initialization
+04-04-15 tm/tmdate.c,include/tm.h: fix specific and ordinal days
+04-04-08 astconf: retain { HOSTTYPE LIBPATH LIBPREFIX LIBSUFFIX } strict vals
+04-04-07 vmalloc/vmbest.c: fix alpha tiny block bug
+	 vmalloc/malloc.c: re-enable on alpha
+04-03-30 tm/tminit.c: GMT => UCT only if tz.daylight not defined
+04-03-25 vmalloc/malloc.c: _AST_std_malloc=1 for __alpha
+	 path/pathprobe.c: per-user probe dir => $HOME/.probe/$HOSTTYPE
+04-03-23 regex/reglib.h: fix isw*() redefines
+04-03-17 features/stdio: no __FILE override for __CYGWIN_ (sys/reent.h clash)
+	 sfio/sfhdr.h,sfio/sfsetbuf.c: lower sfmove() default buf size 4x
 04-02-29 comp/omitted.c: move env trace after PATH fixup
 	 comp/omitted.c: cygwin spawn _P_DETACH => _P_NOWAIT+setpgid(pid,0)
 	 misc/optget.c: fix html mailto: match

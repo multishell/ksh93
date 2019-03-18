@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
@@ -234,7 +230,8 @@ print(register Sfio_t* sp, register char* name, char* delim)
 static void
 context(register Sfio_t* sp, register Error_context_t* cp)
 {
-	if (cp->context) context(sp, cp->context);
+	if (cp->context)
+		context(sp, cp->context);
 	if (!(cp->flags & ERROR_SILENT))
 	{
 		if (cp->id)
@@ -275,8 +272,10 @@ errorv(const char* id, int level, va_list ap)
 	int		line;
 	char*		file;
 
+#if !_PACKAGE_astsa
 	unsigned long	d;
 	struct tms	us;
+#endif
 
 	if (!error_info.init)
 	{
@@ -383,23 +382,23 @@ errorv(const char* id, int level, va_list ap)
 				sfprintf(stkstd, "%s %d: ", ERROR_translate(NiL, NiL, ast.id, "line"), error_info.line);
 			}
 		}
+#if !_PACKAGE_astsa
 		if (error_info.time)
 		{
 			if (error_info.time == 1 || (d = times(&us)) < error_info.time)
 				d = error_info.time = times(&us);
 			sfprintf(stkstd, " %05lu.%05lu.%05lu ", d - error_info.time, (unsigned long)us.tms_utime, (unsigned long)us.tms_stime);
 		}
+#endif
 		switch (level)
 		{
 		case 0:
 			flags &= ~ERROR_SYSTEM;
 			break;
 		case ERROR_WARNING:
-			error_info.warnings++;
 			sfprintf(stkstd, "%s: ", ERROR_translate(NiL, NiL, ast.id, "warning"));
 			break;
 		case ERROR_PANIC:
-			error_info.errors++;
 			sfprintf(stkstd, "%s: ", ERROR_translate(NiL, NiL, ast.id, "panic"));
 			break;
 		default:
@@ -416,8 +415,6 @@ errorv(const char* id, int level, va_list ap)
 					sfputc(stkstd, ' ');
 				}
 			}
-			else
-				error_info.errors++;
 			break;
 		}
 		if (flags & ERROR_SOURCE)
@@ -457,6 +454,13 @@ errorv(const char* id, int level, va_list ap)
 			if (error_info.auxilliary && level >= 0)
 				level = (*error_info.auxilliary)(stkstd, level, flags);
 			sfputc(stkstd, '\n');
+		}
+		if (level > 0)
+		{
+			if ((level & ~ERROR_OUTPUT) > 1)
+				error_info.errors++;
+			else
+				error_info.warnings++;
 		}
 		if (level < 0 || !(level & ERROR_OUTPUT))
 		{

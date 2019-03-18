@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * read [-Aprs] [-d delim] [-u filenum] [-t timeout] [-n n] [-N n] [name...]
@@ -52,6 +48,7 @@
 
 int	b_read(int argc,char *argv[], void *extra)
 {
+	Sfdouble_t sec;
 	register char *name;
 	register int r, flags=0, fd=0;
 	register Shell_t *shp = (Shell_t*)extra;
@@ -65,7 +62,8 @@ int	b_read(int argc,char *argv[], void *extra)
 		flags |= A_FLAG;
 		break;
 	    case 't':
-		timeout = 1000*opt_info.num+1;
+		sec = sh_strnum(opt_info.arg, (char**)0,1);
+		timeout = 1000*sec+1;
 		break;
 	    case 'd':
 		if(opt_info.arg && *opt_info.arg!='\n')
@@ -82,7 +80,7 @@ int	b_read(int argc,char *argv[], void *extra)
 		flags &= ~((1<<D_FLAG)-1);
 		flags |= (r=='n'?N_FLAG:NN_FLAG);
 		r = (int)opt_info.num;
-		if((unsigned)r> 0xfff)
+		if((unsigned)r > (1<<((8*sizeof(int))-D_FLAG))-1)
 			errormsg(SH_DICT,ERROR_exit(1),e_overlimit,"n");
 		flags |= (r<< D_FLAG);
 		break;
@@ -283,9 +281,19 @@ int sh_readline(register Shell_t *shp,char **names, int fd, int flags,long timeo
 		}
 		if(timeslot)
 			timerdel(timeslot);
-		nv_putval(np,var,0);
-		if(c>=sizeof(buf))
-			free((void*)var);
+		if(nv_isattr(np,NV_BINARY))
+		{
+			if(c<sizeof(buf))
+				var = strdup(var);
+			nv_putval(np,var, NV_RAW);
+			nv_setsize(np,c);
+		}
+		else
+		{
+			nv_putval(np,var,0);
+			if(c>=sizeof(buf))
+				free((void*)var);
+		}
 		goto done;
 	}
 	else if(cp = (unsigned char*)sfgetr(iop,delim,0))

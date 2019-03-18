@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
@@ -33,6 +29,8 @@
 
 #ifndef _TM_H
 #define _TM_H
+
+#define TM_VERSION	20041201L
 
 #define tm_data		_tm_data_
 #define tm_info		_tm_info_
@@ -51,9 +49,11 @@
 
 #define TM_PEDANTIC	(1<<3)		/* pedantic date parse		*/
 #define TM_DATESTYLE	(1<<4)		/* date(1) style mmddHHMMccyy	*/
+#define TM_SUBSECOND	(1<<5)		/* <something>%S => ...%S.%P	*/
 
 #define TM_DST		(-60)		/* default minutes for DST	*/
 #define TM_LOCALZONE	(25 * 60)	/* use local time zone offset	*/
+#define TM_UTCZONE	(26 * 60)	/* UTC "time zone"		*/
 #define TM_MAXLEAP	1		/* max leap secs per leap	*/
 #define TM_WINDOW	69		/* century windowing guard year	*/
 
@@ -94,8 +94,10 @@
 #define TM_ERA_TIME		113
 #define TM_ERA_DEFAULT		114
 #define TM_ERA_YEAR		115
+#define TM_ORDINALS		116
+#define TM_FINAL		126
 
-#define TM_NFORM		116
+#define TM_NFORM		129
 
 typedef struct				/* leap second info		*/
 {
@@ -133,7 +135,20 @@ typedef struct				/* tm library global info	*/
 	Tm_zone_t*	zone;		/* current timezone		*/
 } Tm_info_t;
 
-typedef struct tm Tm_t;
+typedef struct Tm_s
+{
+	int			tm_sec;
+	int			tm_min;
+	int			tm_hour;
+	int			tm_mday;
+	int			tm_mon;
+	int			tm_year;
+	int			tm_wday;
+	int			tm_yday;
+	int			tm_isdst;
+	unsigned _ast_int4_t	tm_nsec;
+	Tm_zone_t*		tm_zone;
+} Tm_t;
 
 #if _BLD_ast && defined(__EXPORT__)
 #define extern		extern __EXPORT__
@@ -152,6 +167,7 @@ extern Tm_info_t	tm_info;
 #endif
 
 extern time_t		tmdate(const char*, char**, time_t*);
+extern int		tmequiv(Tm_t*);
 extern Tm_t*		tmfix(Tm_t*);
 extern char*		tmfmt(char*, size_t, const char*, time_t*);
 extern char*		tmform(char*, const char*, time_t*);
@@ -163,6 +179,7 @@ extern char**		tmlocale(void);
 extern Tm_t*		tmmake(time_t*);
 extern char*		tmpoff(char*, size_t, const char*, int, int);
 extern time_t		tmscan(const char*, char**, const char*, char**, time_t*, long);
+extern int		tmsleep(time_t, time_t);
 extern time_t		tmtime(Tm_t*, int);
 extern Tm_zone_t*	tmtype(const char*, char**);
 extern int		tmword(const char*, char**, const char*, char**, int);

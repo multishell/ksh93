@@ -16,6 +16,7 @@ tst	botch_d_ino_dirent64 note{ dirent64.d_ino vs. readdir64 mismatch }end compil
 	#endif
 	#define _LARGEFILE64_SOURCE	1
 	#include <dirent.h>
+	int
 	main()
 	{
 		struct dirent64	ent;
@@ -24,7 +25,7 @@ tst	botch_d_ino_dirent64 note{ dirent64.d_ino vs. readdir64 mismatch }end compil
 	}
 }end
 
-exp	_inc_dirent !_lib_opendir yes{
+if ( ! _lib_opendir ) {
 	/*
 	 * <dirent.h> for systems with no opendir()
 	 */
@@ -64,9 +65,8 @@ exp	_inc_dirent !_lib_opendir yes{
 	#endif
 
 	#endif
-}end
-
-exp	_inc_dirent !_inc_dirent&_nxt_dirent&_lib_stat64&&_typ_off64_t&&_botch_d_ino_dirent64 pass{
+}
+elif ( _nxt_dirent && _lib_stat64 && _typ_off64_t && _botch_d_ino_dirent64 ) pass{
 cat <<!
 	/*
 	 * <dirent.h> for [fl]stat64 and off64_t with sizeof(ino64_t)==4
@@ -113,8 +113,7 @@ cat <<!
 	#endif
 !
 }end
-
-exp	_inc_dirent !_inc_dirent&_nxt_dirent&_lib_stat64&&_typ_off64_t pass{
+elif ( _nxt_dirent && _lib_stat64 && _typ_off64_t ) pass{
 cat <<!
 	/*
 	 * <dirent.h> for [fl]stat64 and off64_t
@@ -155,8 +154,7 @@ cat <<!
 	#endif
 !
 }end
-
-exp	_inc_dirent !_inc_dirent&_nxt_dirent&_hdr_dirent pass{
+elif ( _nxt_dirent && _hdr_dirent ) pass{
 cat <<!
 	/*
 	 * <dirent.h> for systems with ok <dirent.h>
@@ -173,8 +171,7 @@ cat <<!
 	#endif
 !
 }end
-
-exp	_inc_dirent !_inc_dirent&_hdr_ndir yes{
+elif ( _hdr_ndir ) {
 	/*
 	 * <dirent.h> for systems with opendir() and <ndir.h>
 	 */
@@ -224,9 +221,8 @@ exp	_inc_dirent !_inc_dirent&_hdr_ndir yes{
 	extern long		telldir(DIR*);
 
 	#endif
-}end
-
-exp	_inc_dirent !_inc_dirent&_sys_dir yes{
+}
+elif ( _sys_dir ) {
 	/*
 	 * <dirent.h> for systems with opendir() and no <ndir.h>
 	 */
@@ -276,4 +272,5 @@ exp	_inc_dirent !_inc_dirent&_sys_dir yes{
 	extern long		telldir(DIR*);
 
 	#endif
-}end
+}
+endif

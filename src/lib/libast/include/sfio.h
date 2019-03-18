@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #ifndef _SFIO_H
 #define _SFIO_H	1
 
@@ -403,5 +399,46 @@ __INLINE__ ssize_t sfvalue(Sfio_t* f)		{ return __sf_value(f); }
 #define sfslen()				( __sf_slen() )
 
 #endif /*__INLINE__*/
+
+#ifndef _SFSTR_H /* GSF's string manipulation stuff */
+#define _SFSTR_H		1
+
+#define sfstropen()		sfnew(0, 0, -1, -1, SF_READ|SF_WRITE|SF_STRING)
+#define sfstrclose(f)		sfclose(f)
+
+#define sfstrseek(f,p,m) \
+	( (m) == SEEK_SET ? \
+	 	(((p) < 0 || (p) > (f)->_size) ? (char*)0 : \
+		 (char*)((f)->_next = (f)->_data+(p)) ) \
+	: (m) == SEEK_CUR ? \
+		((f)->_next += (p), \
+		 (((f)->_next < (f)->_data || (f)->_next > (f)->_data+(f)->_size) ? \
+			((f)->_next -= (p), (char*)0) : (char*)(f)->_next ) ) \
+	: (m) == SEEK_END ? \
+		( ((p) > 0 || (f)->_size+(p) < 0) ? (char*)0 : \
+			(char*)((f)->_next = (f)->_data+(f)->_size+(p)) ) \
+	: (char*)0 \
+	)
+
+#define sfstrsize(f)		((f)->_size)
+#define sfstrtell(f)		((f)->_next - (f)->_data)
+#define sfstrpend(f)		((f)->_size - sfstrtell())
+#define sfstrbase(f)		((char*)(f)->_data)
+
+#define sfstruse(f) \
+	(sfputc((f),0) < 0 ? (char*)0 : (char*)((f)->_next = (f)->_data) \
+	)
+
+#define sfstrrsrv(f,n) \
+	(sfreserve((f),(n),SF_WRITE|SF_LOCKR), sfwrite((f),(f)->_next,0), \
+	 ((f)->_next+(n) <= (f)->_data+(f)->_size ? (char*)(f)->_next : (char*)0) \
+	)
+
+#define sfstrbuf(f,b,n,m) \
+	(sfsetbuf((f),(b),(n)), ((f)->_flags |= (m) ? SF_MALLOC : 0), \
+	 ((f)->_data == (unsigned char*)(b) ? 0 : -1) \
+	)
+
+#endif /* _SFSTR_H */
 
 #endif /* _SFIO_H */

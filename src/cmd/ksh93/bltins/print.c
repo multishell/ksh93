@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * echo [arg...]
@@ -91,7 +87,7 @@ static int outexceptf(Sfio_t* iop, int mode, void* data, Sfdisc_t* dp)
 {
 	if(mode==SF_DPOP || mode==SF_FINAL)
 		free((void*)dp);
-	else if(mode==SF_WRITE)
+	else if(mode==SF_WRITE && (errno!= EINTR || !sh.trapnote))
 	{
 		int save = errno;
 		sfpurge(iop);
@@ -115,7 +111,7 @@ static int outexceptf(Sfio_t* iop, int mode, void* data, Sfdisc_t* dp)
 	if(!prdata.sh->universe)
 	{
 		register char *universe;
-		if(universe=astconf("_AST_UNIVERSE",0,0))
+		if(universe=astconf("UNIVERSE",0,0))
 			bsd_univ = (strcmp(universe,"ucb")==0);
 		prdata.sh->universe = 1;
 	}
@@ -522,8 +518,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			value->c = 0;
 			fe->flags &= ~SFFMT_LONG;
 			break;
-		case 's':
 		case 'q':
+			format = 's';
+			/* FALL THROUGH */
+		case 's':
 		case 'H':
 		case 'B':
 		case 'P':
@@ -558,9 +556,10 @@ static int extend(Sfio_t* sp, void* v, Sffmt_t* fe)
 			value->ll = time(NIL(time_t*));
 			break;
 		default:
+			if(!strchr("DdXxoUu",format))
+				errormsg(SH_DICT,ERROR_exit(1),e_formspec,format);
 			fe->fmt = 'd';
 			value->ll = 0;
-			errormsg(SH_DICT,ERROR_exit(1),e_formspec,format);
 			break;
 		}
 	}

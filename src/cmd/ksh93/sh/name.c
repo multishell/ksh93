@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * AT&T Labs
@@ -193,7 +189,7 @@ void nv_setlist(register struct argnod *arg,register int flags)
 				int flag = (NV_VARNAME|NV_ARRAY|NV_ASSIGN);
 #endif /* SHOPT_COMPOUND_ARRAY */
 				struct fornod *fp=(struct fornod*)arg->argchn.ap;
-				register union anynode *tp=fp->fortre;
+				register Shnode_t *tp=fp->fortre;
 				char *prefix = sh.prefix;
 				if(arg->argflag&ARG_QUOTED)
 					cp = sh_mactrim(fp->fornam,-1);
@@ -633,7 +629,7 @@ Namval_t	*nv_open(const char *name,Dt_t *root,int flags)
 		{
 			Namfun_t *disc = nv_cover(np);
 			char *name = nv_name(np);
-			if(np=nv_search((char*)np,root,mode|HASH_NOSCOPE|HASH_SCOPE|HASH_BUCKET))
+			if((np=nv_search((char*)np,root,mode|HASH_NOSCOPE|HASH_SCOPE|HASH_BUCKET)) && nv_isnull(np))
 			{
 				np->nvfun = disc;
 				np->nvname = name;
@@ -769,7 +765,9 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 	register char *cp;
 	register int size = 0;
 	register int dot;
+#ifdef _ENV_H
 	int	was_local = nv_local;
+#endif
 	if(!(flags&NV_RDONLY) && nv_isattr (np, NV_RDONLY))
 		errormsg(SH_DICT,ERROR_exit(1),e_readonly, nv_name(np));
 	/* The following could cause the shell to fork if assignment
@@ -808,7 +806,7 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 #if !SHOPT_BSH
 	if(nv_isattr(np,NV_EXPORT))
 		nv_offattr(np,NV_IMPORT);
-	if(!nv_isattr(np,NV_MINIMAL))
+	else if(!nv_isattr(np,NV_MINIMAL))
 		np->nvenv = 0;
 #endif /* SHOPT_BSH */
 	if(nv_isattr (np, NV_INTEGER))
@@ -941,8 +939,6 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 					else if(flags&NV_APPEND)	
 						ol =  *(up->lp);
 					*(up->lp) = l+ol;
-					if(l && *sp++ == '0')
-						nv_onattr(np,NV_UNSIGN);
 				}
 			}
 		}
@@ -1028,6 +1024,8 @@ void nv_putval(register Namval_t *np, const char *string, int flags)
 				int oldsize = (flags&NV_APPEND)?nv_size(np):0;
 				if(flags&NV_RAW)
 				{
+					if(tofree)
+						free((void*)tofree);
 					up->cp = sp;
 					return;
 				}
@@ -1436,7 +1434,7 @@ void	sh_envnolocal (register Namval_t *np, void *data)
 			return;
 	}
 	if(nv_isarray(np))
-		nv_putsub(np,NIL(char*),ARRAY_SCAN);
+		nv_putsub(np,NIL(char*),ARRAY_UNDEF);
 	_nv_unset(np,NV_RDONLY);
 	nv_setattr(np,0);
 	if(cp)
@@ -1502,6 +1500,7 @@ void	_nv_unset(register Namval_t *np,int flags)
 					nv_setdisc(npv,cp,NIL(Namval_t*),(Namfun_t*)npv);
 			}
 			stakdelete(slp->slptr);
+			free((void*)np->nvalue.ip);
 			np->nvalue.ip = 0;
 		}
 		goto done;
@@ -1635,7 +1634,7 @@ static void put_optimize(Namval_t* np,const char *val,int flags,Namfun_t *fp)
 	optimize_clear(np,fp);
 }
 
-static const Namdisc_t optimize_disc  = {  0, put_optimize };
+static const Namdisc_t optimize_disc  = {sizeof(struct optimize),put_optimize};
 
 void nv_optimize(Namval_t *np)
 {
@@ -1744,7 +1743,7 @@ char *nv_getval(register Namval_t *np)
 			Sfdouble_t ld;
 			double d;
 			char *curbuf, *format;
-			long l = nv_size(np)+8;
+			long l = nv_size(np)+30;
 			curbuf = getbuf(l);
 			if(nv_isattr(np,NV_LONG))
 			{

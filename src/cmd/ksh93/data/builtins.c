@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 
 #include	<shell.h>
@@ -38,18 +34,6 @@
 #   define	Bltin(x)	(B_##x)
 #else
 #   define bltin(x)	0
-#endif
-
-#if SHOPT_CMDLIB_DIR
-#   ifdef SH_CMDLIB_DIR
-#       define BDIR		SH_CMDLIB_DIR
-#   else
-#       define BDIR		"/opt/ast/bin/"
-#   endif
-#   undef  SHOPT_CMDLIB_BLTIN
-#   define SHOPT_CMDLIB_BLTIN	1
-#else
-#   define BDIR
 #endif
 
 /*
@@ -128,69 +112,31 @@ const struct shtable3 shtab_builtins[] =
 	"wait",		NV_BLTIN|BLT_ENV|BLT_EXIT,	bltin(wait),
 	"type",		NV_BLTIN|BLT_ENV,		bltin(whence),
 	"whence",	NV_BLTIN|BLT_ENV,		bltin(whence),
-#if SHOPT_CMDLIB_BLTIN
-	BDIR "basename",NV_BLTIN|NV_NOFREE,	 	bltin(basename),
-	BDIR "cat",	NV_BLTIN|NV_NOFREE,	 	bltin(cat),
-	BDIR "chgrp",	NV_BLTIN|NV_NOFREE,	 	bltin(chgrp),
-	BDIR "chmod",	NV_BLTIN|NV_NOFREE,	 	bltin(chmod),
-	BDIR "chown",	NV_BLTIN|NV_NOFREE,	 	bltin(chown),
-	BDIR "cmp",	NV_BLTIN|NV_NOFREE,	 	bltin(cmp),
-	BDIR "comm",	NV_BLTIN|NV_NOFREE,	 	bltin(comm),
-	BDIR "cp",	NV_BLTIN|NV_NOFREE,	 	bltin(cp),
-	BDIR "cut",	NV_BLTIN|NV_NOFREE,	 	bltin(cut),
-	BDIR "date",	NV_BLTIN|NV_NOFREE,	 	bltin(date),
-	BDIR "dirname",	NV_BLTIN|NV_NOFREE,	 	bltin(dirname),
-	BDIR "expr",	NV_BLTIN|NV_NOFREE,	 	bltin(expr),
-	BDIR "fmt",	NV_BLTIN|NV_NOFREE,	 	bltin(fmt),
-	BDIR "fold",	NV_BLTIN|NV_NOFREE,	 	bltin(fold),
-	BDIR "getconf",	NV_BLTIN|NV_NOFREE,	 	bltin(getconf),
-	BDIR "head",	NV_BLTIN|NV_NOFREE,	 	bltin(head),
-	BDIR "id",	NV_BLTIN|NV_NOFREE,	 	bltin(id),
-	BDIR "join",	NV_BLTIN|NV_NOFREE,	 	bltin(join),
-	BDIR "ln",	NV_BLTIN|NV_NOFREE,	 	bltin(ln),
-	BDIR "logname",	NV_BLTIN|NV_NOFREE,	 	bltin(logname),
-	BDIR "mkdir",	NV_BLTIN|NV_NOFREE,	 	bltin(mkdir),
-	BDIR "mkfifo",	NV_BLTIN|NV_NOFREE,	 	bltin(mkfifo),
-	BDIR "mv",	NV_BLTIN|NV_NOFREE,	 	bltin(mv),
-	BDIR "paste",	NV_BLTIN|NV_NOFREE,	 	bltin(paste),
-	BDIR "pathchk",	NV_BLTIN|NV_NOFREE,	 	bltin(pathchk),
-	BDIR "rev",	NV_BLTIN|NV_NOFREE,	 	bltin(rev),
-	BDIR "rm",	NV_BLTIN|NV_NOFREE,	 	bltin(rm),
-	BDIR "rmdir",	NV_BLTIN|NV_NOFREE,	 	bltin(rmdir),
-	BDIR "stty",	NV_BLTIN|NV_NOFREE,	 	bltin(stty),
-	BDIR "tail",	NV_BLTIN|NV_NOFREE,	 	bltin(tail),
-	BDIR "tee",	NV_BLTIN|NV_NOFREE,	 	bltin(tee),
-	BDIR "tty",	NV_BLTIN|NV_NOFREE,	 	bltin(tty),
-	BDIR "uname",	NV_BLTIN|NV_NOFREE,	 	bltin(uname),
-	BDIR "uniq",	NV_BLTIN|NV_NOFREE,	 	bltin(uniq),
-	BDIR "wc",	NV_BLTIN|NV_NOFREE,	 	bltin(wc),
-#else
 	"/bin/basename",NV_BLTIN|NV_NOFREE,		bltin(basename),
 	"/bin/chmod",	NV_BLTIN|NV_NOFREE,		bltin(chmod),
 	"/bin/dirname",	NV_BLTIN|NV_NOFREE,		bltin(dirname),
 	"/bin/head",	NV_BLTIN|NV_NOFREE,		bltin(head),
 	"/bin/mkdir",	NV_BLTIN|NV_NOFREE,		bltin(mkdir),
-#   if defined(_usr_bin_logname)  && !defined(_bin_logname)
+#if defined(_usr_bin_logname)  && !defined(_bin_logname)
 	"/usr/bin/logname",	NV_BLTIN|NV_NOFREE,	bltin(logname),
-#   else
+#else
 	"/bin/logname",	NV_BLTIN|NV_NOFREE,		bltin(logname),
-#   endif
+#endif
 	"/bin/cat",	NV_BLTIN|NV_NOFREE,		bltin(cat),
 	"/bin/cmp",	NV_BLTIN|NV_NOFREE,		bltin(cmp),
-#   if defined(_usr_bin_cut)  && !defined(_bin_cut)
+#if defined(_usr_bin_cut)  && !defined(_bin_cut)
 	"/usr/bin/cut",	NV_BLTIN|NV_NOFREE,		bltin(cut),
-#   else
+#else
 	"/bin/cut",	NV_BLTIN|NV_NOFREE,		bltin(cut),
-#   endif
+#endif
 	"/bin/uname",	NV_BLTIN|NV_NOFREE,		bltin(uname),
-#   if defined(_usr_bin_wc)  && !defined(_bin_wc)
+#if defined(_usr_bin_wc)  && !defined(_bin_wc)
 	"/usr/bin/wc",	NV_BLTIN|NV_NOFREE,		bltin(wc),
-#   else
-#	if defined(_usr_ucb_wc)  && !defined(_bin_wc)
+#else
+#   if defined(_usr_ucb_wc)  && !defined(_bin_wc)
 	   "/usr/ucb/wc", NV_BLTIN|NV_NOFREE,		bltin(wc),
-#	else
+#   else
 	   "/bin/wc",	NV_BLTIN|NV_NOFREE,		bltin(wc),
-#	endif
 #   endif
 #endif
 	"",		0, 0 
@@ -397,43 +343,42 @@ const char sh_optbuiltin[] =
 USAGE_LICENSE
 "[+NAME?builtin - add, delete, or display shell built-ins]"
 "[+DESCRIPTION?\bbuiltin\b can be used to add, delete, or display "
-	"built-in commands in the current shell environment.  A "
-	"built-in command executes in the current shell process "
-	"and can have side effects in the current shell.  On most "
-	"systems, the invocation time for built-in commands is one "
-	"or two orders of magnitude less than commands that create "
-	"a separate process.]" 
+    "built-in commands in the current shell environment. A built-in command "
+    "executes in the current shell process and can have side effects in the "
+    "current shell. On most systems, the invocation time for built-in "
+    "commands is one or two orders of magnitude less than commands that "
+    "create a separate process.]"
 "[+?For each \apathname\a specified, the basename of the pathname "
-	"determines the name of the built-in.  For each basename, "
-	"the shell looks for a C level function in the current shell "
-	"whose name is determined by prepending \bb_\b to the built-in "
-	"name.  If \apathname\a contains a \b/\b, then the built-in is "
-	"bound to this pathname.  A built-in bound to a pathname will "
-	"only be executed if \apathname\a is the first executable "
-	"found during a path search.  Otherwise, built-ins are found "
-	"prior to performing the path search.]"
+    "determines the name of the built-in. For each basename, the shell looks "
+    "for a C level function in the current shell whose name is determined by "
+    "prepending \bb_\b to the built-in name. If \apathname\a contains a "
+    "\b/\b, then the built-in is bound to this pathname. A built-in bound to "
+    "a pathname will only be executed if \apathname\a is the first "
+    "executable found during a path search. Otherwise, built-ins are found "
+    "prior to performing the path search.]"
 "[+?If no \apathname\a operands are specified, then \bbuiltin\b displays "
-	"the current list of built-ins, or just the special built-ins if "
-	"\b-s\b is specified, on standard output.  The full pathname for "
-	"built-ins that are bound to pathnames are displayed.]"
+    "the current list of built-ins, or just the special built-ins if \b-s\b "
+    "is specified, on standard output. The full pathname for built-ins that "
+    "are bound to pathnames are displayed.]"
 "[+?Libraries containing built-ins can be specified with the \b-f\b "
-	"option.  If the library contains a function named \blib_init\b(), "
-	"this function will be invoked with argument \b0\b when the "
-	"library is loaded.  The \blib_init\b() function can load "
-	"built-ins by invoking an appropriate C level function.  In "
-	"this case there is no restriction on the C level function name.]"
-"[+?The C level function will be invoked with three arguments.  The first "
-	"two are the same as \bmain\b() and the third one is a pointer.]"
+    "option. If the library contains a function named \blib_init\b(), this "
+    "function will be invoked with argument \b0\b when the library is "
+    "loaded. The \blib_init\b() function can load built-ins by invoking an "
+    "appropriate C level function. In this case there is no restriction on "
+    "the C level function name.]"
+"[+?The C level function will be invoked with three arguments. The first "
+    "two are the same as \bmain\b() and the third one is a pointer.]"
 "[+?\bbuiltin\b cannot be invoked from a restricted shell.]"
-"[d?Deletes each of the specified built-ins.  Special built-ins cannot "
-	"be deleted.]"
-"[f]:[lib?On systems with dynamic linking, \alib\a names a shared library "
-	"to load and search for built-ins.  The shared library suffix, which "
-	"depends on the system, can be omitted. Once a library is loaded, "
-	"its symbols become available for the current and subsequent "
-	"invocations of \bbuiltin\b.  Multiple libraries can be specified "
-	"with separate invocations of \bbuiltin\b.  Libraries are searched in "
-	"the reverse order in which they are specified.]"
+"[d?Deletes each of the specified built-ins. Special built-ins cannot be "
+    "deleted.]"
+"[f]:[lib?On systems with dynamic linking, \alib\a names a shared "
+    "library to load and search for built-ins. Libraries are search for in "
+    "\b$PATH\b and system dependent library directories. The system "
+    "dependent shared library prefix and/or suffix may be omitted. Once a "
+    "library is loaded, its symbols become available for the current and "
+    "subsequent invocations of \bbuiltin\b. Multiple libraries can be "
+    "specified with separate invocations of \bbuiltin\b. Libraries are "
+    "searched in the reverse order in which they are specified.]"
 "[s?Display only the special built-ins.]"
 "\n"
 "\n[pathname ...]\n"
@@ -561,7 +506,7 @@ USAGE_LICENSE
 "[+EXIT STATUS?If \aname\a is found, then the exit status is that "
 	"of the last command executed.  Otherwise, since this is a special "
 	"built-in, an error will cause a non-interactive shell to exit with "
-	"a non-zero exit status.  A interactive shell returns a non-zero exit"
+	"a non-zero exit status.  An interactive shell returns a non-zero exit "
 	"status to indicate an error.]"
 
 "[+SEE ALSO?\bcommand\b(1), \bksh\b(1)]"
@@ -690,7 +635,8 @@ USAGE_LICENSE
   "shell variable \bOPTIND\b.  When the shell is invoked \bOPTIND\b "
   "is initialized to \b1\b.  When an option requires or permits an option "
   "argument, \bgetopts\b places the option argument in the shell "
-  "variable \bOPTARG\b.]"
+  "variable \bOPTARG\b. Otherwise \bOPTARG\b is set to \b1\b when the "
+  "option is set and \b0\b when the option is unset.]"
 "[+?The \aoptstring\a string consists of alpha-numeric characters, "
   "the special characters +, -, ?, :, and <space>, or character groups "
   "enclosed in [...]].  Character groups may be nested in {...}. "
@@ -702,7 +648,7 @@ USAGE_LICENSE
   "optional description string following ?.  The characters from the ? "
   "to the end of the next ]] are ignored for option parsing and short "
   "usage messages.  They are used for generating verbose help or man pages. "
-  "The : character may not appear in the label.  "
+  "The : character may not appear in the label. "
   "The ? character must be specified as ?? in the label and the ]] character "
   "must be specified as ]]]] in the description string. "
   "Text between two \\b (backspace) characters indicates "
@@ -713,19 +659,48 @@ USAGE_LICENSE
   "that the text should displayed in a fixed width font. "
   "Text between two \\f (formfeed) characters will be replaced by the "
     "output from the shell function whose name is that of the enclosed text.]"
-"[+?There are five types of groups:]{"
-  "[+1.?An option specification of the form \aoption\a:\alongname\a. In this "
+"[+?All output from this interface is written to the standard error.]"
+"[+?There are several group types:]{"
+  "[+1.?A group of the form "
+    "[-\aversion\a[\aflag\a[\anumber\a]]]]...[?\atext\a]]]] "
+    "appearing as the first group enables the extended interface. \aversion\a "
+    "specifies the interface version, currently \b1\b. Future enhancements "
+    "may increment \aversion\a, but all versions will be supported. \atext\a "
+    "typcally specifies an SCCS or CVS identification string. Zero or more "
+    "\aflags\a with optional \anumber\a values may be specified to control "
+    "option parsing. "
+    "The flags are:]{"
+      "[+c?Cache this \aoptstring\a for multiple passes. Used to optimize "
+	"builtins that may be called many times within the same process.]"
+      "[+i?Ignore this \aoptstring\a when generating help. Used when "
+	"combining \aoptstring\a values from multiple passes.]"
+      "[+l?Display only \alongname\a options in help messages.]"
+      "[+o?The \b-\b option character prefix is optional (supports "
+        "obsolete \bps\b(1) option syntax.)]"
+      "[+p?\anumber\a specifies the number of \b-\b characters that must "
+	"prefix long option names. The default is \b2\b; \b0\b, \b1\b or "
+	"\b2\b are accepted (e.g., \bp0\b for \bdd\b(1) and \bp1\b for "
+	"\bfind\b(1).)]"
+      "[+s?\anumber\a specifies the \b--??man\b section number, "
+        "\b1\b by default.]"
+  "}"
+  "[+2.?An option specification of the form "
+    "[\aoption\a[!]][=\anumber\a]][:\alongname\a]][?\atext\a]]]]. In this "
     "case the first field is the option character; this is the value returned "
     "in the \aname\a operand when the option is matched.  If there is no "
     "option character then a two or more digit number should be specified. "
     "This number will be returned as the value of the \aname\a operand if the "
-    "long option is matched. A longname is specified by \b--\b\alongname\a "
-    "and is matched by the shortest non-ambiguous prefix of all long options. "
-    "* in the \alongname\a field indicates that only characters up to that "
-    "point need to match, provided any additional characters match exactly. "
-    "The [ and ]] can be omitted for an option that does not have a longname "
-    "or descriptive text.]"
-  "[+2.?A string option argument specification. "
+    "long option is matched. If \aoption\a is followed by \b!\b then the option "
+    "character sense is the inverse of the longname sense. For options that do "
+    "not take values \bOPTARG\b will be set to \b0\b for \b!\b inverted option "
+    "characters and \b1\b otherwise. =\anumber\a optionally specifies a number to "
+    "be returned in the \aname\a operand instead of the option character. A "
+    "longname is specified by \b--\b\alongname\a and is matched by the shortest "
+    "non-ambiguous prefix of all long options. * in the \alongname\a field "
+    "indicates that only characters up to that point need to match, provided "
+    "any additional characters match exactly. The enclosing [ and ]] can be "
+    "omitted for an option that does not have a longname or descriptive text.]"
+  "[+3.?An option argument specification. "
     "Options that take arguments can be followed by : (string value) or # "
     "(numeric value) and an option argument specification.  An option argument "
     "specification consists of the option argument name as field 1. "
@@ -735,15 +710,23 @@ USAGE_LICENSE
     "\b:=\b\adefault\a. The option argument specification may be followed "
     "by a list of option value descriptions enclosed in braces. "
     "A long option that takes an argument is specified as "
-    "\b--\b\alongname\a=\avalue\a.]"
-  "[+3.?A option value description.]"
-  "[+4.?A argument specification. A list of valid option argument values "
+    "\b--\b\alongname\a=\avalue\a. If the : or # is followed by ? then the "
+    "option argument is optional. If only the option character form is "
+    "specified then the optional argument value is not set if the next "
+    "argument starts with - or +.]"
+  "[+4.?A option value description.]"
+  "[+5.?A argument specification. A list of valid option argument values "
     "can be specified by enclosing them inside a {...} following "
     "the option argument specification.  Each of the permitted "
     "values can be specified with a [...]] containing the "
     "value followed by a description.]"
-  "[+5.?A group of the form [+\\n...]] will display the characters "
+  "[+6.?A group of the form [+\\n...]] will display the characters "
     "representing ... in fixed with font without adding line breaks.]"
+  "[+7.?A group of the form [+\aname\a?\atext\a]] specifies a section "
+    "\aname\a with descriptiove \atext\a. If \aname\a is omitted then "
+    "\atext\a is placed in a new paragraph.]"
+  "[+8.?A group of the form [-\aname\a?\atext\a]] specifies entries "
+    "for the \bIMPLEMENTATION\b section.]"
 "}"
 "[+?If the leading character of \aoptstring\a is +, then arguments "
   "beginning with + will also be considered options.]"
@@ -775,6 +758,9 @@ USAGE_LICENSE
 	"[+--????api?To generate an easy to parse usage message.]"
 	"[+--????html?To generate a man page in \bhtml\b format.]"
 	"[+--????nroff?To generate a man page in \bnroff\b format.]"
+	"[+--????usage?List the current \aoptstring\a.]"
+	"[+--??????\aname\a?List \bversion=\b\an\a, \an\a>0, "
+	  "if the option \aname\a is recognized by \bgetopts\b.]"
 "}"
 "[+?When the end of options is encountered, \bgetopts\b exits with a "
   "non-zero return value and the variable \bOPTIND\b is set to the "
@@ -1139,7 +1125,9 @@ USAGE_LICENSE
 				"the 1-, 2-, or 3-digit octal number \ax\a.]"
 		"}"
 	"[+%q?Output \astring\a quoted in a manner that it can be read in "
-		"by the shell to get back the same string.]"
+		"by the shell to get back the same string.  However, empty "
+		"strings resulting from missing \astring\a operands will "
+		"not be quoted.]"
 	"[+%B?Treat the argument as a variable name and output the value "
 		"without converting it to a string.  This is most useful for "
 		"variables of type \b-b\b.]"
@@ -1181,7 +1169,7 @@ USAGE_LICENSE
 "[+?If there are more \astring\a operands than format specifiers, the "
 	"\aformat\a string is reprocessed from the beginning.  If there are "
 	"fewer \astring\a operands than format specifiers, then string "
-	"specifiers will be treated as if null strings were supplied, "
+	"specifiers will be treated as if empty strings were supplied, "
 	"numeric conversions will be treated as if 0 were supplied, and "
 	"time conversions will be treated as if \bnow\b were supplied.]"
 "[+?\bprintf\b is equivalent to \bprint -f\b which allows additional "
@@ -1234,6 +1222,8 @@ USAGE_LICENSE
 	"the leftover fields and their intervening separators are assigned "
 	"to the last variable.  If no \avar\a is specifed then the variable "
 	"\bREPLY\b is used.]"
+"[+?When \avar\a has the binary attribute and \b-n\b or \b-N\b is specified, "
+	"the bytes that are read are stored directly into \bvar\b.]"
 "[+?If you specify \b?\b\aprompt\a after the first \avar\a, then \bread\b "
 	"will display \aprompt\a on standard error when standard input "
 	"is a terminal or pipe.]"
@@ -1246,7 +1236,7 @@ USAGE_LICENSE
 "[r?Do not treat \b\\\b specially when processing the input line.]"
 "[s?Save a copy of the input as an entry in the shell history file.]"
 "[u]#[fd:=0?Read from file descriptor number \afd\a instead of standard input.]"
-"[t]#[timeout?Specify a timeout \atimeout\a in seconds when reading from "
+"[t]:[timeout?Specify a timeout \atimeout\a in seconds when reading from "
 	"a terminal or pipe.]"
 "[n]#[nbyte?Read at most \anbyte\a bytes.]"
 "[N]#[nbyte?Read exactly \anbyte\a bytes.]"
@@ -1352,6 +1342,8 @@ USAGE_LICENSE
 "[D\f:dump-strings\f?Do not execute the script, but output the set of double "
 	"quoted strings preceded by a \b$\b.  These strings are needed for "
 	"localization of the script to different locales.]"
+"[E?Reads the file \b${ENV-$HOME/.kshrc}\b, if it exists, as a profile. "
+	"On by default for interactive shells; use \b+E\b to disable.]"
 #if SHOPT_PFSH
 "[P?Invoke the shell as a profile shell.  See \bpfexec\b(1).]"
 #endif
@@ -1367,7 +1359,7 @@ USAGE_LICENSE
 "\n[arg ...]\n"
 "\n"
 "[+EXIT STATUS?If \b\f?\f\b executes command, the exit status will be that "
-        "of the last command executed.  Otherwise, it will be one of"
+        "of the last command executed.  Otherwise, it will be one of "
         "the following:]{"
         "[+0?The script or command line to be executed consists entirely "
 		"of zero or more blank lines or comments.]"

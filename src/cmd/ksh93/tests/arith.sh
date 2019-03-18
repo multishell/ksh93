@@ -1,26 +1,22 @@
-####################################################################
-#                                                                  #
-#             This software is part of the ast package             #
-#                Copyright (c) 1982-2004 AT&T Corp.                #
-#        and it may only be used by you under license from         #
-#                       AT&T Corp. ("AT&T")                        #
-#         A copy of the Source Code Agreement is available         #
-#                at the AT&T Internet web site URL                 #
-#                                                                  #
-#       http://www.research.att.com/sw/license/ast-open.html       #
-#                                                                  #
-#    If you have copied or used this software without agreeing     #
-#        to the terms of the license you are infringing on         #
-#           the license and copyright and are violating            #
-#               AT&T's intellectual property rights.               #
-#                                                                  #
-#            Information and Software Systems Research             #
-#                        AT&T Labs Research                        #
-#                         Florham Park NJ                          #
-#                                                                  #
-#                David Korn <dgk@research.att.com>                 #
-#                                                                  #
-####################################################################
+########################################################################
+#                                                                      #
+#               This software is part of the ast package               #
+#                  Copyright (c) 1982-2004 AT&T Corp.                  #
+#                      and is licensed under the                       #
+#                  Common Public License, Version 1.0                  #
+#                            by AT&T Corp.                             #
+#                                                                      #
+#                A copy of the License is available at                 #
+#            http://www.opensource.org/licenses/cpl1.0.txt             #
+#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#                                                                      #
+#              Information and Software Systems Research               #
+#                            AT&T Research                             #
+#                           Florham Park NJ                            #
+#                                                                      #
+#                  David Korn <dgk@research.att.com>                   #
+#                                                                      #
+########################################################################
 function err_exit
 {
 	print -u2 -n "\t"
@@ -357,7 +353,67 @@ c010=3
 (( c$x  == 3 )) || err_exit 'leading zero with variable should not be stripped'
 [[ $( ($SHELL -c '((++1))' 2>&1)2>/dev/null ) == *lvalue* ]] || err_exit "((--1)) not generating error message"
 i=2
-(( "22" == 22 )) || print err_exit "double quoted constants fail"
-(( "2$i" == 22 )) || print err_exit "double quoted variables fail"
-(( "18+$i+2" == 22 )) || print err_exit "double quoted expressions fail"
+(( "22" == 22 )) || err_exit "double quoted constants fail"
+(( "2$i" == 22 )) || err_exit "double quoted variables fail"
+(( "18+$i+2" == 22 )) || err_exit "double quoted expressions fail"
+# 04-04-28 bug fix
+unset i; typeset -i i=01-2
+(( i == -1 )) || err_exit "01-2 is not -1"
+
+trap 'rm -f /tmp/script$$ /tmp/data$$.[12]' EXIT
+cat > /tmp/script$$ <<-\!
+tests=$*
+typeset -A blop
+function blop.get {
+	.sh.value=777
+}
+function mkObj {
+	nameref obj=$1
+	obj=()
+[[ $tests == *1* ]] && {
+	(( obj.foo = 1 ))
+	(( obj.bar = 2 ))
+	(( obj.baz = obj.foo + obj.bar ))	# ok
+	echo $obj
+}
+[[ $tests == *2* ]] && {
+	(( obj.faz = faz = obj.foo + obj.bar ))	# ok
+	echo $obj
+}
+[[ $tests == *3* ]] && {
+	# case 3, 'active' variable involved, w/ intermediate variable
+	(( obj.foz = foz = ${blop[1]} ))	# coredump
+	echo $obj
+}
+[[ $tests == *4* ]] && {
+	# case 4, 'active' variable, in two steps
+	(( foz = ${blop[1]} ))	# ok
+	(( obj.foz = foz ))		# ok
+	echo $obj
+}
+[[ $tests == *5* ]] && {
+	# case 5, 'active' variable involved, w/o intermediate variable
+	(( obj.fuz = ${blop[1]} ))	# coredump
+	echo $obj
+}
+[[ $tests == *6* ]] && {
+	echo $(( obj.baz = obj.foo + obj.bar ))	# coredump
+}
+[[ $tests == *7* ]] && {
+	echo $(( obj.foo + obj.bar ))	# coredump
+}
+}
+mkObj bla
+!
+chmod +x /tmp/script$$
+[[ $(/tmp/script$$ 1) != '( bar=2 baz=3 foo=1 )' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 1 failed'
+[[ $(/tmp/script$$ 2) != '( faz=0 )' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 2 failed'
+[[ $(/tmp/script$$ 3) != '( foz=777 )' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 3 failed'
+[[ $(/tmp/script$$ 4) != '( foz=777 )' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 4 failed'
+[[ $(/tmp/script$$ 5) != '( fuz=777 )' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 5 failed'
+[[ $(/tmp/script$$ 6) != '0' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 6 failed'
+[[ $(/tmp/script$$ 7) != '0' ]] 2>/dev/null && err_exit 'ojbect arithmetic test 7 failed'
+unset foo
+typeset -F1 foo=123456789.19
+[[ $foo == 123456789.2 ]] || err_exit 'typeset -F1 not working correctly'
 exit $((Errors))

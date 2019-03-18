@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * David Korn
@@ -32,6 +28,7 @@
 #include	<fcin.h>
 #include	<ls.h>
 #include	<nval.h>
+#include	<dlldefs.h>
 #include	"variables.h"
 #include	"path.h"
 #include	"io.h"
@@ -235,6 +232,12 @@ skip:
 	return(cp);
 }
 
+static void free_bltin(Namval_t *np,void *data)
+{
+	if((void*)np->nvenv==data)
+		dtdelete(sh_bltin_tree(),np);
+}
+
 /*
  * delete current Pathcomp_t structure
  */
@@ -246,6 +249,13 @@ void  path_delete(Pathcomp_t *first)
 		ppnext = pp->next;
 		if(--pp->refcount<=0)
 		{
+			if(pp->lib)
+				free((void*)pp->lib);
+			if(pp->bltin_lib && pp->bltin_lib != (void*)e_dot)
+			{
+				nv_scan(sh_bltin_tree(),free_bltin,pp->bltin_lib,0,0);
+				dlclose(pp->bltin_lib);
+			}
 			free((void*)pp);
 			if(old)
 				old->next = ppnext;
@@ -609,6 +619,21 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 			pp = path_nextcomp(pp,name,0);
 		if(endpath)
 			return(endpath);
+		if(!isfun && oldpp->bltin_lib && oldpp->bltin_lib != (void*)e_dot)
+		{
+			typedef int (*Fptr_t)(int, char*[], void*);
+			Fptr_t addr;
+			int n = staktell();
+			stakputs("b_");
+			stakputs(name);
+			stakputc(0);
+			if(addr=(Fptr_t)dlllook(oldpp->bltin_lib,stakptr(n)))
+			{
+				Namval_t *np = sh_addbuiltin(stakptr(PATH_OFFSET),addr,(void*)0);
+				np->nvenv = oldpp->bltin_lib;
+				return(oldpp);
+			}
+		}
 		f = canexecute(stakptr(PATH_OFFSET),isfun);
 		if(isfun && f>=0)
 		{
@@ -616,7 +641,6 @@ Pathcomp_t *path_absolute(register const char *name, Pathcomp_t *endpath)
 			nv_onattr(np,NV_LTOU|NV_FUNCTION);
 			close(f);
 			f = -1;
-			pp = 0;
 			return(0);
 		}
 		if(!pp || f>=0)
@@ -916,8 +940,12 @@ retry:
 #ifdef _lib_fork
 			if(sh.subshell)
 				return(-1);
-			if(pid=fork())
-				return(pid);
+			do
+			{
+				if((pid=fork())>0)
+					return(pid);
+			}
+			while(_sh_fork(pid,0,(int*)0) < 0);
 #else
 			return(-1);
 #endif
@@ -1170,10 +1198,11 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 			stakputc(*cp++);
 		len = staktell()-offset;
 		stakputc(0);
+		stakseek(offset);
+		name = (const char*)stakptr(offset);
 	}
 	else
 		len = strlen(name);
-	stakseek(offset);
 	for(pp=first; pp; pp=pp->next)
 	{
 		if(memcmp(name,pp->name,len)==0 && (pp->name[len]==':' || pp->name[len]==0))
@@ -1182,14 +1211,14 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 			return(first);
 		}
 	}
-	if(old && (old=path_dirfind(old,stakptr(offset),0)))
+	if(old && (old=path_dirfind(old,name,0)))
 	{
 		statb.st_ino = old->ino;
 		statb.st_dev = old->dev;
 		if(old->ino==0 && old->dev==0)
 			flag |= PATH_SKIP;
 	}
-	else if(stat(stakptr(offset),&statb)<0 || !S_ISDIR(statb.st_mode))
+	else if(stat(name,&statb)<0 || !S_ISDIR(statb.st_mode))
 	{
 		if(*name=='/')
 			return(first);
@@ -1211,7 +1240,7 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 	}
 	pp = newof((Pathcomp_t*)0,Pathcomp_t,1,len+1);
 	pp->refcount = 1;
-	memcpy((char*)(pp+1),stakptr(offset),len+1);
+	memcpy((char*)(pp+1),name,len+1);
 	pp->name = (char*)(pp+1);
 	pp->len = len;
 	pp->dev = statb.st_dev;
@@ -1228,7 +1257,7 @@ static Pathcomp_t *path_addcomp(Pathcomp_t *first, Pathcomp_t *old,const char *n
 }
 
 /*
- * This function checks for the .fpath file in directory in <pp>
+ * This function checks for the .paths file in directory in <pp>
  * it assumes that the directory is on the stack at <offset> 
  */
 static int path_chkfpath(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int offset)
@@ -1263,20 +1292,38 @@ static int path_chkfpath(Pathcomp_t *first, Pathcomp_t* old,Pathcomp_t *pp, int 
 				continue;
 			}
 			*cp = 0;
-			if(!ep || memcmp((void*)sp,(void*)"FPATH=",6)==0)
+			m = ep ? (ep-sp) : 0;
+			if(!m || m==6 && memcmp((void*)sp,(void*)"FPATH=",6)==0)
 			{
 				if(first)
 				{
 					char *ptr = stakptr(offset+pp->len+1);
-					stakseek(offset);
 					if(ep)
 						strcpy(ptr,ep);
 					path_addcomp(first,old,stakptr(offset),PATH_FPATH|PATH_BFPATH);
 				}
 			}
-			else if(ep)
+			else if(m==12 && memcmp((void*)sp,(void*)"BUILTIN_LIB=",12)==0)
 			{
-				m = ep-sp;
+				if(!pp->bltin_lib)
+				{
+#if (_AST_VERSION>=20040404)
+					if (*ep != '/' && (sp = malloc(k = pp->len + strlen(ep) + 2)))
+						sfsprintf(sp, k, "%s/%s", pp->name, ep);
+					else
+						sp = ep;
+					pp->bltin_lib = dllplug("ksh", sp, NiL, RTLD_LAZY, NiL, 0);
+					if (sp != ep)
+						free(sp);
+#else
+					pp->bltin_lib = dllfind(ep, NiL, RTLD_LAZY, NiL, 0);
+#endif
+					if (!pp->bltin_lib)
+						pp->bltin_lib = (void*)e_dot;
+				}
+			}
+			else if(m)
+			{
 				pp->lib = (char*)malloc(cp-sp+pp->len+2);
 				memcpy((void*)pp->lib,(void*)sp,m);
 				memcpy((void*)&pp->lib[m],stakptr(offset),pp->len);

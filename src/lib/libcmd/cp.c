@@ -1,27 +1,23 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1992-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1992-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
@@ -31,7 +27,7 @@
  */
 
 static const char usage_head[] =
-"[-?@(#)$Id: cp (AT&T Labs Research) 2004-02-29 $\n]"
+"[-?@(#)$Id: cp (AT&T Labs Research) 2004-12-15 $\n]"
 USAGE_LICENSE
 ;
 
@@ -130,8 +126,8 @@ static const char usage_tail[] =
 #include <ftwalk.h>
 #include <fs3d.h>
 #include <hashkey.h>
-#include <sfstr.h>
 #include <stk.h>
+#include <tmx.h>
 
 #define PATH_CHUNK	256
 
@@ -191,8 +187,8 @@ preserve(const char* path, struct stat* ns, struct stat* os)
 {
 	int	n;
 
-	if (touch(path, os->st_atime, os->st_mtime, 0))
-		error(ERROR_SYSTEM|2, "%s: cannot reset directory times", path);
+	if (tmxtouch(path, tmxgetatime(os), tmxgetmtime(os), TMX_NOTIME, 0))
+		error(ERROR_SYSTEM|2, "%s: cannot reset access and modify times", path);
 	n = ((ns->st_uid != os->st_uid) << 1) | (ns->st_gid != os->st_gid);
 	if (n && chown(state.path, os->st_uid, os->st_gid))
 		switch (n)
@@ -237,6 +233,12 @@ visit(register Ftw_t* ftw)
 
 	if (state.interrupt)
 		return -1;
+	if (ftw->info == FTW_DC)
+	{
+		error(2, "%s: directory causes cycle", ftw->path);
+		ftw->status = FTW_SKIP;
+		return 0;
+	}
 	if (ftw->level == 0)
 	{
 		base = ftw->name;
@@ -279,7 +281,7 @@ visit(register Ftw_t* ftw)
 			while (e = strchr(s, '/'))
 			{
 				*e = 0;
-				if (access(state.path, 0))
+				if (access(state.path, F_OK))
 				{
 					st.st_mode = state.missmode;
 					if (s = strrchr(s, '/'))
@@ -527,7 +529,9 @@ visit(register Ftw_t* ftw)
 		{
 			if (!rename(ftw->path, state.path))
 				return 0;
-			if (!rm && st.st_mode && !remove(state.path))
+			if (errno == ENOENT)
+				rm = 1;
+			else if (!rm && st.st_mode && !remove(state.path))
 			{
 				rm = 1;
 				continue;

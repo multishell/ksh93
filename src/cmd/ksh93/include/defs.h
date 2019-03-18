@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * David Korn
@@ -36,7 +32,11 @@
 #include	"FEATURE/options"
 #include	<cdt.h>
 #include	<history.h>
-#include	<env.h>
+#ifdef SHOPT_ENV
+#   include	<env.h>
+#else
+#   define Env_t	void
+#endif
 #include	"fault.h"
 #include	"argnod.h"
 
@@ -141,6 +141,7 @@ struct limits
 	int		*outpipe;	/* output pipe pointer */ \
 	int		cpipe[2]; \
 	int		coutpipe; \
+	int		inuse_bits; \
 	struct argnod	*envlist; \
 	struct dolnod	*arglist; \
 	int		fn_depth; \
@@ -177,7 +178,8 @@ struct limits
 	History_t	*hist_ptr; \
 	char		universe; \
 	void		*jmpbuffer; \
-	char		ifstable[256];
+	char		ifstable[256]; \
+	Shopt_t		offoptions;
 
 #include	<shell.h>
 
@@ -250,7 +252,6 @@ struct limits
 #   define SH_SHIFT_VERBOSE	75
 #   define SH_SOURCEPATH	76
 #   define SH_XPG_ECHO		77
-#   define SH_NORC		79
 #endif
 
 #if SHOPT_HISTEXPAND
@@ -261,6 +262,8 @@ struct limits
 #   define SH_HISTVERIFY	62
 #endif
 
+#define MATCH_MAX		64
+
 extern void 		*sh_argopen(Shell_t*);
 extern Namval_t		*sh_assignok(Namval_t*,int);
 extern char		*sh_checkid(char*,char*);
@@ -268,7 +271,9 @@ extern int		sh_debug(const char*,const char*,const char*,char *const[],int);
 extern int 		sh_echolist(Sfio_t*, int, char**);
 extern struct argnod	*sh_endword(int);
 extern char 		**sh_envgen(void);
+#ifdef SHOPT_ENV
 extern void 		sh_envput(Env_t*, Namval_t*);
+#endif
 extern void 		sh_envnolocal(Namval_t*,void*);
 extern Sfdouble_t	sh_arith(const char*);
 extern void		*sh_arithcomp(char*);

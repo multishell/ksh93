@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 /*
  * bash specific extensions
  * originally provided by Karsten Fleischer
@@ -69,12 +65,13 @@ const char sh_bash2[] =
 "[01:init-file|rcfile]:[file?Execute commands from \afile\a instead of the "
 	"standard personal initialization file ~/.bashrc if the shell is "
 	"interactive. Only available if invoked as \bbash\b.]"
-"[02:noediting?For option compatibility with \bbash\b only. Ignored.]"
-"[03:noprofile?Do not read either the system-wide startup file or any of the "
-	"personal initialization files. Only available if invoked as \bbash\b.]"
-"[04:norc?Do not read and execute the personal initialization file "
-	"~/.bashrc if the shell is interactive. Only available if invoked as "
-	"\bbash\b.]"
+"[02:editing?For option compatibility with \bbash\b only. Ignored.]"
+"[03:profile?Read either the system-wide startup file or any of the "
+	"personal initialization files. On by default for interactive "
+	"shells. Only available if invoked as \bbash\b.]"
+"[04:rc?Read and execute the personal initialization file "
+	"\b$HOME/.bashrc\b. On by default for interactive shells. Only "
+	"available if invoked as \bbash\b.]"
 "[05:posix?If invoked as \bbash\b, turn on POSIX compatibility. \bBash\b in "
 	"POSIX mode is not the same as \bksh\b.]"
 "[06:version?Print version number and exit.]";
@@ -430,10 +427,6 @@ void bash_init(int mode)
 		login_files[n++] = (char*)e_profile;
 	}
 	sh.login_files = login_files;
-	if(sh_isoption(SH_NORC))
-		sh.rcfile=0;
-	else if(!sh.rcfile)
-		sh.rcfile = strdup(sh_mactry("$HOME/.bashrc"));
 reinit:
 	xtrace = sh_isoption(SH_XTRACE);
 	sh_offoption(SH_XTRACE);

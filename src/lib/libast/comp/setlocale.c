@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 
 /*
@@ -37,50 +33,6 @@
 #include <ctype.h>
 #include <mc.h>
 #include <namval.h>
-#include <sfstr.h>
-
-#if __OBSOLETE__ && __OBSOLETE__ < 20020401
-
-/*
- * _Ast_info_t grew
- * the old exported symbol was _ast_state, retained here for link compatibility
- * new compilations will use _ast_info
- * extra space was added to avoid this in the future
- */
-
-typedef struct
-{
-
-	char*		id;
-
-	struct
-	{
-	unsigned int	serial;
-	unsigned int	set;
-	}		locale;
-
-	long		tmp_long;
-	size_t		tmp_size;
-	short		tmp_short;
-	char		tmp_char;
-	wchar_t		tmp_wchar;
-
-	int		(*collate)(const char*, const char*);
-
-	int		tmp_int;
-	void*		tmp_pointer;
-
-} _Ast_state_t;
-
-#define old			_ast_state
-extern _Ast_state_t		old;
-#define OLD(x)			x
-
-#else
-
-#define OLD(x)
-
-#endif
 
 #if ( _lib_wcwidth || _lib_wctomb ) && _hdr_wctype
 #include <wctype.h>
@@ -531,19 +483,16 @@ set_collate(Lc_category_t* cp)
 {
 	if (locales[cp->internal]->flags & LC_debug)
 	{
-		OLD(old.collate = debug_strcoll;)
 		ast.collate = debug_strcoll;
 		ast.mb_xfrm = debug_strxfrm;
 	}
 	else if (locales[cp->internal]->flags & LC_default)
 	{
-		OLD(old.collate = strcmp;)
 		ast.collate = strcmp;
 		ast.mb_xfrm = 0;
 	}
 	else
 	{
-		OLD(old.collate = strcoll;)
 		ast.collate = strcoll;
 		ast.mb_xfrm = strxfrm;
 	}
@@ -655,7 +604,6 @@ setopt(void* a, const void* p, int n, const char* v)
 			ast.locale.set |= ((Namval_t*)p)->value;
 		else
 			ast.locale.set &= ~((Namval_t*)p)->value;
-		OLD(old.locale.set = ast.locale.set;)
 	}
 	return 0;
 }
@@ -746,7 +694,6 @@ single(int category, Lc_t* lc)
 			ast.locale.set &= ~(1<<category);
 		else
 			ast.locale.set |= (1<<category);
-		OLD(old.locale.set = ast.locale.set;)
 	}
 	return (char*)lc->name;
 }

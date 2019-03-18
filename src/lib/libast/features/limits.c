@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
@@ -53,15 +49,8 @@ __STDPP__directive pragma pp:hide getpagesize getdtablesize printf
  * kick that in
  */
 
-#ifndef _POSIX_SOURCE
-#define _POSIX_SOURCE	1
-#endif
-#ifndef _XOPEN_SOURCE
-#define _XOPEN_SOURCE	1
-#endif
-#ifndef __EXTENSIONS__
-#define __EXTENSIONS__	1
-#endif
+#include "FEATURE/standards"
+
 #ifdef __sun
 #define _timespec	timespec
 #endif
@@ -95,7 +84,7 @@ extern int		printf(const char*, ...);
 
 #include "conflib.h"
 
-main()
+int main()
 {
 	char			c;
 	unsigned char		uc;
@@ -351,7 +340,7 @@ main()
 		vll = ull;
 #endif
 		printf("#if defined(__STDC__) && _ast_LL\n");
-		printf("#define ULONGLONG_MAX	%lluLLU\n", vll);
+		printf("#define ULONGLONG_MAX	%lluULL\n", vll);
 		printf("#else\n");
 		printf("#define ULONGLONG_MAX	%llu\n", vll);
 		printf("#endif\n");
@@ -480,5 +469,5 @@ main()
 	printf("#endif\n");
 	printf("\n");
 
-	return(0);
+	return 0;
 }

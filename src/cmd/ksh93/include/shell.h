@@ -1,26 +1,22 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1982-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1982-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 #ifndef SH_INTERACTIVE
 /*
@@ -63,6 +59,9 @@ typedef void	(*Shinit_f)(int);
 typedef int     (*Shbltin_f)(int, char*[], void*);
 typedef int	(*Shwait_f)(int, long, int);
 
+union Shnode_u;
+typedef union Shnode_u Shnode_t;
+
 #define SH_CFLAG	0
 #define SH_HISTORY	1	/* used also as a state */
 #define	SH_ERREXIT	2	/* used also as a state */
@@ -96,6 +95,7 @@ typedef int	(*Shwait_f)(int, long, int);
 #define SH_PIPEFAIL	32
 #define SH_GLOBSTARS	33
 #define SH_XARGS	34
+#define SH_RC		35
 
 /*
  * passed as flags to builtins in Nambltin_t struct when BLT_OPTIM is on
@@ -203,8 +203,7 @@ extern unsigned long	sh_isoption(int);
 extern unsigned long	sh_onoption(int);
 extern unsigned long	sh_offoption(int);
 extern int 		sh_waitsafe(void);
-
-
+extern int		sh_exec(const Shnode_t*,int);
 
 #if SHOPT_DYNAMIC
     extern void		**sh_getliblist(void);

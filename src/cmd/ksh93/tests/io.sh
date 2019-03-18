@@ -1,26 +1,22 @@
-####################################################################
-#                                                                  #
-#             This software is part of the ast package             #
-#                Copyright (c) 1982-2004 AT&T Corp.                #
-#        and it may only be used by you under license from         #
-#                       AT&T Corp. ("AT&T")                        #
-#         A copy of the Source Code Agreement is available         #
-#                at the AT&T Internet web site URL                 #
-#                                                                  #
-#       http://www.research.att.com/sw/license/ast-open.html       #
-#                                                                  #
-#    If you have copied or used this software without agreeing     #
-#        to the terms of the license you are infringing on         #
-#           the license and copyright and are violating            #
-#               AT&T's intellectual property rights.               #
-#                                                                  #
-#            Information and Software Systems Research             #
-#                        AT&T Labs Research                        #
-#                         Florham Park NJ                          #
-#                                                                  #
-#                David Korn <dgk@research.att.com>                 #
-#                                                                  #
-####################################################################
+########################################################################
+#                                                                      #
+#               This software is part of the ast package               #
+#                  Copyright (c) 1982-2004 AT&T Corp.                  #
+#                      and is licensed under the                       #
+#                  Common Public License, Version 1.0                  #
+#                            by AT&T Corp.                             #
+#                                                                      #
+#                A copy of the License is available at                 #
+#            http://www.opensource.org/licenses/cpl1.0.txt             #
+#         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         #
+#                                                                      #
+#              Information and Software Systems Research               #
+#                            AT&T Research                             #
+#                           Florham Park NJ                            #
+#                                                                      #
+#                  David Korn <dgk@research.att.com>                   #
+#                                                                      #
+########################################################################
 function err_exit
 {
 	print -u2 -n "\t"
@@ -117,4 +113,59 @@ if	[[ $line != foo ]]
 then	err_exit 'file descriptor not restored after exec in subshell'
 fi
 exec 3>&- 4>&-; cd /; rm -r /tmp/ksh$$ || err_exit "rm -r /tmp/ksh$$ failed"
+[[ $( {
+	read -r line;print -r -- "$line"
+	(
+	        read -r line;print -r -- "$line"
+	) & wait
+	while	read -r line
+        do	print -r -- "$line"
+	done
+ } << !
+line 1
+line 2
+line 3
+!) == $'line 1\nline 2\nline 3' ]] || err_exit 'read error with subshells'
+# 2004-05-11 bug fix
+cat > /tmp/io$$.1 <<- \++EOF++  
+	script=/tmp/io$$.2
+	trap 'rm -f $script' EXIT
+	exec 9> $script
+	for ((i=3; i<9; i++))
+	do	eval "while read -u$i; do : ;done $i</dev/null"
+		print -u9 "exec $i< /dev/null" 
+	done
+	for ((i=0; i < 60; i++))
+	do	print -u9 -f "%.80c\n"  ' '
+	done
+	print -u9 'print ok'
+	exec 9<&-
+	chmod +x $script
+	$script
+++EOF++
+chmod +x /tmp/io$$.1
+[[ $($SHELL  /tmp/io$$.1) == ok ]]  || err_exit "parent i/o causes child script to fail"
+rm -rf /tmp/io$$.[12]
+# 2004-11-25 ancient /dev/fd/NN redirection bug fix
+x=$(
+	{
+		print -n 1
+		print -n 2 > /dev/fd/2
+		print -n 3
+		print -n 4 > /dev/fd/2
+	}  2>&1
+)
+[[ $x == "1234" ]] || err_exit "/dev/fd/NN redirection fails to dup"
+# 2004-12-20 redirction loss bug fix
+cat > /tmp/io$$.1 <<- \++EOF++  
+	function a
+	{
+		trap 'print ok' EXIT
+		: > /dev/null
+	}
+	a
+++EOF++
+chmod +x /tmp/io$$.1
+[[ $(/tmp/io$$.1) == ok ]] || err_exit "trap on EXIT loses last command redirection"
+rm -rf /tmp/io$$.1
 exit $((Errors))

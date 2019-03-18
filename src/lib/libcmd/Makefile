@@ -9,6 +9,7 @@ LICENSE = since=1992,author=gsf+dgk
 CCFLAGS = $(CC.OPTIMIZE) $(CC.DLL)
 
 CP = $(STDCP|"cp")
+CHMOD = $(STDCHMOD|"chmod")
 
 HOSTTYPE == "$(CC.HOSTTYPE)"
 
@@ -24,5 +25,9 @@ cmd 1.2 :LIBRARY: RELEASE cmdinit.c cmdrecurse.c \
 $(INCLUDEDIR) :INSTALLPROTO: cmd.h
 
 "win32*" :NOOPTIMIZE: id.c
+
+if CC.HOSTTYPE == "sun4"
+	pathsetlink == symlink	/* ld.so workaround */
+end
 
 ignore dlldefs.h /* prevents bootstrap double build */

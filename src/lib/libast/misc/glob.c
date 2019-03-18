@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 
 /*
@@ -601,13 +597,15 @@ glob(const char* pattern, int flags, int (*errfn)(const char*, int), register gl
 			gp->gl_type = 0;
 			gp->gl_attr = 0;
 			gp->gl_nextdir = 0;
+			gp->gl_stat = 0;
 		}
 		if (!(flags & GLOB_ALTDIRFUNC))
 		{
 			gp->gl_opendir = (GL_opendir_f)opendir;
 			gp->gl_readdir = (GL_readdir_f)readdir;
 			gp->gl_closedir = (GL_closedir_f)closedir;
-			gp->gl_stat = (flags & GLOB_STARSTAR) ? (GL_stat_f)lstat : (GL_stat_f)pathstat;
+			if (!gp->gl_stat)
+				gp->gl_stat = (flags & GLOB_STARSTAR) ? (GL_stat_f)lstat : (GL_stat_f)pathstat;
 		}
 		if (!gp->gl_intr)
 			gp->gl_intr = &intr;

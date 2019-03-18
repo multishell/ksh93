@@ -3,7 +3,15 @@
  * This makefile should work with nmake 2.3 and higher 
  */
 
-if CC.HOSTTYPE == "*win*" && CC.SUFFIX.DYNAMIC == ".dll" || "$(PACKAGE_OPTIMIZE:N=space)"
+SH = ksh		/* name of the shell program */
+VERSION = 1.1
+
+if CC.HOSTTYPE == "linux.alpha"
+	/* workaround for "BUG IN DYNAMIC LINKER ld.so" */
+	:PACKAGE: - m:static:noinclude noCC.EXPORT.DYNAMIC
+end
+
+if "$(CC.DIALECT:N=EXPORT=DLL)" || "$(PACKAGE_OPTIMIZE:N=space)"
 	CCFLAGS += $$(CC.DLL)
 	LIBS_req = -lshell
 else
@@ -14,7 +22,7 @@ else
 	end
 end
 
-:PACKAGE:	ast$(libtype)
+:PACKAGE: ast$(libtype) --clobber=!($(SH))
 
 LICENSE = since=1982,author=dgk
 
@@ -23,11 +31,6 @@ CATALOG = libshell
 .SOURCE : edit sh bltins data tests fun
 .SOURCE.h : include 
 
-SH = ksh		/* name of the shell program */
-VERSION = 1.1
-
-clobber = !($(SH))	/* move ksh to ksh.old on clobber */
-
 /* documentation files */
 DOCFILES = sh.memo builtins.mm README RELEASE PROMO.mm COMPATIBILITY \
 		DESIGN OBSOLETE RELEASE93 RELEASE88
@@ -35,7 +38,6 @@ DOCFILES = sh.memo builtins.mm README RELEASE PROMO.mm COMPATIBILITY \
 KSHELL == 1			/* this is ksh */
 
 SH_DICT ==			/* message catalog */
-SH_CMDLIB_DIR ==		/* libcmd.a builtin dir */
 DEBUG ==			/* debugging purposes only */
 
 /* set these variables to 1 to enable, 0 to disable, null to probe */
@@ -45,8 +47,6 @@ SHOPT_ACCTFILE ==  		/* per user accounting info */
 SHOPT_APPEND == 1		/* var+=val string append */
 SHOPT_BASH ==			/* bash compatibility code */
 SHOPT_BRACEPAT == 1		/* C-shell {...,...} expansions (, required) */
-SHOPT_CMDLIB_BLTIN ==		/* make all cmds in libcmd.a builtins */
-SHOPT_CMDLIB_DIR ==		/* SHOPT_CMDLIB_BLTIN=1 + "/opt/ast/bin/" */
 SHOPT_COMPOUND_ARRAY == 1	/* allow compound arrays */
 SHOPT_CRNL ==			/* accept <cr><nl> for <nl> */
 SHOPT_DYNAMIC == 1		/* dynamic loading for builtins */
@@ -82,12 +82,12 @@ end
 /* use the following libraries only if they exist */
 LIBS_opt := +ljobs +li
 
-if  CC.HOSTTYPE == "sol[89].*"
+if  CC.HOSTTYPE == "sol([89]|[1-9][0-9]).*"
 	LDFLAGS  += $(CC.LD.LAZY) $(CC.LD.NORECORD)
 end
 
 if ! "$(-mam:N=static*)" && CC.HOSTTYPE != "sgi.mips*"
-	if CC.HOSTTYPE == "sol[789].*"
+	if CC.HOSTTYPE == "sol([789]|[1-9][0-9]).*"
 		LIBS_opt += +lsocket -lnsl
 	else
 		LIBS_opt += +lsocket +lnsl
@@ -98,6 +98,9 @@ if CC.HOSTTYPE == "linux.sparc"
 	LIBS_opt += -ldll
 end
 LIBS_opt += -lsecdb +lintl -ldl
+if CC.HOSTTYPE == "sol.*"
+	LIBS_opt += +lw
+end
 $(LIBS_opt)	: .DONTCARE
 
 LDLIBRARIES = $(LIBS_opt)
@@ -142,7 +145,7 @@ $(INCLUDEDIR) :INSTALLPROTO: nval.h shell.h history.h
 
 suid_exec ::	CC.DLL= suid_exec.c +last
 
-shcomp	::	CC.DLL= SH_DICT='"libshell"' shcomp.c -lshell
+shcomp	::	CC.DLL= SH_DICT='"libshell"' shcomp.c $(LIBS_req)
 
 $(FUNDIR) :INSTALLDIR: mode=+x dirs popd pushd
 

@@ -1,27 +1,23 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1992-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1992-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * David Korn
@@ -32,7 +28,7 @@
  */
 
 static const char usage[] =
-"[-?\n@(#)$Id: id (AT&T Labs Research) 1999-06-17 $\n]"
+"[-?\n@(#)$Id: id (AT&T Labs Research) 2004-06-11 $\n]"
 USAGE_LICENSE
 "[+NAME?id - return user identity]"
 "[+DESCRIPTION?If no \auser\a operand is specified \bid\b writes user and "
@@ -463,7 +459,7 @@ b_id(int argc, char *argv[], void* context)
 		error(2, "incompatible options selected");
 	if (error_info.errors || argc > 1)
 		error(ERROR_usage(2), "%s", optusage(NiL));
-	if (!(flags & ~N_FLAG))
+	if (!(flags & ~(N_FLAG|R_FLAG)))
 	{
 		if (flags & N_FLAG) flags |= O_FLAG;
 		flags |= (U_FLAG|G_FLAG|N_FLAG|R_FLAG|S_FLAG|GG_FLAG);

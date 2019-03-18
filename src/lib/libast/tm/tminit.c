@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * Glenn Fowler
@@ -31,7 +27,6 @@
  * time conversion support
  */
 
-#include <ast.h>
 #include <tm.h>
 #include <ctype.h>
 #include <namval.h>
@@ -60,6 +55,7 @@ static const Namval_t		options[] =
 	"adjust",	TM_ADJUST,
 	"format",	TM_DEFAULT,
 	"leap",		TM_LEAP,
+	"subsecond",	TM_SUBSECOND,
 	"type",		TM_type,
 	"utc",		TM_UTC,
 	0,		0
@@ -79,17 +75,17 @@ __EXTERN__(Tm_info_t, _tm_info_);
 static int
 tzwest(time_t* clock, int* isdst)
 {
-	register Tm_t*	tp;
-	register int	n;
-	register int	m;
-	int		h;
-	time_t		epoch;
+	register struct tm*	tp;
+	register int		n;
+	register int		m;
+	int			h;
+	time_t			epoch;
 
 	/*
 	 * convert to GMT assuming local time
 	 */
 
-	if (!(tp = (Tm_t*)gmtime(clock)))
+	if (!(tp = gmtime(clock)))
 	{
 		/*
 		 * some systems return 0 for negative time_t
@@ -97,7 +93,7 @@ tzwest(time_t* clock, int* isdst)
 
 		epoch = 0;
 		clock = &epoch;
-		tp = (Tm_t*)gmtime(clock);
+		tp = gmtime(clock);
 	}
 	n = tp->tm_yday;
 	h = tp->tm_hour;
@@ -107,7 +103,7 @@ tzwest(time_t* clock, int* isdst)
 	 * localtime() handles DST and GMT offset
 	 */
 
-	tp = (Tm_t*)localtime(clock);
+	tp = localtime(clock);
 	if (n = tp->tm_yday - n)
 	{
 		if (n > 1)
@@ -163,7 +159,7 @@ tmlocal(void)
 	int			m;
 	int			isdst;
 	char*			t;
-	Tm_t*			tp;
+	struct tm*		tp;
 	time_t			now;
 	char			buf[20];
 
@@ -173,8 +169,8 @@ tmlocal(void)
 	tzset();
 #endif
 #if _dat_tzname
-	local.standard = tzname[0];
-	local.daylight = tzname[1];
+	local.standard = strdup(tzname[0]);
+	local.daylight = strdup(tzname[1]);
 #endif
 	tmlocale();
 
@@ -221,9 +217,9 @@ tmlocal(void)
 		 */
 
 		if (!local.standard)
-			local.standard = tzname[0];
+			local.standard = strdup(tzname[0]);
 		if (!local.daylight)
-			local.daylight = tzname[1];
+			local.daylight = strdup(tzname[1]);
 	}
 	else
 #endif
@@ -339,14 +335,17 @@ tmlocal(void)
 	if (!(tm_info.flags & TM_ADJUST))
 	{
 		now = (time_t)78811200;		/* Jun 30 1972 23:59:60 */
-		tp = (Tm_t*)localtime(&now);
+		tp = localtime(&now);
 		if (tp->tm_sec != 60)
 			tm_info.flags |= TM_ADJUST;
 	}
 	if (!(tm_info.flags & TM_UTC))
 	{
 		s = local.standard;
-		for (zp = tm_data.zone; !zp->type && zp->standard; zp++)
+		zp = tm_data.zone;
+		if (local.daylight)
+			zp++;
+		for (; !zp->type && zp->standard; zp++)
 			if (tmword(s, NiL, zp->standard, NiL, 0))
 			{
 				tm_info.flags |= TM_UTC;
@@ -362,7 +361,7 @@ tmlocal(void)
 void
 tminit(register Tm_zone_t* zp)
 {
-	static unsigned _ast_int4_t	serial = ~(_ast_int4_t)0;
+	static unsigned _ast_int4_t	serial = ~(unsigned _ast_int4_t)0;
 
 	if (serial != ast.env_serial)
 	{

@@ -1,28 +1,24 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1985-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                 Phong Vo <kpv@research.att.com>                  *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1985-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                   Phong Vo <kpv@research.att.com>                    *
+*                                                                      *
+***********************************************************************/
 #ifndef _SFHDR_H
 #define _SFHDR_H	1
 #if !defined(_BLD_sfio) && !defined(_BLD_stdio)
@@ -803,7 +799,7 @@ typedef struct _sfextern_s
 			 ((n) >= SF_GRAIN && (ssize_t)(n) >= (f)->size/16 ) )
 
 /* number of pages to memory map at a time */
-#define SF_NMAP		8
+#define SF_NMAP		4
 
 #ifndef MAP_VARIABLE
 #define MAP_VARIABLE	0
@@ -1146,13 +1142,21 @@ extern int		errno;
 #endif
 
 /* for portable encoding of double values */
+#ifndef frexpl
 #if _ast_fltmax_double
 #define frexpl		frexp
-#define ldexpl		ldexp
 #endif
 #if !__STDC__
 extern Sfdouble_t	frexpl _ARG_((Sfdouble_t, int*));
+#endif
+#endif
+#ifndef ldexpl
+#if _ast_fltmax_double
+#define ldexpl		ldexp
+#endif
+#if !__STDC__
 extern Sfdouble_t	ldexpl _ARG_((Sfdouble_t, int));
+#endif
 #endif
 
 #if !_PACKAGE_ast

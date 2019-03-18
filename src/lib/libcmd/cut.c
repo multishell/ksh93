@@ -1,27 +1,23 @@
-/*******************************************************************
-*                                                                  *
-*             This software is part of the ast package             *
-*                Copyright (c) 1992-2004 AT&T Corp.                *
-*        and it may only be used by you under license from         *
-*                       AT&T Corp. ("AT&T")                        *
-*         A copy of the Source Code Agreement is available         *
-*                at the AT&T Internet web site URL                 *
-*                                                                  *
-*       http://www.research.att.com/sw/license/ast-open.html       *
-*                                                                  *
-*    If you have copied or used this software without agreeing     *
-*        to the terms of the license you are infringing on         *
-*           the license and copyright and are violating            *
-*               AT&T's intellectual property rights.               *
-*                                                                  *
-*            Information and Software Systems Research             *
-*                        AT&T Labs Research                        *
-*                         Florham Park NJ                          *
-*                                                                  *
-*               Glenn Fowler <gsf@research.att.com>                *
-*                David Korn <dgk@research.att.com>                 *
-*                                                                  *
-*******************************************************************/
+/***********************************************************************
+*                                                                      *
+*               This software is part of the ast package               *
+*                  Copyright (c) 1992-2004 AT&T Corp.                  *
+*                      and is licensed under the                       *
+*                  Common Public License, Version 1.0                  *
+*                            by AT&T Corp.                             *
+*                                                                      *
+*                A copy of the License is available at                 *
+*            http://www.opensource.org/licenses/cpl1.0.txt             *
+*         (with md5 checksum 059e8cd6165cb4c31e351f2b69388fd9)         *
+*                                                                      *
+*              Information and Software Systems Research               *
+*                            AT&T Research                             *
+*                           Florham Park NJ                            *
+*                                                                      *
+*                 Glenn Fowler <gsf@research.att.com>                  *
+*                  David Korn <dgk@research.att.com>                   *
+*                                                                      *
+***********************************************************************/
 #pragma prototyped
 /*
  * David Korn
@@ -60,7 +56,7 @@ USAGE_LICENSE
 "[f:fields]:[list?\bcut\b based on fields separated by the delimiter "
 	"character specified with the \b-d\b optiion.]"
 "[n:nosplit?Do not split characters.  Currently ignored.]"
-"[r:reclen]#[reclen?If \areclen\a > 0, the input will be read as fixed length "
+"[R|r:reclen]#[reclen?If \areclen\a > 0, the input will be read as fixed length "
 	"records of length \areclen\a when used with the \b-b\b or \b-c\b "
 	"option.]"
 "[s:suppress|only-delimited?Suppress lines with no delimiter characters, "
@@ -456,6 +452,7 @@ b_cut(int argc,char *argv[], void* context)
 	  case 'N':
 		mode |= C_NONEWLINE;
 		break;
+	  case 'R':
 	  case 'r':
 		if(opt_info.num>0)
 			reclen = opt_info.num;

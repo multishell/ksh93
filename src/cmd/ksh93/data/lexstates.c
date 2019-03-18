@@ -214,7 +214,7 @@ static const char sh_lexstate5[256] =
 	S_GRAVE,0,	0,	0,	0,	0,	0,	0,
 	0,	0,	0,	0,	0,	0,	0,	0,
 	0,	0,	0,	0,	0,	0,	0,	0,
-	0,	0,	0,	S_BRACE,S_META,	S_POP,	0,	0
+	0,	0,	0,	S_BRACE,S_META,	S_POP,	S_TILDE,0
 };
 
 /*
@@ -413,3 +413,4 @@ const char e_lexlongquote[]	= "line %d: %c quote may be missing";
 const char e_lexzerobyte[]	= "zero byte";
 const char e_lexemptyfor[]	= "line %d: empty for list";
 const char e_lextypeset[]	= "line %d: %s invalid typeset option order";
+const char e_lexcharclass[]	= "line %d: '^' as first character in character class not portable";

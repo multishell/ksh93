@@ -138,10 +138,15 @@ static char *find_begin(char outbuff[], char *last, int endchar, int *type)
 					if((c= mbchar(cp)) , c!=dot && !isaname(c))
 						break;
 				}
-				if(cp>=last && c!= '}')
+				if(cp>=last)
 				{
-					*type='$';
-					return(++xp);
+					if(c==dot || isaname(c))
+					{
+						*type='$';
+						return(++xp);
+					}
+					if(c!='}')
+						bp = cp;
 				}
 			}
 			else if(c=='(')

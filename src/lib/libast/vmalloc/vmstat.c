@@ -118,8 +118,8 @@ Vmstat_t*	st;
 		}
 		else if((vd->mode&VM_MTPOOL) && s > 0)
 		{	if(seg->free)
-				st->n_free += (SIZE(seg->free)+sizeof(Head_t))/s;
-			st->n_busy += ((seg->baddr - (Vmuchar_t*)b) - sizeof(Head_t))/s;
+				st->n_free += ((int)SIZE(seg->free)+sizeof(Head_t))/(int)s;
+			st->n_busy += ((int)(seg->baddr - (Vmuchar_t*)b) - sizeof(Head_t))/(int)s;
 		}
 	}
 

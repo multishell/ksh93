@@ -165,7 +165,7 @@ reg Void_t*	addr;
 				if(bp == tp)
 					goto done;
 
-		offset = (Vmuchar_t*)addr - (Vmuchar_t*)tp;
+		offset = (long)((Vmuchar_t*)addr - (Vmuchar_t*)tp);
 		goto done;
 	}
 

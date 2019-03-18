@@ -79,7 +79,7 @@ reg int	n;	/* see above */
 						s = r;
 				}
 
-				memcpy(f->data, f->endb-s, s);
+				memmove(f->data, f->endb-s, s);
 				f->next = f->data + (s-r);
 				f->endb = f->data + s;
 			}

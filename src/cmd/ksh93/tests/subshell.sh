@@ -501,4 +501,7 @@ exp=ok
 got=$( $SHELL -c "(eval '$src'); echo $exp" )
 [[ $got == "$exp" ]] || err_exit 'subshell eval of pipeline clobbers stdout'
 
+x=$( { time $SHELL -c date >| /dev/null;} 2>&1)
+[[ $x == *real*user*sys* ]] || err_exit 'time { ...;} 2>&1 in $(...) fails'
+
 exit $((Errors<125?Errors:125))

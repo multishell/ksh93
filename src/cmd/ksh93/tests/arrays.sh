@@ -526,6 +526,16 @@ typeset -m 'a[1]=j'
 [[ ${a[@]} == 'bb aa cc' ]] || err_exit 'moving associative array elements not working'
 unset a j
 
+z=(a b c)
+unset x
+typeset -m x[1]=z
+[[ ${x[1][@]} == 'a b c' ]] || err_exit 'moving indexed array to index array element not working'
+
+unset x z
+z=([0]=a [1]=b [2]=c)
+typeset -m x[1]=z
+[[ ${x[1][@]} == 'a b c' ]] || err_exit 'moving associative array to index array element not working'
+
 {
 typeset -a arr=(
 	float

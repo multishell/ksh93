@@ -43,7 +43,7 @@ char*		to;
 const char*	from;
 int		endc;
 #endif
-{	reg int	n;
+{	reg size_t	n;
 
 	n = strlen(from);
 	memcpy(to,from,n);
@@ -161,8 +161,8 @@ size_t		align;		/* alignment			*/
 		}
 
 		bufp = trstrcpy(bufp, "file", '=');
-		n = endbuf - bufp - SLOP - 3;
-		m = strlen(file);
+		n = (int)(endbuf - bufp) - SLOP - 3;
+		m = (int)strlen(file);
 		if(m > n)
 		{	file += (m - n);
 			bufp = trstrcpy(bufp, "..", '.');

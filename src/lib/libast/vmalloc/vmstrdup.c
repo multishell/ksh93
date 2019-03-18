@@ -40,7 +40,7 @@ register char*	s;
 #endif
 {
 	register char*	t;
-	register int	n;
+	register size_t	n;
 
 	return (s && (t = vmalloc(v, n = strlen(s) + 1))) ? (char*)memcpy(t, s, n) : (char*)0;
 }

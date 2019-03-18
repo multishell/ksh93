@@ -587,4 +587,14 @@ $SHELL -c 'typeset x="123" ; integer i=100 ; print -n "${x:i:5}"'
 got=$($SHELL -c 'A=""; B="B"; for I in ${A[@]} ${B[@]}; do echo "\"$I\""; done')
 [[ $got == $'"B"' ]] || err_exit '"\"$I\"" fails when $I is empty string'
 
+A='|'
+[[ $A == $A ]] || err_exit 'With A="|",  [[ $A == $A ]] does not match'
+
+x="111 222 333 444 555 666"
+[[ $x == ~(E)(...).(...).(...) ]]
+[[ -v .sh.match[0] ]] ||   err_exit '[[ -v .sh.match[0] ]] should be true'
+[[ -v .sh.match[3] ]] ||   err_exit '[[ -v .sh.match[3] ]] should be true'
+[[ -v .sh.match[4] ]] &&   err_exit '[[ -v .sh.match[4] ]] should be false'
+[[ ${#.sh.match[@]} == 4 ]] || err_exit "\${#.sh.match[@]} should be 4, not ${#.sh.match[@]}"
+
 exit $((Errors<125?Errors:125))

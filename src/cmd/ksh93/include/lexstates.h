@@ -152,4 +152,5 @@ extern const char e_lexfuture[];
 extern const char e_lexzerobyte[];
 extern const char e_lexemptyfor[];
 extern const char e_lextypeset[];
+extern const char e_lexcharclass[];
 #endif

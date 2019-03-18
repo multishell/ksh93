@@ -404,6 +404,8 @@ do	case $opt in
 	esac
 done
 
+[[ $($SHELL 2> /dev/null -c 'readonly foo; getopts a: foo -a blah; echo foo') == foo ]] || err_exit 'getopts with readonly variable causes script to abort'
+
 unset a
 { read -N3 a; read -N1 b;}  <<!
 abcdefg

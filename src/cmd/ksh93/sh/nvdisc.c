@@ -122,6 +122,7 @@ Sfdouble_t nv_getn(Namval_t *np, register Namfun_t *nfp)
 void nv_putv(Namval_t *np, const char *value, int flags, register Namfun_t *nfp)
 {
 	register Namfun_t	*fp, *fpnext;
+	Namarr_t		*ap;
 	if((fp=nfp) != NIL(Namfun_t*) && !nv_local)
 		fp = nfp = nfp->next;
 	nv_local=0;
@@ -132,7 +133,7 @@ void nv_putv(Namval_t *np, const char *value, int flags, register Namfun_t *nfp)
 		fpnext = fp->next;
 		if(!fp->disc || !fp->disc->putval)
 		{
-			if(!value)
+			if(!value && (!(ap=nv_arrayptr(np)) || ap->nelem==0))
 			{
 				if(fp->disc || !(fp->nofree&1))
 					nv_disc(np,fp,NV_POP);

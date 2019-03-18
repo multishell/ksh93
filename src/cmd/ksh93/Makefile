@@ -104,7 +104,7 @@ elif CC.HOSTTYPE == "sol?([789]|[1-9][0-9]).*"
 elif CC.HOSTTYPE != "sgi.mips*"
 	LIBS_opt += +lsocket +lnsl
 end
-if CC.HOSTTYPE == "linux.sparc"
+if CC.HOSTTYPE == "linux.sparc*"
 	/* the linux.sparc linker still has some problems */
 	LIBS_opt += -ldll
 end
@@ -153,7 +153,7 @@ shell $(VERSION) :LIBRARY: shell.3 nval.3 alarm.c cd_pwd.c cflow.c deparse.c \
 	trestore.c waitevent.c xec.c env.c $(DATAFILES) $(FILES_opt) \
 	-lcmd -last -lm
 
-"sol*.i386" :NOOPTIMIZE: main.c
+"sol*.i386*" :NOOPTIMIZE: main.c
 "win32*" :NOOPTIMIZE: trestore.c
 
 if CC.HOSTTYPE == "win32*"
@@ -185,16 +185,16 @@ bash_pre_rc.c : bash_pre_rc.sh
 	echo ";" >> $(<)
 end
 
-:: math.tab syscall.s mamexec mamstate.c deparse.c $(DOCFILES) \
+:: math.tab syscall.s mamexec mamstate.c $(DOCFILES) \
 	bash.c bash_pre_rc.sh hexpand.c mkservice.c \
 	shopen.mk shopen.c
 
 :: shtests \
-	alias.sh append.sh arith.sh arrays.sh attributes.sh basic.sh \
-	bracket.sh builtins.sh case.sh comvar.sh coprocess.sh exit.sh \
-	expand.sh functions.sh glob.sh grep.sh heredoc.sh io.sh \
-	nameref.sh options.sh path.sh quoting.sh quoting2.sh return.sh \
-	select.sh substring.sh tilde.sh variables.sh 
+	alias.sh append.sh arith.sh arrays.sh arrays2.sh attributes.sh \
+	basic.sh bracket.sh builtins.sh case.sh comvar.sh coprocess.sh \
+	exit.sh expand.sh functions.sh glob.sh grep.sh heredoc.sh io.sh \
+	nameref.sh options.sh path.sh quoting.sh quoting2.sh restricted.sh \
+	return.sh select.sh substring.sh tilde.sh variables.sh 
 
 if "$(PWD:B:N=cc-*)"
 

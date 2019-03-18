@@ -51,5 +51,5 @@ system(const char* cmd)
 	sh[1] = "-c";
 	sh[2] = (char*)cmd;
 	sh[3] = 0;
-	return procrun(NiL, sh);
+	return procrun(NiL, sh, 0);
 }

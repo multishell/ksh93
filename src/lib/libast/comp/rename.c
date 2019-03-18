@@ -49,7 +49,7 @@ mvdir(const char* from, const char* to)
 		argv[1] = from;
 		argv[2] = to;
 		argv[3] = 0;
-		if (!procrun(argv[0], argv))
+		if (!procrun(argv[0], argv, 0))
 		{
 			errno = oerrno;
 			return 0;

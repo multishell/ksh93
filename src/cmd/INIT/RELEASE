@@ -1,3 +1,9 @@
+07-05-08 regress.sh: execute basename instead of absolute path for short $0
+07-04-27 cc.sgi.mips[34]: for #error to exit non-zero -- a no brainer
+07-04-20 mktest.sh: defer to systems without 'grep -q' -- sigh
+07-04-11 mamprobe.sh: handle $(CC.*) => ${mam_cc_*}, $(...) => ${...}
+07-04-11 make.probe: fix CC.PICBIG probe, default { CC.PIC CC.DLL } to BIG
+07-04-04 iffe.sh: prepend ${tst}${ext} to each .c probe
 07-03-28 package.sh: fix binary tgz architecture type duplication
 07-03-28 package.mk: add binary write PACKAGE.$HOSTTYPE.lst
 07-03-28 iffe.sh: add -F header to mac test

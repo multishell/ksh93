@@ -209,6 +209,7 @@ Namval_t *sh_assignok(register Namval_t *np,int add)
 	subshell_data->svar = lp;
 	save = sh.subshell;
 	sh.subshell = 0;;
+	mp->nvname = np->nvname;
 	nv_clone(np,mp,NV_NOFREE);
 	sh.subshell = save;
 	return(np);
@@ -236,7 +237,7 @@ static void nv_restore(struct subshell *sp)
 			mp->nvenv = np->nvenv;
 		mp->nvfun = np->nvfun;
 		mp->nvflag = np->nvflag;
-		if((mp==nv_scoped(PATHNOD)) || (mp==nv_scoped(IFSNOD)))
+		if(nv_cover(mp))
 			nv_putval(mp, np->nvalue.cp,0);
 		else
 			mp->nvalue.cp = np->nvalue.cp;
@@ -329,6 +330,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 	register struct subshell *sp = &sub_data;
 	int jmpval,nsig;
 	int savecurenv = shp->curenv;
+	int savejobpgid = job.curpgid;
 	int16_t subshell;
 	char *savsig;
 	Sfio_t *iop=0;
@@ -344,6 +346,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 		subenv = 0;
 	}
 	shp->curenv = ++subenv;
+	job.curpgid = 0;
 	savst = shp->st;
 	sh_pushcontext(&buff,SH_JMPSUB);
 	subshell = shp->subshell+1;
@@ -364,7 +367,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 	if(!shp->pwd)
 		path_pwd(0);
 	sp->bckpid = shp->bckpid;
-	if(!comsub || !sh_isoption(SH_SUBSHARE))
+	if(!comsub || (comsub==1 && !sh_isoption(SH_SUBSHARE)))
 	{
 		sp->shpwd = shp->pwd;
 		sp->pwd = (shp->pwd?strdup(shp->pwd):0);
@@ -489,6 +492,7 @@ Sfio_t *sh_subshell(Shnode_t *t, int flags, int comsub)
 #endif
 	job_subrestore(sp->jobs);
 	shp->jobenv = savecurenv;
+	job.curpgid = savejobpgid;
 	shp->bckpid = sp->bckpid;
 	if(sp->shpwd)	/* restore environment if saved */
 	{

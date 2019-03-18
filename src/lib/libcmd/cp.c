@@ -229,8 +229,6 @@ visit(State_t* state, register FTSENT* ent)
 	FTSENT*		sub;
 	struct stat	st;
 
-	if (cmdquit())
-		return -1;
 	if (ent->fts_info == FTS_DC)
 	{
 		error(2, "%s: directory causes cycle", ent->fts_path);
@@ -904,7 +902,7 @@ b_cp(int argc, register char** argv, void* context)
 		state.flags |= FTS_TOP;
 	if (fts = fts_open(argv, state.flags, NiL))
 	{
-		while ((ent = fts_read(fts)) && !visit(&state, ent));
+		while (!sh_checksig(context) && (ent = fts_read(fts)) && !visit(&state, ent));
 		fts_close(fts);
 	}
 	else if (state.link != pathsetlink)

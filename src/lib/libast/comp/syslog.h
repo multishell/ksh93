@@ -95,7 +95,7 @@
 
 /* encoding support */
 
-#include <namval.h>
+#include <ast_namval.h>
 
 #define log_facility	_log_facility
 #define log_severity	_log_severity

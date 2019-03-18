@@ -44,7 +44,7 @@
 #	define SHOPT_CMDLIB_HDR	<cmdlist.h>
 #endif
 #define Q(f)		#f	/* libpp cpp workaround -- fixed 2005-04-11 */
-#define CMDLIST(f)	SH_CMDLIB_DIR "/" Q(f), NV_BLTIN|NV_NOFREE, bltin(f),
+#define CMDLIST(f)	SH_CMDLIB_DIR "/" Q(f), NV_BLTIN|NV_BLTINOPT|NV_NOFREE, bltin(f),
 
 #undef	basename
 #undef	dirname
@@ -105,7 +105,6 @@ const struct shtable3 shtab_builtins[] =
 	"jobs",		NV_BLTIN|BLT_ENV,		bltin(jobs),
 #endif	/* JOBS */
 	"false",	NV_BLTIN|BLT_ENV,		bltin(false),
-SH_CMDLIB_DIR "/getconf",NV_BLTIN|BLT_ENV,		bltin(getconf),
 	"getopts",	NV_BLTIN|BLT_ENV,		bltin(getopts),
 	"print",	NV_BLTIN|BLT_ENV,		bltin(print),
 	"printf",	NV_BLTIN|NV_NOFREE,		bltin(printf),
@@ -131,6 +130,7 @@ SH_CMDLIB_DIR "/getconf",NV_BLTIN|BLT_ENV,		bltin(getconf),
 	CMDLIST(basename)
 	CMDLIST(chmod)
 	CMDLIST(dirname)
+	CMDLIST(getconf)
 	CMDLIST(head)
 	CMDLIST(mkdir)
 	CMDLIST(logname)
@@ -1368,14 +1368,19 @@ USAGE_LICENSE
 "[D\f:dump-strings\f?Do not execute the script, but output the set of double "
 	"quoted strings preceded by a \b$\b.  These strings are needed for "
 	"localization of the script to different locales.]"
-"[E?Reads the file \b${ENV-$HOME/.kshrc}\b, if it exists, as a profile. "
+"[E?Reads the file "
+#if SHOPT_SYSRC
+	"\b/etc/ksh.kshrc\b, if it exists, as a profile, followed by "
+#endif
+	"\b${ENV-$HOME/.kshrc}\b, if it exists, as a profile. "
 	"On by default for interactive shells; use \b+E\b to disable.]"
 #if SHOPT_PFSH
 "[P?Invoke the shell as a profile shell.  See \bpfexec\b(1).]"
 #endif
 #if SHOPT_KIA
 "[R]:[file?Do not execute the script, but create a cross reference database "
-	"in \afile\a that can be used a separate shell script browser.]"
+	"in \afile\a that can be used a separate shell script browser.  The "
+	"-R option requires a script to be specified as the first operand.]"
 #endif /* SHOPT_KIA */
 #if SHOPT_BASH
    "\fbash2\f"
@@ -1784,7 +1789,7 @@ USAGE_LICENSE
 #endif /* SHOPT_FS_3D */
 
 const char sh_optwhence[] =
-"[-1c?\n@(#)$Id: whence (AT&T Research) 1999-07-07 $\n]"
+"[-1c?\n@(#)$Id: whence (AT&T Research) 2007-04-24 $\n]"
 USAGE_LICENSE
 "[+NAME?whence - locate a command and describe its type]"
 "[+DESCRIPTION?Without \b-v\b, \bwhence\b writes on standard output an "
@@ -1797,7 +1802,9 @@ USAGE_LICENSE
 "[a?Displays all uses for each \aname\a rather than the first.]"
 "[f?Do not check for functions.]"
 "[p?Do not check to see if \aname\a is a reserved word, a built-in, "
-	"an alias, or a function.]"
+	"an alias, or a function.  This turns off the \b-v\b option.]"
+"[q?Quiet mode. Returns 0 if all arguments are built-ins, functions, or are "
+	"programs found on the path.]"
 "[v?For each name you specify, the shell displays a line that indicates "
 	"if that name is one of the following:]{"
 	"[+?Reserved word]"

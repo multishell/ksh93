@@ -2,7 +2,7 @@
 # Glenn Fowler
 # AT&T Research
 #
-# @(#)make.probe (AT&T Research) 2007-03-23
+# @(#)make.probe (AT&T Research) 2007-04-11
 #
 # C probe for make
 #
@@ -32,7 +32,6 @@ probe_libdir="shlib lib"
 probe_nmflags="'' -p -B"
 probe_optimize="-O"
 probe_pic="-Kpic -KPIC -fpic -fPIC -pic -PIC +z +Z"
-probe_PIC="-KPIC -Kpic -fPIC -fpic -PIC -pic +Z +z"
 probe_readonly="-R -Krodata -xMerge -Wa,-r"
 probe_shared="'' -G -b -c -shared -Wl,dll"
 probe_shared_nostart="-nostartfiles"
@@ -315,14 +314,18 @@ if	$cc -c pic.$src 2>e
 then	e=`wc -l e`
 	s=`$size pic.$obj; wc pic.$obj`
 	eval set x $probe_pic
+	shift
 	while	:
-	do	shift
-		case $# in
-		0)	break ;;
+	do	case $# in
+		0|1)	break ;;
 		esac
+		pic=$1
+		shift
+		PIC=$1
+		shift
 		rm -f pic.$obj
-		$cc $1 -c pic.$src 2>e && test -f pic.$obj || continue
-		$cc $1 -o pic.$exe pic.$obj && test -f pic.$exe || {
+		$cc $pic -c pic.$src 2>e && test -f pic.$obj || continue
+		$cc $pic -o pic.$exe pic.$obj && test -f pic.$exe || {
 			rm -f pic.$exe
 			$cc -o pic.$exe pic.$obj && test -f pic.$exe && continue
 		}
@@ -330,8 +333,8 @@ then	e=`wc -l e`
 		$e)	;;
 		*)	continue ;;
 		esac
-		case $1 in
-		???*)	m=`echo " $1" | sed -e 's/^ [-+]//g' -e 's/./-& /g' -e 's/[-+] //g'`
+		case $pic in
+		???*)	m=`echo " $pic" | sed -e 's/^ [-+]//g' -e 's/./-& /g' -e 's/[-+] //g'`
 			rm -f pic.$obj pic1.$exe
 			if	$cc $m -c pic.$src 2>e && test -f pic.$obj &&
 				$cc -o pic1.$exe pic.$obj && test -f pic1.$exe
@@ -341,12 +344,12 @@ then	e=`wc -l e`
 					;;
 				esac
 			fi
-			cc_pic=$1
+			cc_pic=$pic
 			break
 			;;
 		*)	case `$size pic.$obj; wc pic.$obj` in
 			$s)	;;
-			*)	cc_pic=$1
+			*)	cc_pic=$pic
 				break
 				;;
 			esac
@@ -365,21 +368,11 @@ int main() { f(); return 0; }' > picok.$src
 		;;
 	esac
 	case $cc_pic in
-	?*)	cc_PIC=$cc_pic
-		eval set x x $probe_PIC
-		while	:
-		do	shift
-			shift
-			case $# in
-			0|1)	break ;;
-			esac
-			case $cc_pic in
-			$1)	rm -f pic.$obj
-				$cc $2 -c pic.$src 2>e && test -f pic.$obj && cc_PIC=$2
-				break
-				;;
-			esac
-		done
+	?*)	rm -f pic.$obj
+		if	$cc $PIC -c pic.$src 2>e && test -f pic.$obj
+		then	cc_PIC=$PIC
+		else	cc_PIC=$cc_pic
+		fi
 		;;
 	*)	eval set x $probe_dll
 		while	:
@@ -1910,7 +1903,20 @@ CC_AR=$ar
 CC_ARFLAGS=$arflags
 CC_DEBUG=$debug
 CC_DIALECT=$dialect
-CC_DLL=$cc_dll
+CC_PICBIG=$cc_PIC
+CC_PICSMALL=$cc_pic
+CC_PIC=$CC_PICBIG
+CC_DLL_ONLY=$cc_dll
+case $CC_DLL_ONLY in
+'')	CC_DLLBIG=
+	CC_DLLSMALL=
+	CC_DLL=
+	;;
+*)	CC_DLLBIG="$CC_DLL_ONLY $CC_PICBIG"
+	CC_DLLSMALL="$CC_DLL_ONLY $CC_PICSMALL"
+	CC_DLL="$CC_DLL_ONLY $CC_PICBIG"
+	;;
+esac
 CC_DLL_DIR=$dll_dir
 CC_DLL_LIBRARIES=$dll_libraries
 CC_DLL_VARIANTS=$dll_variants
@@ -1935,8 +1941,6 @@ CC_NM=$nm
 CC_NMEDIT=$nmedit
 CC_NMFLAGS=$nmflags
 CC_OPTIMIZE=$optimize
-CC_PIC=$cc_pic
-CC_PICBIG=$cc_PIC
 CC_READONLY=$readonly
 CC_REPOSITORY=$repository
 CC_REQUIRE=$require
@@ -1997,14 +2001,9 @@ echo CC.AR = $CC_AR
 echo CC.ARFLAGS = $CC_ARFLAGS
 echo CC.DEBUG = $CC_DEBUG
 echo CC.DIALECT = $CC_DIALECT
-case $CC_DLL in
-'')	echo CC.DLL =
-	echo CC.DLLBIG =
-	;;
-*)	echo CC.DLL = $CC_DLL $CC_PIC
-	echo CC.DLLBIG = $CC_DLL $CC_PICBIG
-	;;
-esac
+echo CC.DLLBIG = $CC_DLLBIG
+echo CC.DLLSMALL = $CC_DLLSMALL
+echo CC.DLL = $CC_DLL
 echo CC.DLL.DEF = $cc_dll_def
 echo CC.DLL.DIR = $CC_DLL_DIR
 echo CC.DLL.LIBRARIES = $CC_DLL_LIBRARIES
@@ -2045,8 +2044,9 @@ esac
 echo CC.NMEDIT ="$CC_NMEDIT"
 echo CC.NMFLAGS = $CC_NMFLAGS
 echo CC.OPTIMIZE = $CC_OPTIMIZE
-echo CC.PIC = $CC_PIC
 echo CC.PICBIG = $CC_PICBIG
+echo CC.PICSMALL = $CC_PICSMALL
+echo CC.PIC = $CC_PIC
 echo CC.READONLY = $CC_READONLY
 echo CC.REPOSITORY = $CC_REPOSITORY
 for f in $CC_REQUIRE

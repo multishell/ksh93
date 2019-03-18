@@ -25,19 +25,13 @@
 
 #include <cmd.h>
 
-int	_cmd_quit = 0;
-
 int
 _cmd_init(int argc, char** argv, void* context, const char* catalog, int flags)
 {
 	register char*	cp;
 
 	if (argc < 0)
-	{
-		_cmd_quit = 1;
 		return -1;
-	}
-	_cmd_quit = 0;
 	if (cp = strrchr(argv[0], '/'))
 		cp++;
 	else

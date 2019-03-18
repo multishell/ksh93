@@ -92,7 +92,35 @@ All recorded changes follow.
 
 :::::::: ksh93 ::::::::
 
-07-03-08  --- Release ksh93s+  ---
+07-06-28  --- Release ksh93s+  ---
+07-06-25  In vi insert mode, ksh no longer emits a backspace character
+	  before the carraige return when the newline is entered. 
+07-06-25  A bug in which pipefail would cause a command to return 0
+	  when the pipeline was the last command and the failure happened
+	  on a component other than the last has been fixed.
+07-06-25  A bug in the expansion of ${var/pattern/rep} when pattern or rep
+	  contained a left parenthesis in single quotes has been fixed.
+07-06-18  The braces for a subscripted variable with ${var[sub]} are now
+	  optional when inside [[...]], ((...)) or as a subscript.
+07-05-28  A bug in brace expansion in which single and double quotes did
+          not treat the comma as a literal character has been fixed.
+07-05-24  The -p option of whence now disables -v.
+07-05-23  Several bug fixes in compound variables and arrays of arrays
+	  have been made.
+07-05-15  A bug in which the %B format of printf was affected  by the
+	  locale has been fixed.
+07-05-14  A bug in which \ was not removed in the replacement pattern with
+	  ${var/pattern/rep} when it was not followed by \ or a digit has
+	  been fixed.
+07-05-10  A bug in which ksh -R file core dumped if no script was specified
+	  has been fixed.  it not displays an error message.
+07-05-07  Added additional Solaris signals to signal table.
+07-04-30  A bug in which a pipeline with command substitution inside a
+	  function could cause a pipeline that invokes this function to
+	  hang when the pipefail option is on has been fixed.
+07-04-30  Added -q to whence.
+07-04-18  A small memory leak with each redirection of a non-builtin has
+	  been fixed.
 07-03-08  A bug in which set +o output command line options has been fixed.
 07-03-08  A bug in which an error in read (for example, an invalid variable
 	  name), could leave the terminal in raw mode has been fixed.
@@ -1548,9 +1576,28 @@ All recorded changes follow.
 
 :::::::: libast ::::::::
 
+07-05-21 tm/tmxfmt.c,tmxscan.c: %F => %L (TM_DEFAULT); %F => %Y-%m-%d
+07-05-15 sfio/sfvprintf.c: %h? and SFFMT_SHORT => raw bytes
+07-05-09 features/signal.c,features/siglist: use kill -l & strsignal()
+07-04-25 misc/optctx.c: add for opt_info switching
+07-04-24 misc/cmdarg.c,include/cmdarg.h: add CMD_CHECKED, CMD_SILENT
+07-04-24 misc/procopen.c,include/proc.h: add PROC_CHECK
+07-04-24 misc/procrun.c: add flags arg (current use PROC_ARGMOD)
+07-04-24 misc/cmdarg.c,include/cmdarg.h: move from src/cmd/tw
+07-04-20 port/(lclang.h|lc.c|mc.c|lclib.h|lcgen.c): separate lctab.c
+07-04-20 comp/conf.sh: defer to systems without 'grep -q' -- sigh
+07-04-20 comp/conf.sh: probe for LL integer constant initializer suffix
+07-04-20 include/syslog.h: <namval.h> => <ast_namval.h> for win32
+07-04-20 ast_namval.h: add as copy of include/namval.h for win32
+07-04-19 comp/conf.tab: fix SVID SI entries to probe SI_* (not _SI_*)
+07-04-13 tm/tmxdate.c,tm/tmzone.c: handle [-+]0000 UTC zone offset
+07-04-11 sfio/sfvprintf.c: add %F, propagate SFFMT_UPPER
+07-04-11 sfio/sfcvt.c: handle SFFMT_UPPER => nan/inf vs. NAN/INF
+07-04-02 comp/conf.tab,comp/conf.sh: add C/POSIX <stdint.h> symbols
 07-03-28 misc/optget.c: fix l10n --?-
 07-03-25 features/common: fix { ast_std.h ast_map.h stdint.h } logic
 07-03-21 error.h: move from error_info to (*_error_data_)
+07-03-21 misc/error.c: add errorctx() for error_info switching
 07-03-21 option.h: move from opt_info to (*_opt_data_)
 07-03-19 regex/regdecomp.c: fix REX_ONECHAR escapes and add REX_KMP
 07-03-11 tm/tmxscan.c,regex/regnexec.c: fix strict-alias transgressions
@@ -2967,7 +3014,15 @@ All recorded changes follow.
 
 :::::::: libcmd ::::::::
 
-07-03-28 date.c: add --unelepsed=scale, -U: fmtelapsed() => strelapsed()
+07-05-20 cmd.h: handle msvc's balk at if(0)0=0;
+07-05-20 cksum.c: #include <modex.h>
+07-05-11 cmd.h: add _CMD_CONTEXT_OK() to verify >= 20070511 context
+07-05-09 fds.c: handle ipv6 sockets
+07-05-09 cmd.h: <shbltin.h> : cmdquit() => sh_checksig(context)
+07-04-25 mkdir.c: force (S_ISVTX|S_ISUID|S_ISGID) after mkdir(2)
+07-04-24 procrun.c: add -last intercept => sh_run() and whence -q
+07-04-19 uname.c: name operands first checked for CS_NAME, then NAME
+07-03-28 date.c: add --unelapsed=scale, -U: fmtelapsed() => strelapsed()
 07-03-25 wclib.h: iswspace() requires <wctype.h>!
 07-03-11 tty.c: add sysV --line-number, -l
 07-02-26 Makefile: sumlib.o: direct extract from +lsum (vcodex someday)

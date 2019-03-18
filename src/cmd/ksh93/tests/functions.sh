@@ -755,4 +755,19 @@ function foo
 	done
 }
 [[ $(foo 'NUMBERED RECORDSIZE') == ok ]] || err_exit 'optimization error with undefined variable'
+unset x
+x=$(
+	set -e
+	integer count=0
+	function err_f
+	{
+		if	((count++==3))  
+		then	print failed
+		else	false
+		fi
+	}
+	trap 'err_f' ERR
+	false
+)
+[[ $x == failed ]] && err_exit 'ERR trap executed multiple times'
 exit $((Errors))

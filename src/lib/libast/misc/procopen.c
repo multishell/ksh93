@@ -360,7 +360,7 @@ restore(Proc_t* proc)
  */
 
 Proc_t*
-procopen(const char* cmd, char** argv, char** envv, long* modv, long flags)
+procopen(const char* cmd, char** argv, char** envv, long* modv, int flags)
 {
 	register Proc_t*	proc = 0;
 	register int		procfd;

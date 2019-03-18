@@ -134,6 +134,7 @@ typedef struct
 	int		ignorecase;
 	char*		same;
 	int		samesize;
+	void*		context;
 	File_t		file[2];
 } Join_t;
 
@@ -269,7 +270,7 @@ getrec(Join_t* jp, int index, int discard)
 	register char*		cp;
 	register int		n = 0;
 
-	if (cmdquit())
+	if (sh_checksig(jp->context))
 		return 0;
 	if (discard && fp->discard)
 		sfraise(fp->iop, SFSK_DISCARD, NiL);
@@ -666,6 +667,7 @@ b_join(int argc, char** argv, void* context)
 #endif
 	if (!(jp = init()))
 		error(ERROR_system(1),"out of space");
+	jp->context = context;
 	for (;;)
 	{
 		switch (n = optget(argv, usage))

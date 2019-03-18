@@ -372,7 +372,7 @@ b_chgrp(int argc, char** argv, void* context)
 	}
 	if (!(fts = fts_open(argv + 1, flags, NiL)))
 		error(ERROR_system(1), "%s: not found", argv[1]);
-	while (!cmdquit() && (ent = fts_read(fts)))
+	while (!sh_checksig(context) && (ent = fts_read(fts)))
 		switch (ent->fts_info)
 		{
 		case FTS_F:

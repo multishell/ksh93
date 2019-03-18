@@ -154,7 +154,7 @@ mcfind(char* path, const char* locale, const char* catalog, int category, int nl
 						case_C:
 							if (!catalog)
 								last = 1;
-							v = categories[category].name;
+							v = lc_categories[category].name;
 							break;
 						default:
 							*s++ = c;

@@ -291,7 +291,7 @@ pathprobe(char* path, char* attr, const char* lang, const char* tool, const char
 		*ap++ = (char*)tool;
 		*ap++ = proc;
 		*ap = 0;
-		if (procrun(exe, arg))
+		if (procrun(exe, arg, 0))
 			return 0;
 		if (eaccess(path, R_OK))
 			return 0;

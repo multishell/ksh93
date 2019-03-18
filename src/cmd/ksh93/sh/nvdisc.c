@@ -993,7 +993,7 @@ Namval_t *sh_addbuiltin(const char *path, int (*bltin)(int, char*[],void*),void 
 	register const char *name = path_basename(path);
 	char *cp;
 	register Namval_t *np, *nq=0;
-	int offset = staktell();
+	int attr=0, offset = staktell();
 	if(name==path && (nq=nv_bfsearch(name,sh.bltin_tree,(Namval_t**)0,&cp)))
 		path = name = stakptr(offset);
 	if(np = nv_search(path,sh.bltin_tree,0))
@@ -1019,7 +1019,10 @@ Namval_t *sh_addbuiltin(const char *path, int (*bltin)(int, char*[],void*),void 
 			if(nv_isattr(np,BLT_SPC))
 				return(np);
 			if(!bltin)
+			{
 				bltin = np->nvalue.bfp;
+				attr = nv_isattr(np,NV_BLTINOPT);
+			}
 			if(np->nvenv)
 				dtdelete(sh.bltin_tree,np);
 			if(extra == (void*)1)
@@ -1034,7 +1037,7 @@ Namval_t *sh_addbuiltin(const char *path, int (*bltin)(int, char*[],void*),void 
 		return(np);
 	np->nvenv = 0;
 	np->nvfun = 0;
-	nv_setattr(np,0);
+	nv_setattr(np,attr);
 	if(bltin)
 	{
 		np->nvalue.bfp = bltin;
@@ -1185,6 +1188,8 @@ Dt_t *nv_dict(Namval_t* np)
 			return(tp->dict);
 #if 0
 		np = nv_create(np,(const char*)0, NV_FIRST, (Namfun_t*)0);
+#else
+		break;
 #endif
 	}
 	return(sh.var_tree);
@@ -1236,12 +1241,18 @@ const Namdisc_t *nv_discfun(int which)
 	return(0);
 }
 
+Namval_t *nv_type(Namval_t *np)
+{
+	return(0);
+}
+
 /*
  * This function turns variable <np>  to the type <tp>
  */
 int nv_settype(Namval_t* np, Namval_t *tp, int flags)
 {
 	int isnull = nv_isnull(np);
+	int rdonly = nv_isattr(np,NV_RDONLY);
 	char *val=0;
 	if(isnull)
 		flags &= ~NV_APPEND;
@@ -1253,6 +1264,8 @@ int nv_settype(Namval_t* np, Namval_t *tp, int flags)
 	}
 	if(!nv_clone(tp,np,flags|NV_NOFREE))
 		return(0);
+	if(!rdonly)
+		nv_offattr(np,NV_RDONLY);
 	if(val)
 	{
 		nv_putval(np,val,NV_RDONLY);

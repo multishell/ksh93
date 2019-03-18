@@ -37,6 +37,8 @@ set -- \
 	'f{d,e,f}g'				'fdg feg ffg' \
 	'{l,n,m}xyz'				'lxyz nxyz mxyz' \
 	'{abc\,def}'				'{abc,def}' \
+	'{"abc,def"}'				'{abc,def}' \
+	"{'abc,def'}"				'{abc,def}' \
 	'{abc}'					'{abc}' \
 	'\{a,b,c,d,e}'				'{a,b,c,d,e}' \
 	'{x,y,\{a,b,c}}'			'x} y} {a} b} c}' \

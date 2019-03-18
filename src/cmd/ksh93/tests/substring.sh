@@ -166,6 +166,21 @@ x=[123]def
 if	[[ "${x//\[(*)\]/\{\1\}}" != {123}def ]]
 then	err_exit 'closing brace escape not working'
 fi
+xx=%28text%29
+if	[[ ${xx//%28/abc\)} != 'abc)text%29' ]]
+then	 err_exit '${xx//%28/abc\)} not working'
+fi
+xx='a:b'
+str='(){}[]*?|&^%$#@l'
+for ((i=0 ; i < ${#str}; i++))
+do      [[ $(eval print -r -- \${xx//:/\\${str:i:1}}) == "a${str:i:1}b" ]] || err_exit "substitution of \\${str:i:1}} failed"
+        [[ $(eval print -rn -- \${xx//:/\'${str:i:1}\'}) == "a${str:i:1}b" ]] || err_exit "substitution of '${str:i:1}' failed"
+        [[ $(eval print -r -- \${xx//:/\"${str:i:1}\"}) == "a${str:i:1}b" ]] || err_exit "substitution of \"${str:i:1}\" failed"
+done
+[[ ${xx//:/\\n} == 'a\nb' ]]  || err_exit "substituion of \\\\n failed"
+[[ ${xx//:/'\n'} == 'a\nb' ]] || err_exit "substituion of '\\n' failed"
+[[ ${xx//:/"\n"} ==  'a\nb' ]] || err_exit "substituion of \"\\n\" failed"
+[[ ${xx//:/$'\n'} ==  $'a\nb' ]] || err_exit "substituion of \$'\\n' failed"
 unset foo
 foo=one/two/three
 if	[[ ${foo//'/'/_} != one_two_three ]]
@@ -270,6 +285,10 @@ unset a b
 a='\[abc @(*) def\]'
 b='[abc 123 def]'
 [[ ${b//$a/\1} == 123 ]] || err_exit "\${var/pattern} not working with \[ in pattern"
+unset foo
+foo='(win32.i386) '
+[[ ${foo/'('/'(x11-'} == '(x11-win32.i386) ' ]] || err_exit "\${var/pattern} not working with ' in pattern" 
+$SHELL -c $'v=\'$(hello)\'; [[ ${v//\'$(\'/-I\'$(\'} == -I"$v" ]]' 2> /dev/null || err_exit "\${var/pattern} not working with \$( as pattern"
 unset X
 $SHELL -c '[[ ! ${X[@]:0:300} ]]' 2> /dev/null || err_exit '${X[@]:0:300} with X undefined fails'
 $SHELL -c '[[ ${@:0:300} == "$0" ]]' 2> /dev/null || err_exit '${@:0:300} with no arguments fails'

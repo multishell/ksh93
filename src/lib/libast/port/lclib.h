@@ -28,9 +28,14 @@
 #ifndef _LCLIB_H
 #define _LCLIB_H	1
 
-#define categories	_ast_categories
 #define locales		_ast_locales
 #define translate	_ast_translate
+
+#define lc_categories	_ast_lc_categories
+#define lc_charsets	_ast_lc_charsets
+#define lc_languages	_ast_lc_languages
+#define lc_maps		_ast_lc_maps
+#define lc_territories	_ast_lc_territories
 
 struct Lc_info_s;
 
@@ -53,9 +58,14 @@ typedef struct Lc_numeric_s
 
 #define LCINFO(c)	(&locales[c]->info[c])
 
-extern	Lc_category_t	categories[];
-extern	Lc_t*		locales[];
+extern const Lc_charset_t	lc_charsets[];
+extern const Lc_language_t	lc_languages[];
+extern const Lc_map_t		lc_maps[];
+extern const Lc_territory_t	lc_territories[];
 
-extern char*		translate(const char*, const char*, const char*, const char*);
+extern Lc_category_t		lc_categories[];
+extern Lc_t*			locales[];
+
+extern char*			translate(const char*, const char*, const char*, const char*);
 
 #endif

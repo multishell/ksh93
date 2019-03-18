@@ -43,6 +43,7 @@
 #include	"national.h"
 #include	"streval.h"
 
+
 #undef STR_GROUP
 #ifndef STR_GROUP
 #   define STR_GROUP	0
@@ -71,6 +72,7 @@ typedef struct  _mac_
 	char		arith;		/* set for ((...)) */
 	char		let;		/* set when expanding let arguments */
 	char		zeros;		/* strip leading zeros when set */
+	char		arrayok;	/* $x[] ok for arrays */
 	void		*nvwalk;	/* for name space walking*/
 } Mac_t;
 
@@ -208,6 +210,7 @@ int sh_macexpand(register struct argnod *argp, struct argnod **arghead,int flag)
 	mp->split = !(flag&ARG_ASSIGN);
 	mp->assign = !mp->split;
 	mp->pattern = mp->split && !(flag&ARG_NOGLOB) && !sh_isoption(SH_NOGLOB);
+	mp->arrayok = mp->arith || (flag&ARG_ARRAYOK);
 	str = argp->argval;
 	fcsopen(str);
 	mp->fields = 0;
@@ -388,7 +391,7 @@ char *sh_macpat(register struct argnod *arg, int flags)
 		arg->argchn.ap=0;
 	if(!(sp=arg->argchn.cp))
 	{
-		sh_macexpand(arg,NIL(struct argnod**),flags);
+		sh_macexpand(arg,NIL(struct argnod**),flags|ARG_ARRAYOK);
 		sp = arg->argchn.cp;
 		if(!(flags&ARG_OPTIMIZE) || !(arg->argflag&ARG_MAKE))
 			arg->argchn.cp = 0;
@@ -655,6 +658,17 @@ static void copyto(register Mac_t *mp,int endch, int newquote)
 					--paren;
 			}
 			goto pattern;
+		    case S_COM:
+			if(mp->pattern==4 && (mp->quote || mp->lit))
+			{
+				if(c)
+				{
+					stakwrite(first,c);
+					first = fcseek(c);
+				}
+				stakputc(ESCAPE);
+			}
+			break;
 		    case S_BRACE:
 			if(!(mp->quote || mp->lit))
 			{
@@ -880,13 +894,16 @@ static int subcopy(Mac_t *mp, int flag)
 	int xpattern = mp->pattern;
 	int loc = staktell();
 	int xarith = mp->arith;
+	int arrayok = mp->arrayok;
 	mp->split = 0;
 	mp->arith = 0;
 	mp->pattern = flag?4:0;
+	mp->arrayok=1;
 	copyto(mp,RBRACT,0);
 	mp->pattern = xpattern;
 	mp->split = split;
 	mp->arith = xarith;
+	mp->arrayok = arrayok;
 	return(loc);
 }
 
@@ -1035,7 +1052,7 @@ retry1:
 			do
 				stakputc(c);
 			while(((c=fcget()),(c>0x7f||isaname(c)))||type && c=='.');
-			while(c==LBRACT && type)
+			while(c==LBRACT && (type||mp->arrayok))
 			{
 				sh.argaddr=0;
 				if((c=fcget(),isastchar(c)) && fcpeek(0)==RBRACT)
@@ -1107,7 +1124,7 @@ retry1:
 		ap = np?nv_arrayptr(np):0;
 		if(type)
 		{
-			if(ap && isastchar(mode) && !(ap->nelem&ARRAY_SCAN))
+			if(ap && (isastchar(mode)||type==M_TREE)  && !(ap->nelem&ARRAY_SCAN))
 				nv_putsub(np,NIL(char*),ARRAY_SCAN);
 			if(!isbracechar(c))
 				goto nosub;
@@ -1119,7 +1136,7 @@ retry1:
 		if((type==M_VNAME||type==M_SUBNAME)  && sh.argaddr && strcmp(nv_name(np),id))
 			sh.argaddr = 0;
 		c = (type>M_BRACE && isastchar(mode));
-		if(np && (!c || !ap))
+		if(np && (type==M_TREE || !c || !ap))
 		{
 			if(type==M_VNAME)
 			{
@@ -1129,11 +1146,7 @@ retry1:
 #ifdef SHOPT_TYPEDEF
 			else if(type==M_TYPE)
 			{
-#if 0
 				Namval_t *nq = nv_type(np);
-#else
-				Namval_t *nq = 0;
-#endif
 				type = M_BRACE;
 				if(nq)
 					v = nv_name(nq);
@@ -1628,6 +1641,12 @@ retry2:
 		nv_close(np);
 	return(1);
 nosub:
+	if(type==M_BRACE && sh_lexstates[ST_NORM][c]==S_BREAK)
+	{
+		fcseek(-1);
+		comsubst(mp,2);
+		return(1);
+	}
 	if(type)
 		mac_error(np);
 	fcseek(-1);
@@ -1709,6 +1728,7 @@ static void comsubst(Mac_t *mp,int type)
 		sh.inlineno = error_info.line+sh.st.firstline;
 		t = (Shnode_t*)sh_parse(mp->shp, sp,SH_EOF|SH_NL);
 		sh.inlineno = c;
+		type = 1;
 	}
 #if KSHELL
 	if(t)
@@ -1741,7 +1761,7 @@ static void comsubst(Mac_t *mp,int type)
 			sp = sfnew(NIL(Sfio_t*),(char*)malloc(IOBSIZE+1),IOBSIZE,fd,SF_READ|SF_MALLOC);
 		}
 		else
-			sp = sh_subshell(t,sh_isstate(SH_ERREXIT),1);
+			sp = sh_subshell(t,sh_isstate(SH_ERREXIT),type);
 		fcrestore(&save);
 	}
 	else
@@ -2281,21 +2301,29 @@ static void mac_error(Namval_t *np)
 
 /*
  * Given pattern/string, replace / with 0 and return pointer to string
- * \ characters are stripped from string.
+ * \ characters are stripped from string.  The \ are stripped in the
+ * replacement string unless followed by a digit or \.
  */ 
 static char *mac_getstring(char *pattern)
 {
-	register char *cp = pattern;
-	register int c;
+	register char	*cp=pattern, *rep=0, *dp;
+	register int	c;
 	while(c = *cp++)
 	{
-		if(c==ESCAPE)
-			cp++;
-		else if(c=='/')
+		if(c==ESCAPE && (!rep || (*cp && strchr("&|()[]*?",*cp))))
+		{
+			c = *cp++;
+		}
+		else if(!rep && c=='/')
 		{
 			cp[-1] = 0;
-			return(cp);
+			rep = dp = cp;
+			continue;
 		}
+		if(rep)
+			*dp++ = c;
 	}
-	return(NIL(char*));
+	if(rep)
+		*dp = 0;
+	return(rep);
 }

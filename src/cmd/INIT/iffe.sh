@@ -2723,7 +2723,7 @@ _BEGIN_EXTERNS_
 extern int $v();
 _END_EXTERNS_
 #endif
-static _IFFE_fun i=(_IFFE_fun)$v;main(){return(i==0);}
+static _IFFE_fun i=(_IFFE_fun)$v;int main(){return ((unsigned int)i)^0xaaaa;}
 "
 				if	$cc -D_IFFE_extern -c $tmp.c <&$nullin >&$nullout || $cc -c $tmp.c <&$nullin >&$nullout
 				then	rm -f $tmp.exe

@@ -317,8 +317,11 @@ report(int level, char* text, char* item, unsigned long stamp)
 			}
 			if (level == 1)
 				fprintf(stderr, "warning: ");
-			else if (level > 1)
+			else if (level > 1) {
 				state.errors = 1;
+				fprintf(stderr, "error: This report will eventually break the build - dying early");
+				exit(1);
+			}
 		}
 		if (item)
 			fprintf(stderr, "%s: ", item);
@@ -352,6 +355,8 @@ dont(Rule_t* r, int code, int keepgoing)
 		exit(1);
 	state.errors++;
 	r->flags |= RULE_error;
+	fprintf(stderr, "error: This problem will eventually break the build - dying early");
+	exit(1);
 }
 
 /*

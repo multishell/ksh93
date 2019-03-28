@@ -1603,7 +1603,12 @@ prev std/wchar.h implicit
 make FEATURE/float implicit
 meta FEATURE/float features/%>FEATURE/% features/float float
 make features/float
-prev FEATURE/standards implicit
+make FEATURE/isoc99 implicit
+meta FEATURE/isoc99 features/%>FEATURE/% ${PACKAGEROOT}/src/lib/libast/features/isoc99 isoc99
+make features/isoc99
+done features/isoc99
+exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} ' run features/isoc99
+done FEATURE/isoc99 generated
 done features/float
 exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} ' run features/float
 prev ast_common.h implicit
@@ -4075,7 +4080,7 @@ done sfgetu.o generated
 make sfcvt.o
 make sfio/sfcvt.c
 prev sfio/sfhdr.h implicit
-prev FEATURE/standards implicit
+prev FEATURE/isoc99 implicit
 done sfio/sfcvt.c
 meta sfcvt.o %.c>%.o sfio/sfcvt.c sfcvt
 prev sfio/sfcvt.c
@@ -5623,15 +5628,9 @@ done getoptl.o generated
 make aso.o
 make aso/aso.c
 prev std/stdio.h implicit
-prev FEATURE/aso implicit
 make aso/asohdr.h implicit
 prev include/aso.h implicit
-make FEATURE/asometh implicit
-meta FEATURE/asometh features/%>FEATURE/% features/asometh asometh
-make features/asometh
-done features/asometh
-exec - iffe -v -X ast -X std -c '${CC} ${mam_cc_FLAGS} ${CCFLAGS}   ${LDFLAGS} ' run features/asometh
-done FEATURE/asometh dontcare generated
+prev FEATURE/aso implicit
 make include/fnv.h implicit
 prev ast_common.h implicit
 done include/fnv.h dontcare
